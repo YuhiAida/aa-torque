@@ -157,7 +157,10 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: ${{ steps.version.outputs.tag }}
           generate_release_notes: true
-          draft: true
+          # Published immediately: the in-app updater reads /releases/latest, which
+          # excludes drafts. The concurrency group above makes a burst of merges
+          # collapse into one surviving run, so this publishes one version per burst.
+          draft: false
           files: |
             app/build/outputs/apk/release/aa-torque.apk
             app/build/outputs/mapping/release/mapping.txt

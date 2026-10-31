@@ -62,8 +62,9 @@ behaviour is verified. Report what CI checked and what it did not.
 
 - Never push to `master`. Use a branch and a draft pull request.
 - A push to `master` starts a release. CI bumps `version.properties`, force-pushes the tag
-  `latest`, and creates a **draft** GitHub release that holds the APK. Yuhi publishes it.
-- Never edit `version.properties` by hand. Never publish a release.
+  `latest`, and **publishes** a GitHub release that holds the APK. Publishing is automatic.
+  Never delete a release or a version tag, and never reuse a version number — fix forward.
+- Never edit `version.properties` by hand.
 
 ## Code rules
 
