@@ -140,7 +140,12 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'io.github.takahirom.roborazzi:roborazzi:1.77.0'
     testImplementation 'io.github.takahirom.roborazzi:roborazzi-junit-rule:1.77.0'
-    testImplementation 'org.robolectric:robolectric:4.17'
+    // Robolectric pulls BouncyCastle for its TLS shadows; 1.85 is Java 25 bytecode and the
+    // project's Jetifier (AGP 8.2) cannot transform class file 69. The render test does not
+    // use TLS, so drop it from the test graph.
+    testImplementation('org.robolectric:robolectric:4.17') {
+        exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
+    }
     testImplementation 'androidx.test:core:1.7.0'
     testImplementation 'androidx.test.ext:junit:1.3.0'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
