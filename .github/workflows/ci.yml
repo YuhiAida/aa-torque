@@ -1,5 +1,14 @@
 name: ci
-on: [push]
+
+# A push that only touches prose cannot change the APK, so it must not mint a version either.
+# The whole workflow is skipped for those: no ktlint, no tests, no bump, no release. A mixed
+# push still runs, because paths-ignore only fires when every changed file matches.
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
 
 # One run per branch at a time. A burst of merges would otherwise start a
 # build_deploy job per push, and every one of them bumps and pushes
