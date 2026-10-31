@@ -161,6 +161,9 @@
     <string name="update_dialog_message">Version %1$s is available. Install it through Kingstaller, or Android Auto will stop listing the app.</string>
     <string name="update_open_page">Open release page</string>
     <string name="update_later">Later</string>
+    <string name="check_for_updates">Check for updates</string>
+    <string name="no_update_available">You are on the newest version.</string>
+    <string name="update_check_failed">Could not reach the release page.</string>
     <string name="convert_minutes_seconds">Seconds to Minutes:Seconds</string>
     <string name="donate">Please donate!</string>
     <string name="translate">Translate</string>
