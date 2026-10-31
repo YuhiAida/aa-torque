@@ -95,10 +95,15 @@ on:
       - 'LICENSE'
 ```
 
-A push whose changed files are *all* covered by that list starts nothing: no ktlint, no tests,
-no version bump, no release. Editing the README or a file under `docs/` therefore leaves the
-version alone. A mixed push (code plus docs) still runs, because the filter only skips when every
-changed file matches.
+A push whose changed files are *all* covered by that list starts nothing in this workflow: no
+ktlint, no tests, no version bump, no release. Editing the README or a file under `docs/`
+therefore leaves the version alone. A mixed push (code plus docs) still runs, because the filter
+only skips when every changed file matches.
+
+Prose is not unchecked, though: a separate workflow, `docs.yml`, triggers on the same markdown
+paths and runs `tools/check_docs.py`, which verifies every relative link and every repository path
+written in backticks. It is a different workflow on purpose — `cancel-in-progress` is per workflow,
+so a README push cannot cancel a release that is halfway through.
 
 `master` can then sit ahead of the newest release. That is intended: the release marks the last
 change that altered the APK, which is exactly what the in-app update check should compare.

@@ -61,6 +61,10 @@ There are no instrumentation tests. The JVM tests in `app/src/test` cover pure l
 nothing exercises Android, the Torque binding, or the gauges. Do not claim a runtime behaviour
 is verified — state what CI checked and what it did not.
 
+Markdown is checked by `tools/check_docs.py`, which runs as its own workflow whenever a `.md` file
+or anything under `docs/` changes. It verifies that every relative link and every repository path
+written in backticks resolves. Run it before pushing a doc change.
+
 ## Branch and release rules
 
 - Never push to `master`. Use a branch and a draft pull request.

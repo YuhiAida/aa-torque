@@ -1,0 +1,25 @@
+name: docs
+
+# Prose only. ci.yml ignores markdown, so a README edit never mints a version and can never
+# cancel a release run; this workflow is the gate that markdown never had.
+on:
+  push:
+    paths:
+      - '**.md'
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+  # Lets a maintainer run it by hand from the Actions tab.
+  workflow_dispatch:
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check markdown references
+        run: python3 tools/check_docs.py
