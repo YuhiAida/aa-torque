@@ -57,8 +57,8 @@ jobs:
       - name: Check Kotlin style
         run: ./gradlew ktlintCheck
 
-      - name: Run unit tests
-        run: ./gradlew testDebugUnitTest
+      - name: Run unit tests and verify theme goldens
+        run: ./gradlew verifyRoborazziDebug
 
       - name: Lint the release variant
         run: ./gradlew lintRelease

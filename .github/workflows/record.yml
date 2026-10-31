@@ -1,0 +1,47 @@
+name: record
+
+# Manual: regenerate the theme goldens after an intentional visual change.
+# The output is an artifact, not a commit: download it, review the images, and commit them.
+# The normal `ci` workflow verifies the committed goldens.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: record-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  record:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '19'
+
+      - name: Cache Gradle and wrapper
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+
+      - name: Prepare Gradle
+        run: echo "" >> ./local.properties
+
+      - name: Record the theme goldens
+        run: ./gradlew recordRoborazziDebug
+
+      - name: Upload the goldens
+        uses: actions/upload-artifact@v7
+        with:
+          name: theme-goldens
+          path: app/src/test/screenshots/
+          if-no-files-found: error
+          retention-days: 14
