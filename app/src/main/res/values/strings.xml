@@ -121,7 +121,9 @@
     <string name="custom_expression">Custom expression</string>
     <string name="status_connecting_torque">Connecting to Torque…</string>
     <string name="status_connecting_to_ecu">Connecting to ECU…</string>
-    <string name="credits_modifications">Developed by:</string>
+    <string name="credits_modifications">Maintained by:</string>
+    <string name="maintainer_name">Yuhi</string>
+    <string name="credits_original_author">Original app by: Kyle Agronick</string>
     <string name="export_dashboards">Export dashboards</string>
     <string name="import_dashboards">Import dashboards</string>
     <string name="file_exported_successfully">File exported successfully</string>
@@ -162,8 +164,7 @@
     <string name="update_open_page">Open release page</string>
     <string name="update_later">Later</string>
     <string name="convert_minutes_seconds">Seconds to Minutes:Seconds</string>
-    <string name="donate">Please donate!</string>
-    <string name="translate">Translate</string>
+    <string name="donate">Support</string>
     <string name="pref_chart_title">Chart line color</string>
     <string name="pref_chart_summary">Color to be used to draw lines on the chart</string>
     <string name="font_ev" translatable="false">Electro Vehicle</string>

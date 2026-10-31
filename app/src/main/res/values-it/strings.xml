@@ -149,7 +149,6 @@
     <string name="pref_title_performance">Titolo %1$d</string>
     <string name="convert_minutes_seconds">Secondi in Minuti:Secondi</string>
     <string name="donate">Per favore dona!</string>
-    <string name="translate">Traduci</string>
     <string name="pref_chart_title">Colore linea del grafico</string>
     <string name="pref_chart_summary">Colore da usare per tracciare le linee sul grafico</string>
     <string name="bg_ev">Veicolo elettrico</string>

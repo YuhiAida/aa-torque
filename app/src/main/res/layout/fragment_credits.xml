@@ -19,7 +19,14 @@
         android:id="@+id/myName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Kyle Agronick"
+        android:text="@string/maintainer_name"
+        android:layout_marginBottom="10dp" />
+
+    <TextView
+        android:id="@+id/originalAuthor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/credits_original_author"
         android:layout_marginBottom="10dp" />
 
     <TextView
@@ -95,11 +102,6 @@
         android:drawableLeft="@drawable/github"
         android:text=" Github"/>
 
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/translateBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/translate" />
 
         <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/donateBtn"
