@@ -68,6 +68,10 @@ behaviour is verified. Report what CI checked and what it did not.
 ## Code rules
 
 - Make the smallest diff that solves the problem. Do not reformat unrelated code.
+  A formatting-only change belongs in its own pull request.
+- Run `./gradlew ktlintCheck` before you push. `./gradlew ktlintFormat` fixes what is
+  mechanical. The style comes from `.editorconfig` (`android_studio`), so the IDE and ktlint
+  agree. `org/prowl/torque` and the `speedviewlib` submodule are excluded on purpose.
 - Ask before you add a dependency.
 - Do not add network, analytics or telemetry code. `ch.acra` (crash mail) is the only
   component that sends data off the phone.
