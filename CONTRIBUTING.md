@@ -106,25 +106,6 @@ entire application, so make sure it is calm.
 
 Pick whatever you like.
 
-## Translations
-
-The app ships 16 translations in `app/src/main/res/values-*`. When a language file carries
-keys that the English file does not have, or lacks keys that English has, `fix_strings.py`
-rewrites the key set to match English:
-
-```
-python3 fix_strings.py
-```
-
-Read the diff before you commit it. The script keeps the existing translations and only
-adds or drops keys.
-
-## Legacy files
-
-`dhu.bat` and `small_head_unit.ini` are an Android Auto desktop-head-unit bench from
-earlier work. They are not part of the current workflow and are scheduled for removal.
-Leave them alone until then.
-
 ## License
 
 Contributions land under GPL-3.0, the license of this repository.

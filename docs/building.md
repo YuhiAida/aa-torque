@@ -106,13 +106,6 @@ file names — needs a manual change.
 `dist/` is git-ignored. A downloaded CI artifact usually lands there. It is scratch space,
 not a source of truth.
 
-## Legacy bench files
-
-`dhu.bat` and `small_head_unit.ini` at the repository root are an Android Auto
-desktop-head-unit bench from earlier work (`adb forward tcp:5277` plus
-`desktop-head-unit -c ./small_head_unit.ini`, 800x480). They are not part of the current
-workflow and are scheduled for removal.
-
 ## Without a local SDK
 
 If you cannot install an SDK, work through CI instead: push a branch, let the `lint` job run
