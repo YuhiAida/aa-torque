@@ -4,15 +4,20 @@ Everything is CI. Nobody builds a release by hand, and nobody publishes one from
 
 ## What triggers a release
 
-`.github/workflows/ci.yml` runs `on: [push]` and holds two jobs:
+`.github/workflows/ci.yml` runs on pushes to `master` and on every pull request:
 
 | Job | Runs on | Purpose |
 |---|---|---|
-| `lint` | every branch push | `./gradlew lintRelease`, then regenerates `docs/generated/inventory.md` and commits it when it changed. This is the required gate for a change. |
-| `build_deploy` | `master` only (`if: github.ref == 'refs/heads/master'`) | Runs after `lint` (`needs: lint`). Bumps the version, builds and publishes the APK. |
+| `changes` | every run | Diffs the change and sets `code`, `themes` and `docs`, so each gate reports on every pull request (a path-filtered workflow that never runs cannot be a required check). |
+| `lint` | code changes | `ktlintCheck` and `lintRelease`, then regenerates `docs/generated/inventory.md` and commits it when it changed and the event is a push. |
+| `render` | code changes | `verifyRoborazziDebug`: the JVM tests and the theme goldens. |
+| `themes` | theme changes | `tools/check_themes.py`, the theme contract. |
+| `docs` | markdown changes | `tools/check_docs.py`, links and paths. |
+| `build_deploy` | `master` push with code changes | Bumps the version, builds and publishes the APK. |
 
-A draft pull request therefore gets lint only. The release path cannot be exercised from a
-branch without relaxing that condition; see "Changing the workflow" below.
+A pull request runs the four gates and `pr_artifact`; the release job is skipped. The release
+path cannot be exercised from a branch without relaxing that condition; see "Changing the
+workflow" below.
 
 The workflow has a `concurrency` group per ref with `cancel-in-progress: true`. Merging several
 pull requests in a row triggers one push per merge, so without this a release job starts per
@@ -84,26 +89,15 @@ in the same workspace, so the APK carries the bumped version.
 
 ## Docs-only pushes do not build
 
-The trigger ignores prose:
+The `changes` job diffs the push or the pull request and sets `code=false` when every changed
+file is prose: `LICENSE`, a `.md` file, or anything under `docs/`. `build_deploy` and
+`pr_artifact` run only when `code=true`, so editing the README or a file under `docs/` leaves
+the version alone. A mixed push (code plus docs) still releases.
 
-```yaml
-on:
-  push:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE'
-```
-
-A push whose changed files are *all* covered by that list starts nothing in this workflow: no
-ktlint, no tests, no version bump, no release. Editing the README or a file under `docs/`
-therefore leaves the version alone. A mixed push (code plus docs) still runs, because the filter
-only skips when every changed file matches.
-
-Prose is not unchecked, though: a separate workflow, `docs.yml`, triggers on the same markdown
-paths and runs `tools/check_docs.py`, which verifies every relative link and every repository path
-written in backticks. It is a different workflow on purpose — `cancel-in-progress` is per workflow,
-so a README push cannot cancel a release that is halfway through.
+Prose is not unchecked, though: the `docs` job runs `tools/check_docs.py` whenever markdown
+changes, and the `themes` job runs `tools/check_themes.py` whenever theme resources change.
+Both are ordinary jobs in `ci.yml`, so they appear as checks on every pull request; the step
+that does the work is skipped when the category did not change.
 
 `master` can then sit ahead of the newest release. That is intended: the release marks the last
 change that altered the APK, which is exactly what the in-app update check should compare.

@@ -1,23 +1,12 @@
 name: ci
 
-# A push that only touches prose cannot change the APK, so it must not mint a version either.
-# The whole workflow is skipped for those: no ktlint, no tests, no bump, no release. A mixed
-# push still runs, because paths-ignore only fires when every changed file matches.
+# Pushes run on master only. A same-repo pull request used to start a second, identical
+# run through this trigger (issue #47); the pull_request trigger is now the only path for
+# a branch. A branch push with no pull request gets no checks — open the PR first.
 on:
   push:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE'
-  # A pull request from a fork never pushes to this repository, so the push trigger
-  # above cannot see it. This trigger is what checks fork PRs. It uses the base
-  # branch's workflow and a read-only token, so the inventory commit below is
-  # push-only.
+    branches: [master]
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE'
 
 # One run per branch at a time. A burst of merges would otherwise start a
 # build_deploy job per push, and every one of them bumps and pushes
@@ -29,7 +18,56 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Classifies the change once, so every gate reports on every pull request. A workflow
+  # skipped by a path filter creates no check run, and a required check that never reports
+  # blocks the merge forever (issue #48).
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+      themes: ${{ steps.diff.outputs.themes }}
+      docs: ${{ steps.diff.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - id: diff
+        name: Classify the changed files
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          changed=$(git diff --name-only "$BASE" "$HEAD")
+          if [ -z "$changed" ]; then
+            code=false
+            themes=false
+            docs=false
+          else
+            # Prose only (LICENSE, markdown, docs/) must not mint a version; the old
+            # paths-ignore guaranteed that for the release job.
+            if echo "$changed" | grep -qvE '(^|/)LICENSE$|\.md$|^docs/'; then
+              code=true
+            else
+              code=false
+            fi
+            if echo "$changed" | grep -qE '^app/src/main/res/(values|drawable)|^tools/check_themes\.py|^\.github/workflows/ci\.yml'; then
+              themes=true
+            else
+              themes=false
+            fi
+            if echo "$changed" | grep -qE '\.md$|^docs/|^tools/check_docs\.py|^\.github/workflows/ci\.yml'; then
+              docs=true
+            else
+              docs=false
+            fi
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "themes=$themes" >> "$GITHUB_OUTPUT"
+          echo "docs=$docs" >> "$GITHUB_OUTPUT"
+
   lint:
+    needs: changes
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -39,11 +77,13 @@ jobs:
           submodules: recursive
 
       - uses: actions/setup-java@v5
+        if: needs.changes.outputs.code == 'true'
         with:
           distribution: 'zulu'
           java-version: '19'
 
       - name: Cache Gradle and wrapper
+        if: needs.changes.outputs.code == 'true'
         uses: actions/cache@v5
         with:
           path: |
@@ -52,24 +92,25 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
 
       - name: Prepare Gradle
+        if: needs.changes.outputs.code == 'true'
         run: echo "" >> ./local.properties
 
       - name: Check Kotlin style
+        if: needs.changes.outputs.code == 'true'
         run: ./gradlew ktlintCheck
 
-      - name: Run unit tests and verify theme goldens
-        run: ./gradlew verifyRoborazziDebug
-
       - name: Lint the release variant
+        if: needs.changes.outputs.code == 'true'
         run: ./gradlew lintRelease
 
       - name: Generate source inventory
+        if: needs.changes.outputs.code == 'true'
         run: python3 tools/gen_inventory.py
 
       - name: Commit the inventory when it changed
         # A pull request from a fork gets a read-only token, so it cannot push. The
         # generation above still runs; only the commit is push-only.
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && needs.changes.outputs.code == 'true'
         run: |
           if git diff --quiet -- docs/generated/inventory.md; then
             echo "inventory is current"
@@ -84,11 +125,79 @@ jobs:
           # of the same name and needs no ref_name interpolation.
           git push origin HEAD
 
-  pr_artifact:
+      - name: No code changes
+        if: needs.changes.outputs.code != 'true'
+        run: echo "No code changes; skipping the Kotlin checks."
+
+  render:
+    needs: changes
     runs-on: ubuntu-24.04
-    # A branch or PR build exists for a human to install and look at. master is
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v5
+        if: needs.changes.outputs.code == 'true'
+        with:
+          distribution: 'zulu'
+          java-version: '19'
+
+      - name: Cache Gradle and wrapper
+        if: needs.changes.outputs.code == 'true'
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+
+      - name: Prepare Gradle
+        if: needs.changes.outputs.code == 'true'
+        run: echo "" >> ./local.properties
+
+      - name: Verify the theme goldens
+        if: needs.changes.outputs.code == 'true'
+        run: ./gradlew verifyRoborazziDebug
+
+      - name: No code changes
+        if: needs.changes.outputs.code != 'true'
+        run: echo "No code changes; skipping the theme render."
+
+  themes:
+    needs: changes
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check theme resources
+        if: needs.changes.outputs.themes == 'true'
+        run: python3 tools/check_themes.py
+
+      - name: No theme changes
+        if: needs.changes.outputs.themes != 'true'
+        run: echo "No theme changes; skipping the theme contract check."
+
+  docs:
+    needs: changes
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check markdown references
+        if: needs.changes.outputs.docs == 'true'
+        run: python3 tools/check_docs.py
+
+      - name: No docs changes
+        if: needs.changes.outputs.docs != 'true'
+        run: echo "No markdown changes; skipping the reference check."
+
+  pr_artifact:
+    needs: changes
+    runs-on: ubuntu-24.04
+    # A pull request build exists for a human to install and look at. master is
     # handled by build_deploy, which publishes the signed release instead.
-    if: github.event_name == 'pull_request' || github.ref != 'refs/heads/master'
+    if: needs.changes.outputs.code == 'true' && (github.event_name == 'pull_request' || github.ref != 'refs/heads/master')
     steps:
       - uses: actions/checkout@v5
         with:
@@ -122,12 +231,12 @@ jobs:
           retention-days: 14
 
   build_deploy:
-    needs: lint
+    needs: [lint, changes]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
       discussions: write
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    if: needs.changes.outputs.code == 'true' && github.ref == 'refs/heads/master' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v5
         with:

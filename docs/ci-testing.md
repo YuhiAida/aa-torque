@@ -1,24 +1,28 @@
 # CI testing plan
 
-Status as of v2.3.4 (2026-10-31).
+Status as of v2.3.6 (2026-10-31): the render job landed (PR #57), the duplicate-run and
+missing-required-checks issues are fixed (#47, #48).
 
 ## What the gate does today
 
-| Workflow | Trigger | Checks |
+| Job | Trigger | Checks |
 |---|---|---|
-| `ci.yml` → `lint` | push (non-docs) and pull requests | `ktlintCheck`, `testDebugUnitTest`, `lintRelease` |
-| `ci.yml` → `pr_artifact` | non-master push and pull requests | builds a debug APK and uploads it |
-| `ci.yml` → `build_deploy` | push to `master` | bumps, builds, verifies the signer, publishes |
-| `themes.yml` | `app/src/main/res/**` changes | `tools/check_themes.py` (static theme contract) |
-| `docs.yml` | `**.md` / `docs/**` changes | `tools/check_docs.py` (links and paths) |
+| `ci.yml` → `changes` | every run | classifies `code`, `themes`, `docs` |
+| `ci.yml` → `lint` | code changes | `ktlintCheck`, `lintRelease` |
+| `ci.yml` → `render` | code changes | `verifyRoborazziDebug` (JVM tests + 26 theme goldens) |
+| `ci.yml` → `themes` | theme changes | `tools/check_themes.py` (static theme contract) |
+| `ci.yml` → `docs` | markdown changes | `tools/check_docs.py` (links and paths) |
+| `ci.yml` → `pr_artifact` | pull requests with code | builds a debug APK and uploads it |
+| `ci.yml` → `build_deploy` | `master` push with code | bumps, builds, verifies the signer, publishes |
 
-There is **one unit test** (`PidSelectionTest`). Nothing renders a view, nothing launches
-the app, and the `master` ruleset does not require any of these checks (issue #48).
+The JVM tests render every theme and compare against committed goldens (PR #57). The app
+still launches nothing, and the `master` ruleset requires `lint`, `render`, `themes` and
+`docs` (issue #48).
 
 ## The gaps
 
 1. **No visual test.** A theme or layout that compiles can still render wrong: a needle
-   off its pivot, a clipped label, overlapping widgets, a wrong colour. `themes.yml` only
+   off its pivot, a clipped label, overlapping widgets, a wrong colour. The `themes` job only
    checks that resources exist and arrays line up.
 2. **No runtime test.** Nothing starts an Activity or a Fragment. A crash on launch, a
    broken inflation, or a bad preference migration is found by users, not CI.
