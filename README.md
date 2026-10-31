@@ -1,6 +1,7 @@
 ![CI Status](https://github.com/YuhiAida/aa-torque/actions/workflows/ci.yml/badge.svg?branch=master)
 ![downloads](https://img.shields.io/github/downloads/YuhiAida/aa-torque/total.svg)
 ![license](https://img.shields.io/github/license/YuhiAida/aa-torque)
+[![support](https://img.shields.io/badge/support-%E2%98%95-yellow)](https://revolut.me/bernarfhfo)
 
 # Torque Plugin for Android Auto
 
@@ -130,6 +131,8 @@ later normally.
   [docs/troubleshooting.md](docs/troubleshooting.md) first.
 - **Working on the app:** [docs/](docs/) for reference, [CONTRIBUTING.md](CONTRIBUTING.md)
   for themes and translations, [AGENTS.md](AGENTS.md) for coding agents.
+- **Support:** this fork is maintained in my spare time. If it saves you a headache, you can
+  [help cover the AI tokens behind it](https://revolut.me/bernarfhfo). No obligation, ever.
 
 ## Credits
 
