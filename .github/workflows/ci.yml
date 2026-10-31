@@ -60,6 +60,14 @@ jobs:
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest
 
+      - name: Upload render screenshots (spike)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: render-screenshots
+          path: app/src/test/screenshots/
+          if-no-files-found: warn
+
       - name: Lint the release variant
         run: ./gradlew lintRelease
 
