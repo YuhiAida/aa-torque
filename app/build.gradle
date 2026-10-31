@@ -146,6 +146,10 @@ dependencies {
     testImplementation('org.robolectric:robolectric:4.17') {
         exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
     }
+    // Robolectric needs BouncyCastle at runtime. Pin 1.82: it is the newest release whose
+    // multi-release JAR stops at META-INF/versions/21 (class file 65). 1.83+ ships a
+    // versions/25 entry (class file 69) that AGP 8.2's Jetifier cannot transform.
+    testImplementation 'org.bouncycastle:bcprov-jdk18on:1.82'
     // @GraphicsMode(NATIVE) draws through Robolectric's native runtime, which is a separate artifact.
     testImplementation 'org.robolectric:nativeruntime:4.17'
     testImplementation 'androidx.test:core:1.7.0'
