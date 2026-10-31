@@ -27,7 +27,7 @@ def versionMajor = props.getProperty("majorVersion") as Integer
 def versionMinor = props.getProperty("minorVersion") as Integer
 def versionPatch = props.getProperty("patchVersion") as Integer
 def acraVersion = '5.11.3'
-def ghOwner = "agronick"
+def ghOwner = "YuhiAida"
 def ghPackage = "aa-torque"
 
 
@@ -47,7 +47,10 @@ android {
         resourceConfigurations += ['en', 'cs', 'de', 'el', 'es', 'fr', 'fr-rCA', 'it', 'nl', 'pl', 'pt', 'pt-rBR', 'ru', 'sl', 'uk', 'zh-rHK']
     }
     applicationVariants.configureEach {
-        buildConfigField "String", "RELEASE_URL", "\"https://api.github.com/repos/${ghOwner}/${ghPackage}/releases/latest\""
+        // The release asset URL redirects to /releases/download/<tag>/aa-torque.apk, so the
+        // update check needs no JSON and no API quota. The API allows 60 requests per hour
+        // per IP, which fails behind shared NAT or a VPN exit.
+        buildConfigField "String", "RELEASE_URL", "\"https://github.com/${ghOwner}/${ghPackage}/releases/latest/download/aa-torque.apk\""
     }
     buildTypes {
         debug {
