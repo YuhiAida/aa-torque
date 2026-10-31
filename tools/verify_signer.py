@@ -58,13 +58,21 @@ def signer_certificates(apk: pathlib.Path) -> dict[str, bytes]:
 
 
 def first_certificate(value: bytes) -> bytes:
-    """Walk signer -> signed data -> certificates and return the first certificate DER."""
+    """Walk signer -> signed data -> certificates and return the first certificate DER.
+
+    Layout of signed data: [digests][certificates][attributes], each a 4-byte length
+    followed by its elements, and each element carries its own 4-byte length.
+    """
     signer_length = struct.unpack_from("<I", value, 4)[0]
     signer = value[8:8 + signer_length]
     signed_data_length = struct.unpack_from("<I", signer, 0)[0]
     signed_data = signer[4:4 + signed_data_length]
-    # signed data: digests, then certificates, then attributes
-    offset = 4 + struct.unpack_from("<I", signed_data, 0)[0]
+    digests_length = struct.unpack_from("<I", signed_data, 0)[0]
+    offset = 4 + digests_length
+    certificates_length = struct.unpack_from("<I", signed_data, offset)[0]
+    offset += 4
+    if certificates_length == 0:
+        raise struct.error("no certificates in signed data")
     certificate_length = struct.unpack_from("<I", signed_data, offset)[0]
     return signed_data[offset + 4: offset + 4 + certificate_length]
 
