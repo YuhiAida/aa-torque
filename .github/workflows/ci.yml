@@ -80,7 +80,12 @@ jobs:
           java-version: '19'
 
       - name: Restore keystore
-        run: echo ${{ secrets.DEBUG_KEYSTORE }} | base64 -d > $HOME/debug.keystore
+        run: |
+          echo ${{ secrets.DEBUG_KEYSTORE }} | base64 -d > $HOME/debug.keystore
+          # JKS magic is fe ed fe ed; PKCS12 starts with 30 (ASN.1 SEQUENCE). Printing the
+          # first bytes makes a wrong keystore type fail here and not inside packageRelease.
+          ls -l $HOME/debug.keystore
+          od -An -tx1 -N4 $HOME/debug.keystore
 
       - name: Cache Gradle and wrapper
         uses: actions/cache@v4
@@ -121,6 +126,7 @@ jobs:
           echo "" >> ./local.properties &&
           ./gradlew assembleRelease 
           -Pandroid.injected.signing.store.file=$HOME/debug.keystore 
+          -Pandroid.injected.signing.store.type=JKS 
           -Pandroid.injected.signing.key.alias=androiddebugkey 
           -Pandroid.injected.signing.store.password=android 
           -Pandroid.injected.signing.key.password=android
@@ -130,6 +136,7 @@ jobs:
         run: >
            echo "" >> ./local.properties && ./gradlew assembleRelease
            -Pandroid.injected.signing.store.file=$HOME/debug.keystore
+           -Pandroid.injected.signing.store.type=JKS
            -Pandroid.injected.signing.key.alias=androiddebugkey
            -Pandroid.injected.signing.store.password=android
            -Pandroid.injected.signing.key.password=android
