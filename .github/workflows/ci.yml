@@ -72,6 +72,43 @@ jobs:
           # of the same name and needs no ref_name interpolation.
           git push origin HEAD
 
+  pr_artifact:
+    runs-on: ubuntu-24.04
+    # A branch build exists for a human to install and look at. master is handled
+    # by build_deploy, which publishes the signed release instead.
+    if: github.ref != 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '19'
+
+      - name: Cache Gradle and wrapper
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+
+      - name: Prepare Gradle
+        run: echo "" >> ./local.properties
+
+      - name: Build the debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Upload the debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: aa-torque-debug-${{ github.sha }}
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
   build_deploy:
     needs: lint
     runs-on: ubuntu-24.04
