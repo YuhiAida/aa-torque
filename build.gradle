@@ -35,7 +35,6 @@ allprojects {
         mavenCentral()
         maven { url "https://jitpack.io" }
         google()
-        jcenter()
     }
     gradle.projectsEvaluated {
         tasks.withType(JavaCompile).tap {
