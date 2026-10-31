@@ -118,8 +118,10 @@ git submodule update --init --recursive
 ./gradlew assembleDebug
 ```
 
-Every APK in Releases is built and signed by CI. Release builds use the debug signing key,
-so they install over each other without a prompt.
+Every APK in Releases is built and signed by CI with the same debug key, restored from the
+`DEBUG_KEYSTORE` secret, so releases install over each other. Releases up to 2.0.33 were signed
+with a per-run generated key and cannot update in place — uninstall once, then install 2.0.34 or
+later normally.
 
 ## Help
 

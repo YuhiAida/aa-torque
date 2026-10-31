@@ -65,8 +65,11 @@ Outputs:
 - `app/build/outputs/apk/debug/app-debug.apk`
 - `app/build/outputs/apk/release/app-release.apk`
 
-Release builds use `signingConfig signingConfigs.debug` (`app/build.gradle`), so a local
-release APK installs over a CI build and over upstream without a signature mismatch.
+Release builds use `signingConfig signingConfigs.debug` (`app/build.gradle`), so a local release
+APK is signed with *your* `~/.android/debug.keystore`. That is not the key CI uses, so it will
+not install over a release from Releases: expect `INSTALL_FAILED_UPDATE_INCOMPATIBLE` and
+uninstall first. CI signs with the key in the `DEBUG_KEYSTORE` secret, which is the only way two
+builds can update each other.
 
 ## Install on a phone
 
