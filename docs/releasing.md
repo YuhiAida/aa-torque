@@ -82,6 +82,27 @@ Proven by a dry run on 2026-10-31: a push produced `release: v2.0.32 [skip-ci]`,
 `2.0.32`, and `version.properties` at `2.0.32`; the build step then assembled the release
 in the same workspace, so the APK carries the bumped version.
 
+## Docs-only pushes do not build
+
+The trigger ignores prose:
+
+```yaml
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+```
+
+A push whose changed files are *all* covered by that list starts nothing: no ktlint, no tests,
+no version bump, no release. Editing the README or a file under `docs/` therefore leaves the
+version alone. A mixed push (code plus docs) still runs, because the filter only skips when every
+changed file matches.
+
+`master` can then sit ahead of the newest release. That is intended: the release marks the last
+change that altered the APK, which is exactly what the in-app update check should compare.
+
 ## Changing the workflow
 
 The release job only runs on `master`, so a change to it cannot be proven on a branch.
