@@ -14,19 +14,29 @@ Everything is CI. Nobody builds a release by hand, and nobody publishes one from
 A draft pull request therefore gets lint only. The release path cannot be exercised from a
 branch without relaxing that condition; see "Changing the workflow" below.
 
+The workflow has a `concurrency` group per ref with `cancel-in-progress: true`. Merging several
+pull requests in a row triggers one push per merge, so without this a release job starts per
+push and they all bump and push `version.properties` at the same time. On 2026-10-31 that
+produced three failed runs — two `non-fast-forward`, one `tag '2.0.33' already exists` — and one
+winner. With the group in place only the newest run survives a burst, so a burst yields one
+version.
+
 ## The `build_deploy` steps
 
 1. Restore the debug keystore from the `DEBUG_KEYSTORE` secret (base64).
-2. Bump the version (`oflynned/android-version-bump@v2.0.0`). See "Version numbers" below.
-3. Move the tag `latest` to the current commit (plain `git tag -f latest` + `git push -f`), so it points at the same commit as the version tag the bump produced.
-4. `./gradlew assembleRelease`. Forked repositories build unsigned by the runner and fall
+2. Check whether HEAD is already a `release: v…` commit. If it is, skip the bump: a cancelled
+   run may have pushed its bump commit before it died, and bumping again would skip versions.
+3. Bump the version (`oflynned/android-version-bump@v2.0.0`). See "Version numbers" below.
+4. Move the tag `latest` to the current commit (plain `git tag -f latest` + `git push -f`), so it
+   points at the same commit as the version tag the bump produced.
+5. `./gradlew assembleRelease`. Forked repositories build unsigned by the runner and fall
    back to the `signingConfig signingConfigs.debug` in `app/build.gradle`, so the artifact is
    debug-signed and installs over earlier builds.
-5. Rename the artifact to `aa-torque.apk`.
-6. Create a GitHub release with `softprops/action-gh-release`: APK plus
+6. Rename the artifact to `aa-torque.apk`.
+7. Create a GitHub release with `softprops/action-gh-release`: APK plus
    `app/build/outputs/mapping/release/mapping.txt`, `generate_release_notes: true`,
-   **`draft: true`**. The release takes the tag the bump produced, and falls back to `latest`
-   when no bump ran.
+   **`draft: true`**. The release tag is read from `version.properties`, so it is correct
+   whether or not this run performed the bump.
 
 A push to `master` therefore produces a **draft** release named after the new version. It is
 not visible to users until a maintainer publishes it. Publishing is a manual step on the
