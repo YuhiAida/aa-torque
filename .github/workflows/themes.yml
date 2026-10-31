@@ -13,6 +13,14 @@ on:
       - 'app/src/main/res/drawable-*/**'
       - 'tools/check_themes.py'
       - '.github/workflows/themes.yml'
+  # Fork PRs never push here, so this trigger is what checks them.
+  pull_request:
+    paths:
+      - 'app/src/main/res/values/**'
+      - 'app/src/main/res/drawable/**'
+      - 'app/src/main/res/drawable-*/**'
+      - 'tools/check_themes.py'
+      - '.github/workflows/themes.yml'
   # Lets a maintainer run it by hand from the Actions tab.
   workflow_dispatch:
 

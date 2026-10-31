@@ -75,6 +75,10 @@ A push to a branch also builds a debug APK (`pr_artifact`). Download it from the
 install it if you need to look at the UI: CI compiles and checks, it does not render. A theme
 that compiles can still be visually wrong, and a merge to `master` publishes immediately.
 
+Pull requests run the same checks through the `pull_request` trigger, including PRs from
+forks. A fork PR gets a read-only token, so it cannot commit the inventory; that step is
+push-only. The checks and the debug artifact still run.
+
 ## Branch and release rules
 
 - Never push to `master`. Use a branch and a draft pull request.

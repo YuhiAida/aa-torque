@@ -9,6 +9,15 @@ on:
       - '**.md'
       - 'docs/**'
       - 'LICENSE'
+  # A pull request from a fork never pushes to this repository, so the push trigger
+  # above cannot see it. This trigger is what checks fork PRs. It uses the base
+  # branch's workflow and a read-only token, so the inventory commit below is
+  # push-only.
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
 
 # One run per branch at a time. A burst of merges would otherwise start a
 # build_deploy job per push, and every one of them bumps and pushes
@@ -58,6 +67,9 @@ jobs:
         run: python3 tools/gen_inventory.py
 
       - name: Commit the inventory when it changed
+        # A pull request from a fork gets a read-only token, so it cannot push. The
+        # generation above still runs; only the commit is push-only.
+        if: github.event_name == 'push'
         run: |
           if git diff --quiet -- docs/generated/inventory.md; then
             echo "inventory is current"
@@ -74,9 +86,9 @@ jobs:
 
   pr_artifact:
     runs-on: ubuntu-24.04
-    # A branch build exists for a human to install and look at. master is handled
-    # by build_deploy, which publishes the signed release instead.
-    if: github.ref != 'refs/heads/master'
+    # A branch or PR build exists for a human to install and look at. master is
+    # handled by build_deploy, which publishes the signed release instead.
+    if: github.event_name == 'pull_request' || github.ref != 'refs/heads/master'
     steps:
       - uses: actions/checkout@v5
         with:
@@ -115,7 +127,7 @@ jobs:
     permissions:
       contents: write
       discussions: write
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v5
         with:
