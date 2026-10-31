@@ -112,6 +112,21 @@ class SettingsActivity :
                 true
             }
 
+            R.id.action_check_updates -> {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    if (!checkUpdate(force = true)) {
+                        runOnUiThread {
+                            Toast.makeText(
+                                this@SettingsActivity,
+                                R.string.update_check_failed,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                }
+                true
+            }
+
             android.R.id.home -> {
                 onBackPressedDispatcher.onBackPressed()
                 true
@@ -335,9 +350,13 @@ class SettingsActivity :
         }
     }
 
-    private fun checkUpdate(): Boolean {
+    /**
+     * @param force skip the 24 h throttle, for the manual "Check for updates" menu entry. Still
+     *     only reports; nothing is downloaded or installed.
+     */
+    private fun checkUpdate(force: Boolean = false): Boolean {
         Timber.i("Checking for update")
-        if (!updateCheckDue()) {
+        if (!force && !updateCheckDue()) {
             Timber.i("Update check is throttled")
             return true
         }
@@ -352,6 +371,11 @@ class SettingsActivity :
             showUpdateDialog(latest)
         } else {
             Timber.i("No newer release: newest $latest, installed ${BuildConfig.VERSION_NAME}")
+            if (force) {
+                runOnUiThread {
+                    Toast.makeText(this, R.string.no_update_available, Toast.LENGTH_SHORT).show()
+                }
+            }
         }
         return true
     }
