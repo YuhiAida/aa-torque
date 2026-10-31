@@ -1,7 +1,7 @@
 ![CI Status](https://github.com/YuhiAida/aa-torque/actions/workflows/ci.yml/badge.svg?branch=master)
 ![downloads](https://img.shields.io/github/downloads/YuhiAida/aa-torque/total.svg)
 ![license](https://img.shields.io/github/license/YuhiAida/aa-torque)
-[![support](https://img.shields.io/badge/support-%E2%98%95-yellow)](https://revolut.me/bernarfhfo)
+[![support](https://img.shields.io/badge/support-tip-yellow?logo=revolut)](https://revolut.me/bernarfhfo)
 
 # Torque Plugin for Android Auto
 
