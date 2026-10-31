@@ -86,32 +86,32 @@ class SettingsFragment : PreferenceFragmentCompat() {
             }
             return@setOnPreferenceChangeListener true
         }
-        fontPref.setOnPreferenceChangeListener { preference, newValue ->
+        fontPref.setOnPreferenceChangeListener { _, newValue ->
             updateDatastorePref {
                 it.setSelectedFont(newValue as String)
             }
             Timber.i("Setting font $newValue")
             return@setOnPreferenceChangeListener true
         }
-        backgroundPref.setOnPreferenceChangeListener { preference, newValue ->
+        backgroundPref.setOnPreferenceChangeListener { _, newValue ->
             updateDatastorePref {
                 it.setSelectedBackground(newValue as String)
             }
             return@setOnPreferenceChangeListener true
         }
-        centerGaugeLargePref.setOnPreferenceChangeListener { preference, newValue ->
+        centerGaugeLargePref.setOnPreferenceChangeListener { _, newValue ->
             updateDatastorePref {
                 it.setCenterGaugeLarge(newValue as Boolean)
             }
             return@setOnPreferenceChangeListener true
         }
-        minMaxBelowPref.setOnPreferenceChangeListener { preference, newValue ->
+        minMaxBelowPref.setOnPreferenceChangeListener { _, newValue ->
             updateDatastorePref {
                 it.setMinMaxBelow(newValue as Boolean)
             }
             return@setOnPreferenceChangeListener true
         }
-        mediaBgPref.setOnPreferenceChangeListener { preference, newValue ->
+        mediaBgPref.setOnPreferenceChangeListener { _, newValue ->
             updateDatastorePref {
                 if (newValue as Boolean &&
                     !NotiService.isNotificationAccessEnabled(requireContext())
@@ -131,19 +131,19 @@ class SettingsFragment : PreferenceFragmentCompat() {
             }
             return@setOnPreferenceChangeListener true
         }
-        opacityPref.setOnPreferenceChangeListener { preference, newValue ->
+        opacityPref.setOnPreferenceChangeListener { _, newValue ->
             updateDatastorePref {
                 it.setOpacity(newValue as Int)
             }
             return@setOnPreferenceChangeListener true
         }
-        darkenArtPref.setOnPreferenceChangeListener { preference, newValue ->
+        darkenArtPref.setOnPreferenceChangeListener { _, newValue ->
             updateDatastorePref {
                 it.setDarkenArt(newValue as Int)
             }
             return@setOnPreferenceChangeListener true
         }
-        blurArtPref.setOnPreferenceChangeListener { preference, newValue ->
+        blurArtPref.setOnPreferenceChangeListener { _, newValue ->
             updateDatastorePref {
                 it.setBlurArt(newValue as Int)
             }
