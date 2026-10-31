@@ -126,8 +126,6 @@
     <string name="pref_shrink_gauge_off">Indicatori di uguali dimensioni</string>
     <string name="pref_shrink_gauge_on">Enfatizza indicatore centrale</string>
     <string name="new_version">Nuova versione disponibile</string>
-    <string name="download">Scarica</string>
-    <string name="download_instructions">Scaricamento in corso</string>
     <string name="expressionDocumentation">Vedi documentazione</string>
     <string name="copy_logs">Copia registri negli appunti</string>
     <string name="convert_f_to_c">Fahrenheit in Celsius</string>
@@ -144,15 +142,11 @@
     <string name="element_cylinder">Cilindro motore</string>
     <string name="element_horsepower">Potenza</string>
     <string name="element_transmission">Trasmissione</string>
-    <string name="download_complete">Download completato</string>
     <string name="icon_credits">Crediti icone</string>
     <string name="action_preview">Anteprima</string>
     <string name="pref_view">Vista %1$d</string>
     <string name="pref_data_element_settings">Impostazioni elemento dati %1$d</string>
     <string name="pref_title_performance">Titolo %1$d</string>
-    <string name="download_dialog">Provo ad installare questa app come provenisse dal Play Store?  Se non funziona, prova ad utilizzare Kingstaller.</string>
-    <string name="force_update">Forza aggiornamento</string>
-    <string name="update_failed">Controllo aggiornamento non riuscito</string>
     <string name="convert_minutes_seconds">Secondi in Minuti:Secondi</string>
     <string name="donate">Per favore dona!</string>
     <string name="translate">Traduci</string>

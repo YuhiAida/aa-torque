@@ -136,10 +136,8 @@
     <string name="pref_shrink_gauge_off">Μετρητές ίσου μεγέθους</string>
     <string name="pref_shrink_gauge_on">Δώστε έμφαση στο κεντρικό μετρητή</string>
     <string name="new_version">Μια νέα έκδοση είναι διαθέσιμη</string>
-    <string name="download">Κατεβάστε</string>
 
     <!-- Fuzzy -->
-    <string name="download_instructions">Λήψη ενημέρωσης. Εγκατάσταση με το Kingstaller.</string>
     <string name="expressionDocumentation">Προβολή τεκμηρίωσης</string>
     <string name="copy_logs">Αντιγραφή αρχείων καταγραφής στο πρόχειρο</string>
     <string name="convert_f_to_c">Φαρενάιτ σε Κελσίου</string>
@@ -160,7 +158,6 @@
     <string name="element_transmission">Μετάδοση</string>
 
     <!-- Fuzzy -->
-    <string name="download_complete">Η λήψη ολοκληρώθηκε</string>
     <string name="icon_credits">Εικονίδιο Πιστώσεις</string>
     <string name="action_preview">προεπισκόπηση δράσης</string>
 </resources>

@@ -128,8 +128,6 @@
     <string name="pref_shrink_gauge_off">Gleiche Größe aller Instrumente</string>
     <string name="pref_shrink_gauge_on">Instrument in der Mitte hervorheben (größer)</string>
     <string name="new_version">Eine neue Version ist verfügbar</string>
-    <string name="download">Herunterladen</string>
-    <string name="download_instructions">Aktualisierung wird heruntergeladen</string>
     <string name="expressionDocumentation">Dokumentation anzeigen</string>
     <string name="copy_logs">Protokolle in die Zwischenablage kopieren</string>
     <string name="convert_f_to_c">Fahrenheit nach Grad Celsius umrechnen</string>
@@ -146,15 +144,11 @@
     <string name="element_cylinder">Zylinder / Kolben</string>
     <string name="element_horsepower">Pferdestärke</string>
     <string name="element_transmission">Getriebe</string>
-    <string name="download_complete">Herunterladen abgeschlossen</string>
     <string name="icon_credits">Symbol Anerkennung</string>
     <string name="action_preview">Vorschau</string>
     <string name="pref_view">Datenwert %1$d</string>
     <string name="pref_data_element_settings">Tafel %1$d einstellen</string>
     <string name="pref_title_performance">Titel %1$d</string>
-    <string name="download_dialog">Soll versucht werden, die App so zu installieren, als käme sie vom Google Play Store? Falls es fehlschlägt, können Sie es über KingInstaller versuchen.</string>
-    <string name="force_update">Update erzwingen</string>
-    <string name="update_failed">Aktualisierung-Prüfung fehlgeschlagen</string>
     <string name="convert_minutes_seconds">Sekunden (s) nach Minuten &amp; Sekunden (MM:SS) umrechnen</string>
     <string name="donate">Spenden</string>
     <string name="translate">Übersetzen</string>

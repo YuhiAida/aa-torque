@@ -86,7 +86,6 @@
     <string name="max_value">Max vrednost</string>
     <string name="formulas">Formule</string>
     <string name="new_version">Na voljo je nova verzija</string>
-    <string name="download">Prenos</string>
     <string name="expressionDocumentation">Dokumentacija</string>
     <string name="convert_f_to_c">Fahrenheit -> Celzij</string>
     <string name="convert_c_to_f">Celzij -> Fahrenheit</string>
