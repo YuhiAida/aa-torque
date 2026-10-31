@@ -47,16 +47,19 @@ CI is the required gate. It starts on every branch push.
 
 1. Work on a branch and push it.
 2. Read the run: `gh run list -R YuhiAida/aa-torque -L 5`
-3. The `lint` job runs `./gradlew lintRelease`. Green means the code compiles and Android
-   lint passes.
+3. The `lint` job runs three checks and all must pass:
+   - `./gradlew ktlintCheck` — style, from `.editorconfig`
+   - `./gradlew testDebugUnitTest` — the JVM unit tests in `app/src/test`
+   - `./gradlew lintRelease` — Android lint, and it compiles the release variant
 4. Do not merge. Open a **draft** pull request and stop. Yuhi merges.
 
 A local build is optional. This machine has no Android SDK installed. The setup steps are
 in [docs/building.md](docs/building.md). Do not install an SDK, NDK or emulator image on
 Yuhi's machine without asking first.
 
-This repository has no unit tests and no instrumentation tests. Do not claim a runtime
-behaviour is verified. Report what CI checked and what it did not.
+There are no instrumentation tests. The JVM tests in `app/src/test` cover pure logic only, so
+nothing exercises Android, the Torque binding, or the gauges. Do not claim a runtime behaviour
+is verified — state what CI checked and what it did not.
 
 ## Branch and release rules
 
