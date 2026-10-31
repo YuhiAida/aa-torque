@@ -41,7 +41,22 @@ class TorqueServiceWrapper: Service() {
 
     class ListPids(val ts: ITorqueService, val onComplete: (PidInfo) -> Unit): Runnable {
         override fun run() {
-            val pids = ts.listAllPIDs()
+            // Torque's dictionary holds every PID it knows about, including the many the
+            // connected car never answers. Offering those means a gauge can be bound to a PID
+            // that reports 0 forever with no warning. Prefer what the ECU actually supports,
+            // and keep Torque's own synthetic metrics (ids starting with "ff": GPS speed,
+            // acceleration, power) because those never come from the ECU.
+            val all = ts.listAllPIDs()
+            val supported = try {
+                ts.listECUSupportedPIDs()?.toSet() ?: emptySet()
+            } catch (e: Exception) {
+                emptySet()
+            }
+            val pids = if (supported.isEmpty()) {
+                all
+            } else {
+                all.filter { it.startsWith("ff") || supported.contains(it) }.toTypedArray()
+            }
             val pidAttributes = ts.getPIDInformation(pids).map { it.split(",") }
 
             onComplete(
