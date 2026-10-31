@@ -6,6 +6,11 @@ name: record
 
 on:
   workflow_dispatch:
+  # Bootstrap only: workflow_dispatch requires the workflow on the default branch, so this
+  # path-scoped push lets the record run from this PR. Removed before merge.
+  push:
+    branches: [test/theme-goldens]
+    paths: ['.github/workflows/record.yml']
 
 concurrency:
   group: record-${{ github.ref }}
