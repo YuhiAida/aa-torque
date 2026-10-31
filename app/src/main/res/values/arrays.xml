@@ -25,6 +25,7 @@
         <item>Skoda Monte Carlo</item>
         <item>Aston Martin</item>
         <item>Electro Vehicle</item>
+        <item>Porsche 718</item>
         <item>Test</item>
         <item>Bolt</item>
     </string-array>
@@ -53,6 +54,7 @@
         <item>@drawable/ic_theme_mk</item>
         <item>@drawable/ic_theme_am</item>
         <item>@drawable/ic_theme_ev</item>
+        <item>@drawable/ic_theme_por982</item>
         <item>@drawable/ic_theme_test</item>
         <item>@drawable/ic_theme_bolt</item>
     </array>
@@ -81,6 +83,7 @@
         <item>@style/AppTheme.MK</item>
         <item>@style/AppTheme.AM</item>
         <item>@style/AppTheme.EV</item>
+        <item>@style/AppTheme.Porsche982</item>
         <item>@style/AppTheme.Testing</item>
         <item>@style/AppTheme.Bolt</item>
     </array>
