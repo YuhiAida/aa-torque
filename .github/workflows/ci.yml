@@ -39,6 +39,9 @@ jobs:
       - name: Check Kotlin style
         run: ./gradlew ktlintCheck
 
+      - name: Run unit tests
+        run: ./gradlew testDebugUnitTest
+
       - name: Lint the release variant
         run: ./gradlew lintRelease
 

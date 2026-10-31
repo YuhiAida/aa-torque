@@ -30,7 +30,11 @@ pids = listAllPIDs() filtered by ( supported.contains(id) || id.startsWith("ff")
   to the full list. This lets a user configure dashboards off-car.
 - An exception from `listECUSupportedPIDs()` is treated as an empty set, not as a crash.
 
-The implementation is `ListPids` in `app/src/main/java/com/aatorque/stats/TorqueServiceWrapper.kt`.
+The implementation is `selectPids()` in `app/src/main/java/com/aatorque/stats/PidSelection.kt`,
+called from `ListPids` in `TorqueServiceWrapper.kt`. It is a pure function with no Android or
+AIDL types, so `app/src/test/java/com/aatorque/stats/PidSelectionTest.kt` covers it: unsupported
+PID dropped, `ff*` kept, empty supported set falls back, and a mixed list. `./gradlew
+testDebugUnitTest` runs them in CI.
 
 ## Why this matters for reviews
 
