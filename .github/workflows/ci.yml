@@ -74,6 +74,15 @@ jobs:
           # The version bump reads commit messages back to the previous tag.
           fetch-depth: 0
 
+      - name: Release from the branch tip
+        run: |
+          # The lint job can push a refreshed inventory commit while this job waits, leaving
+          # the event SHA behind the branch. Bumping from a stale base gets the push rejected
+          # with non-fast-forward, so release from the real tip.
+          git fetch origin master
+          git reset --hard origin/master
+          git log --oneline -1
+
       - uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
