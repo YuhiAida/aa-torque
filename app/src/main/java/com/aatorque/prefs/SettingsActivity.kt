@@ -35,17 +35,11 @@ import com.aatorque.stats.R
 import com.google.android.material.snackbar.Snackbar
 import com.google.protobuf.InvalidProtocolBufferException
 import java.io.IOException
-import java.net.ConnectException
-import java.net.HttpURLConnection
 import java.net.URL
-import java.net.UnknownHostException
 import javax.net.ssl.HttpsURLConnection
-import javax.net.ssl.SSLException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.json.JSONException
-import org.json.JSONObject
 import timber.log.Timber
 
 class SettingsActivity :
@@ -358,12 +352,46 @@ class SettingsActivity :
     }
 
     /**
+     * Reads the newest published release tag without the GitHub API. The release asset URL
+     * redirects to /releases/download/<tag>/aa-torque.apk. The API allows 60 requests per hour
+     * per IP address, which is unusable behind a shared NAT or a VPN exit.
+     */
+    private fun latestReleaseTag(): String? {
+        val connection = URL(BuildConfig.RELEASE_URL).openConnection() as HttpsURLConnection
+        connection.instanceFollowRedirects = false
+        connection.connectTimeout = UPDATE_TIMEOUT_MS
+        connection.readTimeout = UPDATE_TIMEOUT_MS
+        connection.requestMethod = "HEAD"
+        return try {
+            connection.responseCode
+            val location = connection.getHeaderField("Location")
+            location?.let { RELEASE_TAG_PATTERN.find(it)?.groupValues?.get(1) }
+        } catch (e: IOException) {
+            Timber.w(e, "Release lookup failed")
+            null
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    private fun isNewerVersion(remote: String, local: String): Boolean {
+        val remoteParts = remote.split(".")
+        val localParts = local.split(".")
+        for (position in 0 until maxOf(remoteParts.size, localParts.size)) {
+            val remotePart = remoteParts.getOrNull(position)?.toIntOrNull() ?: 0
+            val localPart = localParts.getOrNull(position)?.toIntOrNull() ?: 0
+            if (remotePart != localPart) return remotePart > localPart
+        }
+        return false
+    }
+
+    /**
      * Automatic checks only tell the user that a release exists and point at it. Installing the
      * APK from inside the app would overwrite the install record Android Auto checks, and the
      * app would vanish from the car. See docs/aa-install-gate.md.
      */
-    private fun showUpdateDialog(version: String, releasePage: String?) {
-        val page = releasePage ?: RELEASES_PAGE
+    private fun showUpdateDialog(version: String) {
+        val page = "$RELEASES_PAGE/tag/$version"
         runOnUiThread {
             if (isFinishing || isDestroyed) return@runOnUiThread
             AlertDialog.Builder(this)
@@ -384,114 +412,53 @@ class SettingsActivity :
             Timber.i("Update check is throttled")
             return true
         }
-
-        var needsUpdate: Boolean? = if (force) true else null
-        var downloadItem: String? = null
-        var releasePage: String? = null
-        var latestVersion: String? = null
-
-        val url = URL(BuildConfig.RELEASE_URL)
-        val urlConnection = url.openConnection() as HttpsURLConnection
-        urlConnection.setRequestProperty("X-GitHub-Api-Version", "2022-11-28")
-        try {
-            urlConnection.connect()
-        } catch (e: UnknownHostException) {
-            return false
-        } catch (e: ConnectException) {
-            return false
-        } catch (e: SSLException) {
-            return false
-        } catch (e: IOException) {
+        val latest = latestReleaseTag()
+        if (latest == null) {
+            Timber.w("Could not read the newest release")
             return false
         }
-        try {
-            if (urlConnection.responseCode == HttpURLConnection.HTTP_OK) {
-                val response = urlConnection.inputStream.bufferedReader().use {
-                    JSONObject(it.readText())
-                }
-                val tagName = response.getString("tag_name")
-                latestVersion = tagName
-                releasePage = response.optString("html_url").takeIf { it.isNotEmpty() }
-                val assets = response.optJSONArray("assets")
-                if (assets != null && assets.length() > 0) {
-                    downloadItem = assets.getJSONObject(0)
-                        .optString("browser_download_url")
-                        .takeIf { it.isNotEmpty() }
-                }
+        markUpdateChecked()
 
-                val tagSplit = tagName.split(".")
-                val existingSplit = BuildConfig.VERSION_NAME.split(".")
-
-                tagSplit.forEachIndexed { pos, fromServer ->
-                    if (needsUpdate == null && existingSplit.size > pos) {
-                        val toComp = existingSplit[pos]
-                        if (
-                            fromServer != toComp &&
-                            fromServer.isDigitsOnly() && toComp.isDigitsOnly()
-                        ) {
-                            needsUpdate = fromServer.toInt() > toComp.toInt()
-                        }
-                    }
-                }
-                markUpdateChecked()
+        if (!force) {
+            if (isNewerVersion(latest, BuildConfig.VERSION_NAME)) {
+                showUpdateDialog(latest)
+            } else {
+                Timber.i("No newer release: newest $latest, installed ${BuildConfig.VERSION_NAME}")
             }
-        } catch (e: JSONException) {
-            Timber.e("Failed to parse json on update check")
-        } finally {
-            urlConnection.disconnect()
+            return true
         }
 
-        if (needsUpdate == true) {
-            val version = latestVersion
-            if (version == null) {
-                Timber.w("Newer release found without a version tag")
-                return true
-            }
-            if (!force) {
-                showUpdateDialog(version, releasePage)
-                return true
-            }
-            val asset = downloadItem
-            if (asset == null) {
-                Timber.w("Release $version carries no APK asset")
-                runOnUiThread {
-                    Toast.makeText(this, R.string.update_failed, Toast.LENGTH_SHORT).show()
-                }
-                return true
-            }
-            Snackbar.make(
-                findViewById(android.R.id.content),
-                R.string.new_version,
-                Snackbar.LENGTH_LONG
-            )
-                .setDuration(10000)
-                .setActionTextColor(resources.getColor(R.color.snackbarBtnText, theme))
-                .setAction(R.string.download) {
-                    ContextCompat.registerReceiver(
-                        baseContext,
-                        br,
-                        IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-                        ContextCompat.RECEIVER_EXPORTED
-                    )
-                    val downloadRequest = DownloadManager.Request(Uri.parse(asset))
-                    downloadRequest.setDestinationInExternalPublicDir(
-                        Environment.DIRECTORY_DOWNLOADS,
-                        "aa-torque.apk"
-                    )
-                    downloadRequest.setNotificationVisibility(
-                        DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
-                    )
-                    val dm = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
-                    dm.enqueue(downloadRequest)
+        Snackbar.make(
+            findViewById(android.R.id.content),
+            R.string.new_version,
+            Snackbar.LENGTH_LONG
+        )
+            .setDuration(10000)
+            .setActionTextColor(resources.getColor(R.color.snackbarBtnText, theme))
+            .setAction(R.string.download) {
+                ContextCompat.registerReceiver(
+                    baseContext,
+                    br,
+                    IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+                    ContextCompat.RECEIVER_EXPORTED
+                )
+                val downloadRequest = DownloadManager.Request(Uri.parse(BuildConfig.RELEASE_URL))
+                downloadRequest.setDestinationInExternalPublicDir(
+                    Environment.DIRECTORY_DOWNLOADS,
+                    "aa-torque.apk"
+                )
+                downloadRequest.setNotificationVisibility(
+                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+                )
+                val dm = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+                dm.enqueue(downloadRequest)
 
-                    Toast.makeText(
-                        baseContext,
-                        R.string.download_instructions,
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }.show()
-        }
-
+                Toast.makeText(
+                    baseContext,
+                    R.string.download_instructions,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }.show()
         return true
     }
 
@@ -507,6 +474,8 @@ class SettingsActivity :
         private const val UPDATE_LAST_CHECK = "last_check"
         private const val UPDATE_INTERVAL_MS = 24L * 60L * 60L * 1000L
         private const val RELEASES_PAGE = "https://github.com/YuhiAida/aa-torque/releases"
+        private const val UPDATE_TIMEOUT_MS = 5000
+        private val RELEASE_TAG_PATTERN = Regex("/releases/download/([^/]+)/")
         private const val PERMISSION_CAR_VENDOR_EXTENSION =
             "com.google.android.gms.permission.CAR_VENDOR_EXTENSION"
         const val EXPORT_MIME = "application/octet-stream"
