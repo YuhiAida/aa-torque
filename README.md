@@ -29,7 +29,7 @@ Upstream is unmaintained. The fork keeps the package name `com.aatorque.stats`, 
 - Custom expressions through [EvalEx](https://ezylang.github.io/EvalEx/references/functions.html)
 - Backup, restore and share your configuration
 
-<img src="https://github.com/agronick/aa-torque/assets/2042303/e31b0598-25ec-4003-bcee-11e5e108d3a4" width="100%" alt="Gauges" />
+<img src="docs/assets/gauges.jpg" width="100%" alt="Gauges" />
 
 ## Install
 
