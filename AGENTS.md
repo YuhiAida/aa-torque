@@ -65,6 +65,17 @@ behaviour is verified. Report what CI checked and what it did not.
   `latest`, and creates a **draft** GitHub release that holds the APK. Yuhi publishes it.
 - Never edit `version.properties` by hand. Never publish a release.
 
+## Track what you find
+
+Every anomaly, warning or improvement you notice becomes a GitHub issue in this repository.
+Do not leave it in a chat message or a pull request comment.
+
+- State the evidence: run id, `file:line`, command output.
+- List the options and give a recommendation.
+- Reference the issue from the pull request that fixes it.
+- Small enough to fix in the same change? Fix it and say so in the commit message; file the
+  issue only for what is left.
+
 ## Code rules
 
 - Make the smallest diff that solves the problem. Do not reformat unrelated code.
