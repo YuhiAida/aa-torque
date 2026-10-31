@@ -1,5 +1,15 @@
 name: ci
 on: [push]
+
+# One run per branch at a time. A burst of merges would otherwise start a
+# build_deploy job per push, and every one of them bumps and pushes
+# version.properties — on 2026-10-31 three of four failed that way with
+# "non-fast-forward" and "tag already exists". The newest run wins; a run that
+# was cancelled after it pushed its bump commit is caught by the bump guard.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -80,9 +90,20 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
 
+      - name: Check whether this commit is already a version bump
+        id: bump_guard
+        run: |
+          # A run cancelled after it pushed its bump commit leaves a
+          # 'release: v...' commit on master. Do not bump a second time for it.
+          if git log -1 --pretty=%s | grep -qE '^release: v'; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Bump version
         id: bump_version
-        if: github.repository == 'YuhiAida/aa-torque'
+        if: github.repository == 'YuhiAida/aa-torque' && steps.bump_guard.outputs.skip == 'false'
         uses: oflynned/android-version-bump@v2.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -112,11 +133,18 @@ jobs:
       - name: Rename release
         run: mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/aa-torque.apk
 
+      - name: Read the release version
+        id: version
+        run: |
+          tag=$(grep -E '^(majorVersion|minorVersion|patchVersion)=' version.properties | cut -d= -f2 | paste -sd. -)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "release version: $tag"
+
       - name: Create Github Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ steps.bump_version.outputs.git_tag || 'latest' }}
-          name: ${{ steps.bump_version.outputs.git_tag || 'latest' }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
           generate_release_notes: true
           draft: true
           files: |
