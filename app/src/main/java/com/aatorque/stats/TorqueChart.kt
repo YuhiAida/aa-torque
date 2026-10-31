@@ -23,9 +23,11 @@ import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.DataPointInterface
 import com.jjoe64.graphview.series.LineGraphSeries
 import java.util.Date
+import java.util.IdentityHashMap
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import kotlin.properties.Delegates
+import timber.log.Timber
 
 class TorqueChart : Fragment() {
 
@@ -36,7 +38,10 @@ class TorqueChart : Fragment() {
         var icon = MutableLiveData<Int>()
     }
 
-    private val series = HashMap<TorqueData, LineGraphSeries<DataPointInterface>>()
+    // Keyed by the gauge instance on purpose: each gauge owns one series, and setupItems()
+    // rebuilds both together. A recreated TorqueData must get a new series, never reuse one, so
+    // identity is the correct semantics and IdentityHashMap says so out loud. See issue #24.
+    private val series = IdentityHashMap<TorqueData, LineGraphSeries<DataPointInterface>>()
     private lateinit var graph: GraphView
     private lateinit var binding: FragmentChartBinding
     private var startDate by Delegates.notNull<Long>()
@@ -162,9 +167,18 @@ class TorqueChart : Fragment() {
 
     fun notifyUpdate(data: TorqueData, binding: LegendBinding) {
         val line = series[data]
+        if (line == null) {
+            // A gauge whose series was never registered would otherwise be dropped silently.
+            Timber.w("No chart series for ${data.display.label}; skipping point")
+            return
+        }
         val now = Date()
-        val scaled = (data.lastData / (data.display.maxValue - data.display.minValue)) * 100f
-        line?.appendData(DataPoint(now, scaled), true, 100)
+        // A zero range (user set min == max, or a PID the car never answers) would scale to
+        // NaN or Infinity and empty the series. TorqueGauge.setMinMax() already bumps an equal
+        // max, so 0 is the only value this chart can receive. See issue #23.
+        val range = (data.display.maxValue - data.display.minValue).toDouble()
+        val scaled = if (range == 0.0) 0.0 else (data.lastData / range) * 100.0
+        line.appendData(DataPoint(now, scaled), true, 100)
         if (data.hasReceivedNonZero) {
             binding.value.value = "${data.lastDataStr}${data.display.unit}"
         }
