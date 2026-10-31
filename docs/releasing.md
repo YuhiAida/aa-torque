@@ -33,7 +33,7 @@ version.
    back to the `signingConfig signingConfigs.debug` in `app/build.gradle`, so the artifact is
    debug-signed and installs over earlier builds.
 6. Rename the artifact to `aa-torque.apk`.
-7. Create a GitHub release with `softprops/action-gh-release`: APK plus
+7. Create a GitHub release with `softprops/action-gh-release@v3.0.3`: APK plus
    `app/build/outputs/mapping/release/mapping.txt`, `generate_release_notes: true`,
    **`draft: false`** — published immediately. The release tag is read from
    `version.properties`, so it is correct whether or not this run performed the bump.
