@@ -46,17 +46,13 @@ class TorqueServiceWrapper : Service() {
             // that reports 0 forever with no warning. Prefer what the ECU actually supports,
             // and keep Torque's own synthetic metrics (ids starting with "ff": GPS speed,
             // acceleration, power) because those never come from the ECU.
-            val all = ts.listAllPIDs()
+            val all = ts.listAllPIDs().toList()
             val supported = try {
                 ts.listECUSupportedPIDs()?.toSet() ?: emptySet()
             } catch (e: Exception) {
                 emptySet()
             }
-            val pids = if (supported.isEmpty()) {
-                all
-            } else {
-                all.filter { it.startsWith("ff") || supported.contains(it) }.toTypedArray()
-            }
+            val pids = selectPids(all, supported).toTypedArray()
             val pidAttributes = ts.getPIDInformation(pids).map { it.split(",") }
 
             onComplete(

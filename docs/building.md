@@ -57,7 +57,9 @@ properties file.
 ```
 ./gradlew assembleDebug        # debug APK, SIMULATE_METRICS=true
 ./gradlew assembleRelease      # release APK, signed with the debug key
+./gradlew testDebugUnitTest    # JVM unit tests
 ./gradlew lintRelease          # what CI runs
+./gradlew ktlintCheck          # style gate
 ```
 
 Outputs:
