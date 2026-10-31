@@ -66,6 +66,11 @@ This also applies when you move from the upstream build to this fork: both use t
 name `com.aatorque.stats`, so the fork replaces upstream and the record is rewritten. Install
 the fork through KingInstaller, not by tapping the APK.
 
+The app checks for a newer release when you open Settings and shows a dialog with a link to the
+release page. It deliberately does not install the APK itself: a self-install writes the wrong
+record, and the app would vanish from the car. Take the APK from that page and install it with
+KingInstaller.
+
 ### The record is set per install, not kept (measured, Android 16)
 
 | Install path | `installerPackageName` | `initiatingPackageName` |
@@ -75,7 +80,8 @@ the fork through KingInstaller, not by tapping the APK.
 | update **with** `-i com.android.vending` | `com.android.vending` | `com.android.shell` |
 
 The installer field is not sticky: an update rewritten by another path clears it. That is why an
-update always has to go through KingInstaller, even when the version only moves by a patch.
+update always has to go through KingInstaller, even when the version only moves by a patch, and
+why the prompt above only links to the release page instead of installing it.
 
 ## When it still does not appear
 

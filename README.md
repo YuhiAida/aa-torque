@@ -93,6 +93,9 @@ Any update installed by another path overwrites the install record, and the app 
 from Android Auto again. Always update through KingInstaller with Shizuku. The same applies
 when you move from the upstream build to this fork.
 
+AA Torque checks for a newer release when you open its settings and offers a link to the release
+page. It does not install the APK itself — install it with KingInstaller, as above.
+
 ## Use
 
 1. Open **AA Torque Settings** on the phone and grant every permission it asks for. The app

@@ -344,11 +344,51 @@ class SettingsActivity :
         return true
     }
 
+    private fun updateCheckDue(): Boolean {
+        val last = getSharedPreferences(UPDATE_PREFS, Context.MODE_PRIVATE)
+            .getLong(UPDATE_LAST_CHECK, 0L)
+        return System.currentTimeMillis() - last > UPDATE_INTERVAL_MS
+    }
+
+    private fun markUpdateChecked() {
+        getSharedPreferences(UPDATE_PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putLong(UPDATE_LAST_CHECK, System.currentTimeMillis())
+            .apply()
+    }
+
+    /**
+     * Automatic checks only tell the user that a release exists and point at it. Installing the
+     * APK from inside the app would overwrite the install record Android Auto checks, and the
+     * app would vanish from the car. See docs/aa-install-gate.md.
+     */
+    private fun showUpdateDialog(version: String, releasePage: String?) {
+        val page = releasePage ?: RELEASES_PAGE
+        runOnUiThread {
+            if (isFinishing || isDestroyed) return@runOnUiThread
+            AlertDialog.Builder(this)
+                .setTitle(R.string.new_version)
+                .setMessage(getString(R.string.update_dialog_message, version))
+                .setPositiveButton(R.string.update_open_page) { dialog, _ ->
+                    dialog.dismiss()
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(page)))
+                }
+                .setNegativeButton(R.string.update_later) { dialog, _ -> dialog.dismiss() }
+                .show()
+        }
+    }
+
     private fun checkUpdate(force: Boolean = false): Boolean {
         Timber.i("Checking for update")
+        if (!force && !updateCheckDue()) {
+            Timber.i("Update check is throttled")
+            return true
+        }
 
-        var needsUpdate: Boolean? = if (!force) null else true
+        var needsUpdate: Boolean? = if (force) true else null
         var downloadItem: String? = null
+        var releasePage: String? = null
+        var latestVersion: String? = null
 
         val url = URL(BuildConfig.RELEASE_URL)
         val urlConnection = url.openConnection() as HttpsURLConnection
@@ -370,9 +410,14 @@ class SettingsActivity :
                     JSONObject(it.readText())
                 }
                 val tagName = response.getString("tag_name")
-                downloadItem = response.getJSONArray("assets")
-                    .getJSONObject(0)
-                    .getString("browser_download_url")
+                latestVersion = tagName
+                releasePage = response.optString("html_url").takeIf { it.isNotEmpty() }
+                val assets = response.optJSONArray("assets")
+                if (assets != null && assets.length() > 0) {
+                    downloadItem = assets.getJSONObject(0)
+                        .optString("browser_download_url")
+                        .takeIf { it.isNotEmpty() }
+                }
 
                 val tagSplit = tagName.split(".")
                 val existingSplit = BuildConfig.VERSION_NAME.split(".")
@@ -388,6 +433,7 @@ class SettingsActivity :
                         }
                     }
                 }
+                markUpdateChecked()
             }
         } catch (e: JSONException) {
             Timber.e("Failed to parse json on update check")
@@ -396,7 +442,23 @@ class SettingsActivity :
         }
 
         if (needsUpdate == true) {
-            assert(downloadItem != null)
+            val version = latestVersion
+            if (version == null) {
+                Timber.w("Newer release found without a version tag")
+                return true
+            }
+            if (!force) {
+                showUpdateDialog(version, releasePage)
+                return true
+            }
+            val asset = downloadItem
+            if (asset == null) {
+                Timber.w("Release $version carries no APK asset")
+                runOnUiThread {
+                    Toast.makeText(this, R.string.update_failed, Toast.LENGTH_SHORT).show()
+                }
+                return true
+            }
             Snackbar.make(
                 findViewById(android.R.id.content),
                 R.string.new_version,
@@ -411,7 +473,7 @@ class SettingsActivity :
                         IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
                         ContextCompat.RECEIVER_EXPORTED
                     )
-                    val downloadRequest = DownloadManager.Request(Uri.parse(downloadItem))
+                    val downloadRequest = DownloadManager.Request(Uri.parse(asset))
                     downloadRequest.setDestinationInExternalPublicDir(
                         Environment.DIRECTORY_DOWNLOADS,
                         "aa-torque.apk"
@@ -441,6 +503,10 @@ class SettingsActivity :
 
     companion object {
         private const val REQUEST_PERMISSIONS = 0
+        private const val UPDATE_PREFS = "update_check"
+        private const val UPDATE_LAST_CHECK = "last_check"
+        private const val UPDATE_INTERVAL_MS = 24L * 60L * 60L * 1000L
+        private const val RELEASES_PAGE = "https://github.com/YuhiAida/aa-torque/releases"
         private const val PERMISSION_CAR_VENDOR_EXTENSION =
             "com.google.android.gms.permission.CAR_VENDOR_EXTENSION"
         const val EXPORT_MIME = "application/octet-stream"
