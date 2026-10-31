@@ -37,9 +37,10 @@ class ThemeRenderSpikeTest {
     private fun slug(theme: String) = theme.lowercase().replace(" ", "_").replace("/", "_")
 
     private fun render(theme: String, size: Int = 480): Pair<File, Bitmap> {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        context.setTheme(mapTheme(context, theme))
-
+        val appContext = ApplicationProvider.getApplicationContext<Context>()
+        // A ContextThemeWrapper is what an Activity uses; setTheme on the application
+        // context does not reach the views' theme-attribute lookups.
+        val context = android.view.ContextThemeWrapper(appContext, mapTheme(appContext, theme))
         val binding = FragmentGaugeBinding.inflate(LayoutInflater.from(context))
         binding.minValue = 0f
         binding.maxValue = 100f
