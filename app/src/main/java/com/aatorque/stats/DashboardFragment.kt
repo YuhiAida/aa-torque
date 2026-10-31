@@ -55,7 +55,7 @@ open class DashboardFragment : AlbumArt() {
     private lateinit var mWrapper: RelativeLayout
     lateinit var mConStatus: TextView
 
-    var guages = arrayOfNulls<TorqueGauge>(3)
+    var gauges = arrayOfNulls<TorqueGauge>(3)
     var displays = arrayOfNulls<TorqueDisplay>(4)
     var gaugeViews = arrayOfNulls<FragmentContainerView>(3)
 
@@ -136,7 +136,7 @@ open class DashboardFragment : AlbumArt() {
                     screens.gaugesList.forEachIndexed { index, display ->
                         if (showChartChanged || torqueRefresher.hasChanged(index, display)) {
                             val clock = torqueRefresher.populateQuery(index, screenIndex, display)
-                            guages[index]?.setupClock(clock)
+                            gauges[index]?.setupClock(clock)
                         }
                     }
                 }
@@ -251,9 +251,9 @@ open class DashboardFragment : AlbumArt() {
         gaugeViews[1] = binding.gaugeCenter
         gaugeViews[2] = binding.gaugeRight
 
-        guages[0] = childFragmentManager.findFragmentById(R.id.gaugeLeft)!! as TorqueGauge
-        guages[1] = childFragmentManager.findFragmentById(R.id.gaugeCenter)!! as TorqueGauge
-        guages[2] = childFragmentManager.findFragmentById(R.id.gaugeRight)!! as TorqueGauge
+        gauges[0] = childFragmentManager.findFragmentById(R.id.gaugeLeft)!! as TorqueGauge
+        gauges[1] = childFragmentManager.findFragmentById(R.id.gaugeCenter)!! as TorqueGauge
+        gauges[2] = childFragmentManager.findFragmentById(R.id.gaugeRight)!! as TorqueGauge
         displays[0] = childFragmentManager.findFragmentById(R.id.display1)!! as TorqueDisplay
         displays[1] = childFragmentManager.findFragmentById(R.id.display2)!! as TorqueDisplay
         displays[2] = childFragmentManager.findFragmentById(R.id.display3)!! as TorqueDisplay

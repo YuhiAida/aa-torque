@@ -26,7 +26,6 @@ class TorqueData(var display: Display) {
         twoPlaces.isGroupingUsed = true
         intPlaces.isGroupingUsed = true
         twoPlaces.roundingMode = BigDecimal.ROUND_HALF_UP
-        twoPlaces.roundingMode = BigDecimal.ROUND_HALF_UP
     }
 
     var pid: String? = null

@@ -6,7 +6,7 @@ Every source file under `app/src/main/java`, grouped by package. CI regenerates
 this file on each push, so it always matches the tree.
 
 - Files: 41 (38 Kotlin, 3 Java)
-- Lines: 7990
+- Lines: 7989
 - Packages: 5
 
 ## `com/aatorque/prefs`
@@ -44,7 +44,7 @@ this file on each push, so it always matches the tree.
 | `PidSelection.kt` | 25 |
 | `SizedImageIndicator.kt` | 29 |
 | `TorqueChart.kt` | 186 |
-| `TorqueData.kt` | 154 |
+| `TorqueData.kt` | 153 |
 | `TorqueDisplay.kt` | 109 |
 | `TorqueGauge.kt` | 314 |
 | `TorqueRefresher.kt` | 121 |
