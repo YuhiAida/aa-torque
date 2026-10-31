@@ -9,6 +9,7 @@ Find the symptom, then follow the cause. Two of these have their own files.
 | App is not in the Android Auto launcher | Install record is wrong | [aa-install-gate.md](aa-install-gate.md) |
 | No update prompt in Settings | No newer published release, the 24 h throttle, or a network failure | Use the overflow menu → **Check for updates**: it skips the throttle and reports what it finds. The automatic check is silent on failure by design. |
 | App disappeared from Android Auto after an update | The update overwrote the install record | Reinstall through KingInstaller with Shizuku |
+| The `docs` workflow fails on a path that looks fine | The checker only accepts paths that exist in a clone | Run `python3 tools/check_docs.py`; build outputs (`app/build/`), `dist/`, `local.properties` and the `speedviewlib` submodule are skipped by design |
 | Gauge stays at `0`, other gauges work | The gauge binds a PID the car does not answer | [pid-filtering.md](pid-filtering.md) |
 | Status line: `Torque bound, no adapter` | Torque has no OBD-II adapter connected | Pair the adapter in Torque |
 | Torque is not detected at all | Torque not installed, or never opened once | Install Torque Pro and open it, then start AA Torque |
