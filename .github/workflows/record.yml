@@ -10,7 +10,9 @@ on:
   # path-scoped push lets the record run from this PR. Removed before merge.
   push:
     branches: [test/theme-goldens]
-    paths: ['.github/workflows/record.yml']
+    paths:
+      - '.github/workflows/record.yml'
+      - 'app/src/test/java/com/aatorque/stats/ThemeRenderTest.kt'
 
 concurrency:
   group: record-${{ github.ref }}

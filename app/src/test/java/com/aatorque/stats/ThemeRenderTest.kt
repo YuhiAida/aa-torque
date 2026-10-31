@@ -93,7 +93,7 @@ class ThemeRenderTest {
             bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
             assertTrue("$theme rendered blank", pixels.toSet().size > 10)
 
-            captureRoboImage("$goldenDir/${slug(theme)}.png", view)
+            view.captureRoboImage("$goldenDir/${slug(theme)}.png")
         }
 
         if (!recording) {
