@@ -206,6 +206,5 @@ kapt {
 //apply plugin: 'com.google.gms.google-services'
 repositories {
     mavenCentral()
-    jcenter()
     maven { url 'https://jitpack.io' }
 }
