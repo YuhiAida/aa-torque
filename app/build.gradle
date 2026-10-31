@@ -138,8 +138,8 @@ dependencies {
     implementation project(':speedviewlib')
 
     testImplementation 'junit:junit:4.13.2'
-    testImplementation 'io.github.takahirom.roborazzi:roborazzi:1.77.0'
-    testImplementation 'io.github.takahirom.roborazzi:roborazzi-junit-rule:1.77.0'
+    testImplementation 'io.github.takahirom.roborazzi:roborazzi:1.47.0'
+    testImplementation 'io.github.takahirom.roborazzi:roborazzi-junit-rule:1.47.0'
     // Robolectric pulls BouncyCastle for its TLS shadows; 1.85 is Java 25 bytecode and the
     // project's Jetifier (AGP 8.2) cannot transform class file 69. The render test does not
     // use TLS, so drop it from the test graph.
