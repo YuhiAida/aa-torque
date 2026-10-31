@@ -3,6 +3,7 @@ plugins {
     id 'kotlin-kapt'
  // id 'com.google.dagger.hilt.android'
     id 'org.jlleitschuh.gradle.ktlint'
+    id 'io.github.takahirom.roborazzi'
 }
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
@@ -89,6 +90,12 @@ android {
         jvmTarget = "19"
     }
 
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
+
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.4"
     }
@@ -131,6 +138,13 @@ dependencies {
     implementation project(':speedviewlib')
 
     testImplementation 'junit:junit:4.13.2'
+    testImplementation 'io.github.takahirom.roborazzi:roborazzi:1.47.0'
+    testImplementation 'io.github.takahirom.roborazzi:roborazzi-junit-rule:1.47.0'
+    testImplementation 'org.robolectric:robolectric:4.17'
+    // @GraphicsMode(NATIVE) draws through Robolectric's native runtime, which is a separate artifact.
+    testImplementation 'org.robolectric:nativeruntime:4.17'
+    testImplementation 'androidx.test:core:1.7.0'
+    testImplementation 'androidx.test.ext:junit:1.3.0'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     implementation 'com.ezylang:EvalEx:3.0.5'
 
@@ -204,6 +218,9 @@ protobuf {
 kapt {
     correctErrorTypes true
 }
+
+// The goldens live at app/src/test/screenshots/<theme>.png; the test passes that path
+// explicitly to captureRoboImage, so no separate outputDir is needed.
 
 //apply plugin: 'com.google.gms.google-services'
 repositories {

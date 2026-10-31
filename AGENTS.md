@@ -47,9 +47,9 @@ CI is the required gate. It starts on every branch push.
 
 1. Work on a branch and push it.
 2. Read the run: `gh run list -R YuhiAida/aa-torque -L 5`
-3. The `lint` job runs three checks and all must pass:
+3. The `lint` job runs four checks and all must pass:
    - `./gradlew ktlintCheck` — style, from `.editorconfig`
-   - `./gradlew testDebugUnitTest` — the JVM unit tests in `app/src/test`
+   - `./gradlew verifyRoborazziDebug` — the JVM unit tests plus the theme golden comparison
    - `./gradlew lintRelease` — Android lint, and it compiles the release variant
 4. Do not merge. Open a **draft** pull request and stop. Yuhi merges.
 
@@ -57,9 +57,14 @@ A local build is optional. This machine has no Android SDK installed. The setup 
 in [docs/building.md](docs/building.md). Do not install an SDK, NDK or emulator image on
 Yuhi's machine without asking first.
 
-There are no instrumentation tests. The JVM tests in `app/src/test` cover pure logic only, so
-nothing exercises Android, the Torque binding, or the gauges. Do not claim a runtime behaviour
-is verified — state what CI checked and what it did not.
+There are no instrumentation tests. The JVM tests in `app/src/test` render every theme with
+Robolectric and compare against the goldens in `app/src/test/screenshots`; they still do not
+exercise the Torque binding or the Android Auto surface. Do not claim a runtime behaviour is
+verified — state what CI checked and what it did not.
+
+Record a theme golden with `./gradlew recordRoborazziDebug`, or the `record` workflow
+(Actions → record → Run workflow) when there is no local SDK. Record, review the PNG, and
+commit it with the theme change. Never hand-edit a golden.
 
 Markdown is checked by `tools/check_docs.py`, which runs as its own workflow whenever a `.md` file
 or anything under `docs/` changes. It verifies that every relative link and every repository path
