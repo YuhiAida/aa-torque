@@ -8,3 +8,6 @@ captures/
 .externalNativeBuild/
 .cxx/
 google-services.json
+
+# locally built apk
+dist/
