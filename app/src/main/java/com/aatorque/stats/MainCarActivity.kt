@@ -10,17 +10,19 @@ import com.aatorque.prefs.dataStore
 import com.aatorque.prefs.mapTheme
 import com.aatorque.stats.ListMenuAdapter.MenuCallbacks
 import com.google.android.apps.auto.sdk.CarActivity
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import timber.log.Timber
 
 class MainCarActivity : CarActivity() {
+    // MainScope because the compiler cannot see that CarActivity is a LifecycleOwner:
+    // its superclass is a missing dependency (see the file-level suppression).
+    private val mainScope = MainScope()
     private var mCurrentFragmentTag: String? = null
     private val mMenuCallbacks: MenuCallbacks = object : MenuCallbacks {
         override fun onMenuItemClicked(name: String) {
@@ -51,20 +53,25 @@ class MainCarActivity : CarActivity() {
         return super.onKeyDown(keyCode, event)
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate(bundle: Bundle?) {
         super.onCreate(bundle)
-        val data = runBlocking {
-            dataStore.data.first()
+        // Read the first value off the main thread. DataStore emits its default immediately,
+        // so setupUi() runs in the next main-thread task.
+        mainScope.launch {
+            val data = dataStore.data.first()
+            setLocalTheme(data.selectedTheme)
+            setupUi(bundle)
         }
-        GlobalScope.launch {
+        mainScope.launch {
             dataStore.data.map {
                 it.selectedTheme
             }.distinctUntilChanged().drop(1).collect(
                 this@MainCarActivity::recreateWithTheme
             )
         }
-        setLocalTheme(data.selectedTheme)
+    }
+
+    private fun setupUi(bundle: Bundle?) {
         setContentView(R.layout.activity_car_main)
         /*
         CarUiController carUiController = getCarUiController();
@@ -177,6 +184,11 @@ class MainCarActivity : CarActivity() {
         inBg = false
         awaitingTheme?.let(this::recreateWithTheme)
         awaitingTheme = null
+    }
+
+    override fun onDestroy() {
+        mainScope.cancel()
+        super.onDestroy()
     }
 
     companion object {
