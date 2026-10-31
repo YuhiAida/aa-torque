@@ -24,9 +24,9 @@ class CreditsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        btnOpenUrl(R.id.githubBtn, "https://github.com/agronick/aa-torque")
-        btnOpenUrl(R.id.donateBtn, "https://www.paypal.me/kagronick")
-        btnOpenUrl(R.id.translateBtn, "https://poeditor.com/join/project/yttme0y1VZ")
+        btnOpenUrl(R.id.githubBtn, "https://github.com/YuhiAida/aa-torque")
+        // Same target as the repo's Sponsor button, via .github/FUNDING.yml.
+        btnOpenUrl(R.id.donateBtn, "https://revolut.me/bernarfhfo")
         val iconCredits = view.findViewById<LinearLayout>(R.id.ic_credits_list)
         resources.getStringArray(R.array.ic_credits_items).forEach {
             val tv = TextView(requireContext())

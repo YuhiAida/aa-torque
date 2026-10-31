@@ -181,7 +181,6 @@
 
 "Donar" has the same meaning for the user and looks far better -->
     <string name="donate">Donar!</string>
-    <string name="translate">Traducir</string>
     <string name="pref_chart_title">Color de linea de gráfico</string>
     <string name="pref_chart_summary">Color a usar para dibujar lineas en el gráfico</string>
     <string name="bg_ev">Vehículo Electrico</string>
