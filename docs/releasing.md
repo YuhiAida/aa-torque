@@ -39,12 +39,12 @@ Releases page.
 
 ```
 versionName = major.minor.patch
-versionCode = major * 1000 + minor * 100 + patch * 10
+versionCode = major * 10000 + minor * 100 + patch
 ```
 
-Consequences: the patch component must stay below 100, or `versionCode` collides with the
-next minor version. Bad numbers fail the release quietly in the Play-style ordering sense —
-Android still installs, but "newer" is wrong.
+Consequences: each component is packed into its own field, so patch and minor must each
+stay below 100 and major must stay below 214748 (Android's `versionCode` is a signed
+32-bit integer, so `major * 10000` must fit). In practice major is single-digit.
 
 ### The bump in this fork
 
