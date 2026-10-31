@@ -1,88 +1,136 @@
-![CI Status](https://github.com/agronick/aa-torque/actions/workflows/ci.yml/badge.svg?branch=master)
-![downloads](https://img.shields.io/github/downloads/agronick/aa-torque/total.svg)
+![CI Status](https://github.com/YuhiAida/aa-torque/actions/workflows/ci.yml/badge.svg?branch=master)
+![downloads](https://img.shields.io/github/downloads/YuhiAida/aa-torque/total.svg)
+![license](https://img.shields.io/github/license/YuhiAida/aa-torque)
 
+# Torque Plugin for Android Auto
 
-# Torque Plugin for Android Auto 
+AA Torque shows the data from [Torque Pro](https://play.google.com/store/apps/details?id=org.prowl.torque)
+as gauges, charts and a speedometer on your Android Auto head unit. You need Torque Pro and
+a cheap OBD-II adapter. The app reads every PID Torque exposes, including custom ones.
 
-## Video Walkthrough
-(Click to open in YouTube)
-[![Click to open in YouTube](https://github.com/agronick/aa-torque/assets/2042303/b735fc1c-8732-4237-8a8d-a540a0d1f778
-)](https://www.youtube.com/watch?v=gYJJ9M9a0m8)
+This repository is a maintained fork of [agronick/aa-torque](https://github.com/agronick/aa-torque).
+Upstream is unmaintained. The fork keeps the package name `com.aatorque.stats`, so it
+**replaces** the upstream build in place. You cannot install both.
 
+- [Features](#features)
+- [Install](#install)
+- [The app does not show up in Android Auto](#the-app-does-not-show-up-in-android-auto)
+- [Use](#use)
+- [Build from source](#build-from-source)
+- [Help](#help)
+- [Credits](#credits)
 
-This is a performance monitor based on [Chillout's Performance Monitor](https://github.com/jilleb/mqb-pm) which was based on Martoreto's aa-stats.
-The app has been modified with a focus on making it more customizable with the ability
-to obtain any PID from Torque. Torque pro is required to use this app.
+## Features
 
-The original app focused on VAG (Volkswagen Auto Group) cars. This version focuses on exposing
-all data from Torque in a way that is as customizable as possible.
-
-## Help and helping
-- Visit [the dicussions page](https://github.com/agronick/aa-torque/discussions) to ask questions and get support
-- English isn't your native language? [Help translate this app!](https://poeditor.com/join/project/yttme0y1VZ) Many of the translations are incomplete.
-- Help spread the word. Make posts on forums and other social networks showing off your setup.
-- This app is taking hundreds of hours of work. If you enjoy it consider donating on [Paypal](https://www.paypal.me/kagronick) or [Github Sponsors](https://github.com/agronick).
-
-# Main features:
-- Display data from Torque including custom PIDs
-- Many themes, fonts, incons, and backgrounds to choose from
-- Up to 10 dashboards
+- Show any Torque PID, including custom PIDs, on the Android Auto screen
+- Up to 10 dashboards, many themes, fonts, icons and backgrounds
 - Rotary dial support
-- Supports custom expressions using [EvalEx](https://ezylang.github.io/EvalEx/references/functions.html)
-- Backup, restore, and share your configuration
+- Custom expressions through [EvalEx](https://ezylang.github.io/EvalEx/references/functions.html)
+- Backup, restore and share your configuration
 
-# Instructions:
-
-## Prepare
-- Install [Torque Pro](https://play.google.com/store/apps/details?id=org.prowl.torque&hl=en_US&gl=US) You will need this app and a cheap OBD2 Bluetooth module.
+<img src="https://github.com/agronick/aa-torque/assets/2042303/e31b0598-25ec-4003-bcee-11e5e108d3a4" width="100%" alt="Gauges" />
 
 ## Install
-[Video guide for how to install](https://www.youtube.com/watch?v=DDxPrPzxZ3k)
 
-- Download the latest [release](https://github.com/agronick/aa-torque/releases). Pre-releases can only be installed through Kingstaller.
-- Make sure Android Auto is in developer mode: Open Android Auto (while not connected to the car), go to About. Tap the "About Android Auto" header 10 times until you see a toast message saying you're a developer. From the right top corner select developer options, scroll down and make sure you check "Unknown sources". This will allow programs from non-Playstore apps to be run on Android Auto. [See a picture guide how to enable Developer mode here](https://www.howtogeek.com/271132/how-to-enable-developer-settings-on-android-auto/).
-- Install the APK that you downloaded in the _Prepare_ section using your normal package installer
-- Open _AA Torque Settings_
-- Select the options menu and select force update. Follow the process so your phone will reinstall
-  it thinking it came from the Play Store.
-- If this fails, you can try using [Kingstaller](https://github.com/fcaronte/KingInstaller/releases)
-  so your phone thinks it came from the Play Store. Reference the Kingstaller README if you have
-  issues installing.
+1. Install **Torque Pro** on your phone and pair your OBD-II adapter in Torque.
+2. Download the newest published APK from [Releases](https://github.com/YuhiAida/aa-torque/releases).
+3. Install the APK with your normal package installer. Android may warn about an unknown
+   source. Allow it.
+4. Continue with the next section. A plain install does **not** make the app visible in
+   Android Auto.
 
-Note: Do not open a bug for an installation issue. You need to bypass restrictions put in place by Google to get this app working on Android Auto. These instructions will work for most phones. I can not troubleshoot every phone. Pixel phones have special instructions on the [Kingstaller README](https://github.com/fcaronte/KingInstaller). 
+Do not rely on the "Unknown sources" switch in the Android Auto developer options. It does
+not admit this app. The reason is in [docs/aa-install-gate.md](docs/aa-install-gate.md).
 
-The Kingstaller README has this to say about Pixel Phones:
+## The app does not show up in Android Auto
 
-> For this phone you need to reinstall\update the current Google PackageInstaller, you can download the same version from ApkMirror or similar site, or you can get the apk directly from your phone using a file manager with that feature (I'm use mixplorer) then install the apk as normal and now you can use kinginstaller to install the app and will work!
+Android Auto decides which apps it accepts from the **install record**, not from the
+developer options. For this app, both fields must read:
 
-There seems to be issues with Android 14 as well. If you upgrade to Android 14 you may need to
-uninstall and reinstall. Check the [discussions](https://github.com/agronick/aa-torque/discussions)
-page for help installing.
-If you have an AAWireless dongle, enabling developer mode in AAWireless can work around it.
+| Field | Required value |
+|---|---|
+| `initiatingPackageName` | `com.google.android.packageinstaller` |
+| `installerPackageName` | `com.android.vending` |
 
-## Using
-- Open the AA Torque settings, grant all the rights it's requesting. If you don't do this, the app will NOT work.
-- Hook your phone to your car's USB, start Android Auto on your unit.
-- You can find the AA Torque in the menu on the lower right in Android Auto, the one with the dashboard clock on it.
+`adb install` and most file managers set one field and not the other. Kingstaller's normal
+mode has the same problem. Use **Kingstaller with Shizuku** instead.
 
-# Screenshots:
-Some screenshots of the app:
+### Repair the install record
 
-<img src="https://github.com/agronick/aa-torque/assets/2042303/e31b0598-25ec-4003-bcee-11e5e108d3a4" width="100%" alt="" />
+1. Install [KingInstaller](https://github.com/fcaronte/KingInstaller/releases).
+2. Install [Shizuku](https://shizuku.rikka.app/) from the Play Store.
+3. Start Shizuku and grant the permission it asks for. Wireless debugging is the usual
+   method.
+4. In KingInstaller, choose **Shizuku** as the installation method, select the AA Torque
+   APK, and install. Success reads `App installed successfully! (AA Compatible)`.
+5. Force-stop Android Auto so it rebuilds its list:
+   `adb shell am force-stop com.google.android.projection.gearhead`
+6. Open the Android Auto settings on the phone, then look for AA Torque under
+   **Add a shortcut to the Launcher**. If it is there, the install record is correct. You
+   do not need the car for this check.
 
-<img src="https://github.com/agronick/aa-torque/assets/2042303/bf40ed97-adf3-4923-bbc5-63a618899173" width="100%" alt="" />
+To read the two fields yourself:
 
-*Album art background with ray instead of needle*
+```
+adb shell dumpsys package com.aatorque.stats | grep -E "installerPackageName|initiatingPackageName"
+```
 
-<img src="https://github.com/agronick/aa-torque/assets/2042303/a99571f9-0bb3-43ec-89ce-938e41506e97" width="100%" alt="" />
+### Phone notes
 
-*Chart view*
+- **OnePlus, OPPO, Realme:** enable **Disable permission monitoring** in the developer
+  options, at the bottom of the Apps section. Without it Shizuku starts but reports that
+  its ADB permission is limited, and the install silently falls back to the wrong record.
+  The same switch over adb: `settings put global direct_control_permission_monitoring 0`.
+- **Pixel:** reinstall or update the Google PackageInstaller as described in the
+  KingInstaller README, then install through KingInstaller.
+- **Android 14 and newer:** uninstall the old version first when an earlier build worked.
+  An AAWireless dongle with developer mode enabled is a known workaround.
 
-<img src="https://github.com/agronick/aa-torque/assets/2042303/229315c8-ad3b-42e6-86e6-e7fe7abb16a8" width="100%" alt="" />
+### After an update
 
-<img src="https://github.com/agronick/aa-torque/assets/2042303/698c666b-5e3c-4611-80a5-8e767b04186a" width="100%" alt="" />
+Any update installed by another path overwrites the install record, and the app disappears
+from Android Auto again. Always update through KingInstaller with Shizuku. The same applies
+when you move from the upstream build to this fork.
 
+## Use
 
+1. Open **AA Torque Settings** on the phone and grant every permission it asks for. The app
+   does not work without them.
+2. Connect the phone to the car and start Android Auto.
+3. Open the app drawer in Android Auto. AA Torque sits there with its own icon.
 
-## Custom Expressions
-AA Torque uses [EvalEx](https://ezylang.github.io/EvalEx) for custom expressions. You can find documentation [here](https://ezylang.github.io/EvalEx/references/functions.html).
+The status line in the settings screen tells you what the app sees:
+
+- `Torque bound, no adapter` — the app talks to Torque, but Torque has no OBD-II adapter.
+  No car data flows yet.
+- `ECU live - N PIDs` — the adapter answers queries and the gauges show real values.
+
+A gauge that stays at zero usually binds a PID your car does not answer. See
+[docs/pid-filtering.md](docs/pid-filtering.md).
+
+## Build from source
+
+The build needs a JDK (19 or newer), an Android SDK and the `speedviewlib` submodule. The
+full steps, including the two common traps, are in [docs/building.md](docs/building.md).
+
+```
+git submodule update --init --recursive
+./gradlew assembleDebug
+```
+
+Every APK in Releases is built and signed by CI. Release builds use the debug signing key,
+so they install over each other without a prompt.
+
+## Help
+
+- **Something is broken:** open an [issue](https://github.com/YuhiAida/aa-torque/issues).
+- **Install problems:** read [docs/aa-install-gate.md](docs/aa-install-gate.md) and
+  [docs/troubleshooting.md](docs/troubleshooting.md) first.
+- **Working on the app:** [docs/](docs/) for reference, [CONTRIBUTING.md](CONTRIBUTING.md)
+  for themes and translations, [AGENTS.md](AGENTS.md) for coding agents.
+
+## Credits
+
+AA Torque derives from [Chillout's Performance Monitor](https://github.com/jilleb/mqb-pm),
+which derives from Martoreto's aa-stats. The original app targeted VAG cars. This fork keeps
+the "any PID" approach. Licensed under GPL-3.0, see [LICENSE.md](LICENSE.md).
