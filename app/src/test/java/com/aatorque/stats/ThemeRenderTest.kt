@@ -40,7 +40,7 @@ class ThemeRenderTest {
 
     private fun slug(theme: String) = theme.lowercase().replace(" ", "_").replace("/", "_")
 
-    private fun render(appContext: Context, theme: String): Pair<View, Bitmap> {
+    private fun render(appContext: Context, theme: String): Bitmap {
         val context = android.view.ContextThemeWrapper(appContext, mapTheme(appContext, theme))
         val binding = FragmentGaugeBinding.inflate(LayoutInflater.from(context))
         binding.minValue = 0f
@@ -77,7 +77,7 @@ class ThemeRenderTest {
 
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         view.draw(Canvas(bitmap))
-        return view to bitmap
+        return bitmap
     }
 
     @Test
@@ -87,13 +87,15 @@ class ThemeRenderTest {
         val recording = System.getProperty("roborazzi.test.record") == "true"
 
         for (theme in themes) {
-            val (view, bitmap) = render(appContext, theme)
+            val bitmap = render(appContext, theme)
 
             val pixels = IntArray(bitmap.width * bitmap.height)
             bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
             assertTrue("$theme rendered blank", pixels.toSet().size > 10)
 
-            view.captureRoboImage("$goldenDir/${slug(theme)}.png")
+            // The Bitmap overload is used because the View overload requires an Activity
+            // context, and these views are themed over the application context.
+            bitmap.captureRoboImage("$goldenDir/${slug(theme)}.png")
         }
 
         if (!recording) {
