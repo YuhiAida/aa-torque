@@ -65,6 +65,20 @@ Markdown is checked by `tools/check_docs.py`, which runs as its own workflow whe
 or anything under `docs/` changes. It verifies that every relative link and every repository path
 written in backticks resolves. Run it before pushing a doc change.
 
+Themes are checked by `tools/check_themes.py`, which runs as its own workflow whenever a
+file under `app/src/main/res/` changes. It verifies that `Themes`, `ThemesThumbs` and
+`ThemeList` agree by index, that every style named in `ThemeList` is defined and sets the
+required attributes, and that every referenced drawable and colour exists. Run it before
+pushing a theme change.
+
+A push to a branch also builds a debug APK (`pr_artifact`). Download it from the run and
+install it if you need to look at the UI: CI compiles and checks, it does not render. A theme
+that compiles can still be visually wrong, and a merge to `master` publishes immediately.
+
+Pull requests run the same checks through the `pull_request` trigger, including PRs from
+forks. A fork PR gets a read-only token, so it cannot commit the inventory; that step is
+push-only. The checks and the debug artifact still run.
+
 ## Branch and release rules
 
 - Never push to `master`. Use a branch and a draft pull request.
