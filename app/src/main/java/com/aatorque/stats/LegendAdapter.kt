@@ -9,9 +9,13 @@ import com.aatorque.prefs.SettingsViewModel
 import com.aatorque.stats.databinding.ChartLegendBinding
 import com.google.common.collect.ImmutableList
 
-class LegendAdapter(private var settingsViewModel: SettingsViewModel, var items: ImmutableList<TorqueChart.LegendBinding>): RecyclerView.Adapter<LegendAdapter.ViewHolder>() {
+class LegendAdapter(
+    private var settingsViewModel: SettingsViewModel,
+    var items: ImmutableList<TorqueChart.LegendBinding>
+) : RecyclerView.Adapter<LegendAdapter.ViewHolder>() {
 
-    class ViewHolder(var binding: ChartLegendBinding, itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class ViewHolder(var binding: ChartLegendBinding, itemView: View) :
+        RecyclerView.ViewHolder(itemView) {
         fun bind(vm: SettingsViewModel, data: TorqueChart.LegendBinding) {
             binding.binding = data
             // make sure to include this so your view will be updated
@@ -30,16 +34,13 @@ class LegendAdapter(private var settingsViewModel: SettingsViewModel, var items:
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        return ViewHolder.from(parent)
-    }
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder =
+        ViewHolder.from(parent)
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val todo = items[position] // this will be the list object you created
         holder.bind(settingsViewModel, todo)
     }
 
-    override fun getItemCount(): Int {
-        return items.size
-    }
+    override fun getItemCount(): Int = items.size
 }

@@ -16,7 +16,7 @@ import com.github.anastr.speedviewlib.ImageSpeedometer
 class TorqueSpeedometer @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0,
+    defStyleAttr: Int = 0
 ) : ImageSpeedometer(context, attrs, defStyleAttr) {
 
     var icon: Drawable? = null
@@ -49,7 +49,7 @@ class TorqueSpeedometer @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         drawIcon(canvas)
-        alarmPaint?.let{
+        alarmPaint?.let {
             var start = 45f
             var distance = 90f
             val percent = alarmAnimator.animatedValue as Float
@@ -65,7 +65,7 @@ class TorqueSpeedometer @JvmOverloads constructor(
                 start,
                 distance,
                 false,
-                it,
+                it
             )
         }
     }
@@ -75,14 +75,12 @@ class TorqueSpeedometer @JvmOverloads constructor(
     val squeezeTop = dpTOpx(7f)
     val squeezeBottom = dpTOpx(3f)
 
-    override fun getSpeedUnitTextBounds(): RectF {
-        return super.getSpeedUnitTextBounds().apply {
-            if (icon != null) {
-                top -= halfIcon
-                bottom -= halfIcon
-                top += squeezeTop
-                bottom += squeezeTop
-            }
+    override fun getSpeedUnitTextBounds(): RectF = super.getSpeedUnitTextBounds().apply {
+        if (icon != null) {
+            top -= halfIcon
+            bottom -= halfIcon
+            top += squeezeTop
+            bottom += squeezeTop
         }
     }
 
@@ -94,12 +92,12 @@ class TorqueSpeedometer @JvmOverloads constructor(
             minPoint - halfIcon,
             bounds.bottom - squeezeBottom,
             minPoint + halfIcon,
-            bounds.bottom + iconSize - squeezeBottom,
+            bounds.bottom + iconSize - squeezeBottom
         )
     }
 
     private fun drawIcon(canvas: Canvas) {
-        icon?.let{
+        icon?.let {
             it.bounds = getIconBounds().toRect()
             it.draw(canvas)
         }

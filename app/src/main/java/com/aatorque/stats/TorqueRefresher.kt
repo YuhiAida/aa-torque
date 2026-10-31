@@ -2,6 +2,8 @@ package com.aatorque.stats
 import android.os.Handler
 import android.os.Looper
 import com.aatorque.datastore.Display
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -9,11 +11,12 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.runInterruptible
 import timber.log.Timber
-import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 enum class ConnectStatus {
-    CONNECTING_TORQUE, CONNECTING_ECU, CONNECTED, SETUP_GAUGE
+    CONNECTING_TORQUE,
+    CONNECTING_ECU,
+    CONNECTED,
+    SETUP_GAUGE
 }
 
 class TorqueRefresher {
@@ -109,12 +112,10 @@ class TorqueRefresher {
         return data[idx]?.display?.equals(otherScreen) != true
     }
 
-    fun updateIfNeeded(pos: Int, screen: Int, query: Display): TorqueData {
-        return if (hasChanged(pos, query)) {
+    fun updateIfNeeded(pos: Int, screen: Int, query: Display): TorqueData =
+        if (hasChanged(pos, query)) {
             populateQuery(pos, screen, query)
         } else {
             data[pos]!!
         }
-    }
-
 }

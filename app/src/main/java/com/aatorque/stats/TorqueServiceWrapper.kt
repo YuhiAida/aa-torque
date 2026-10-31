@@ -8,13 +8,13 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Binder
 import android.os.IBinder
-import org.prowl.torque.remote.ITorqueService
-import timber.log.Timber
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import org.prowl.torque.remote.ITorqueService
+import timber.log.Timber
 
 typealias PidInfo = List<Pair<String, List<String>>>
-class TorqueServiceWrapper: Service() {
+class TorqueServiceWrapper : Service() {
     private val binder = LocalBinder()
     var wasStartAttempted = false
     var torqueService: ITorqueService? = null
@@ -39,7 +39,7 @@ class TorqueServiceWrapper: Service() {
         }
     }
 
-    class ListPids(val ts: ITorqueService, val onComplete: (PidInfo) -> Unit): Runnable {
+    class ListPids(val ts: ITorqueService, val onComplete: (PidInfo) -> Unit) : Runnable {
         override fun run() {
             // Torque's dictionary holds every PID it knows about, including the many the
             // connected car never answers. Offering those means a gauge can be bound to a PID
@@ -63,7 +63,6 @@ class TorqueServiceWrapper: Service() {
                 pids.zip(pidAttributes).sortedBy { it.second[0] }
             )
         }
-
     }
 
     fun loadPidInformation(force: Boolean = false, onComplete: ((PidInfo) -> Unit)? = null) {
@@ -72,14 +71,14 @@ class TorqueServiceWrapper: Service() {
             return
         }
         addConnectCallback {
-            val bg = ListPids(it) {
-                newPids ->
+            val bg = ListPids(it) { newPids ->
                 this.pids = newPids
                 onComplete?.invoke(newPids)
             }
             Thread(bg).start()
         }
     }
+
     /**
      * Class used for the client Binder. Because we know this service always
      * runs in the same process as its clients, we don't need to deal with IPC.
@@ -89,9 +88,7 @@ class TorqueServiceWrapper: Service() {
         fun getService(): TorqueServiceWrapper = this@TorqueServiceWrapper
     }
 
-    fun isAvailable(): Boolean {
-        return torqueService != null
-    }
+    fun isAvailable(): Boolean = torqueService != null
 
     fun addConnectCallback(func: (ITorqueService) -> Unit): TorqueServiceWrapper {
         if (torqueService == null) {
@@ -104,10 +101,7 @@ class TorqueServiceWrapper: Service() {
         return this
     }
 
-    override fun onBind(intent: Intent): IBinder {
-        return binder
-    }
-
+    override fun onBind(intent: Intent): IBinder = binder
 
     private val torqueConnection: ServiceConnection = object : ServiceConnection {
         /**
@@ -141,9 +135,12 @@ class TorqueServiceWrapper: Service() {
         val intent = Intent()
         intent.setClassName("org.prowl.torque", "org.prowl.torque.remote.TorqueService")
         val torqueBind = bindService(intent, torqueConnection, Activity.BIND_AUTO_CREATE)
-        Timber.i(
-            if (torqueBind) "Connected to torque service!" else "Unable to connect to Torque plugin service"
-        )
+        val message = if (torqueBind) {
+            "Connected to torque service!"
+        } else {
+            "Unable to connect to Torque plugin service"
+        }
+        Timber.i(message)
         return torqueBind
     }
 

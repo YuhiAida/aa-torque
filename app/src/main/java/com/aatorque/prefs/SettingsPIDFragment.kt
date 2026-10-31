@@ -19,17 +19,16 @@ import com.aatorque.datastore.MaxControl
 import com.aatorque.datastore.Screen
 import com.aatorque.stats.R
 import com.aatorque.stats.TorqueServiceWrapper
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import kotlin.math.ceil
-import kotlin.math.floor
 
-
-class SettingsPIDFragment:  PreferenceFragmentCompat() {
+class SettingsPIDFragment : PreferenceFragmentCompat() {
     lateinit var prefCat: PreferenceCategory
     var mBound: Boolean = false
 
@@ -61,8 +60,7 @@ class SettingsPIDFragment:  PreferenceFragmentCompat() {
     var torqueConnection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
             torqueService = (service as TorqueServiceWrapper.LocalBinder).getService()
-            torqueService!!.loadPidInformation(false) {
-                pids ->
+            torqueService!!.loadPidInformation(false) { pids ->
                 requireActivity().runOnUiThread {
                     val valuesQuery = pids.map { "torque_${it.first}" }.toTypedArray()
                     val names = pids.map { it.second[0] }.toTypedArray()
@@ -145,7 +143,7 @@ class SettingsPIDFragment:  PreferenceFragmentCompat() {
                 val pidOnly = (newValue as String).substring("torque_".length)
                 torqueService!!.pids!!.firstOrNull {
                     it.first == pidOnly
-                }?.let {entryVal ->
+                }?.let { entryVal ->
                     var minVal = ceil(entryVal.second[3].toDouble()).toInt()
                     var maxVal = floor(entryVal.second[4].toDouble()).toInt()
                     if (minVal == 0 && maxVal == 0) {
@@ -175,7 +173,7 @@ class SettingsPIDFragment:  PreferenceFragmentCompat() {
             requireContext().dataStore.data.map {
                 val screen = it.getScreens(screen)
                 return@map if (isClock) screen.getGauges(index) else screen.getDisplays(index)
-            }.collect{
+            }.collect {
                 display = it
                 enabledPref.isChecked = !display.disabled
                 pidPref.value = display.pid
@@ -200,7 +198,9 @@ class SettingsPIDFragment:  PreferenceFragmentCompat() {
                             recycle()
                             color
                         }
-                    } else it
+                    } else {
+                        it
+                    }
                 }
                 jsPref.setValue(display.customScript)
                 if (pidPref.value.startsWith("torque")) {
@@ -209,7 +209,6 @@ class SettingsPIDFragment:  PreferenceFragmentCompat() {
             }
         }
     }
-
 
     fun enableItems(enabled: Boolean) {
         unitPref.isEnabled = enabled
@@ -234,12 +233,10 @@ class SettingsPIDFragment:  PreferenceFragmentCompat() {
 
     @OptIn(DelicateCoroutinesApi::class)
     fun saveState() {
-        fun coerce(value: String?, default: Int): Int {
-            return try {
-                value?.toInt() ?: default
-            } catch (e: NumberFormatException) {
-                default
-            }
+        fun coerce(value: String?, default: Int): Int = try {
+            value?.toInt() ?: default
+        } catch (e: NumberFormatException) {
+            default
         }
 
         val minVal = coerce(minValuePref.text, 0)
@@ -280,8 +277,7 @@ class SettingsPIDFragment:  PreferenceFragmentCompat() {
         }
         val context = requireContext()
         GlobalScope.launch(Dispatchers.IO) {
-            context.dataStore.updateData {
-                    currentSettings ->
+            context.dataStore.updateData { currentSettings ->
                 return@updateData currentSettings.toBuilder().let { set1 ->
                     var screenObj: Screen.Builder = try {
                         set1.getScreens(screen).toBuilder()
@@ -306,7 +302,7 @@ class SettingsPIDFragment:  PreferenceFragmentCompat() {
         if (mBound) {
             try {
                 requireContext().unbindService(torqueConnection)
-            }catch(e: IllegalArgumentException) {
+            } catch (e: IllegalArgumentException) {
                 Timber.e("Failed to unbind service", e)
             }
             mBound = false

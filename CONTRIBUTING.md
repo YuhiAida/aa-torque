@@ -18,7 +18,8 @@ change, themes, and translations. Deep reference material is in [`docs/`](docs/)
 
 1. Branch off `master`. Never commit to `master` directly.
 2. Make the smallest change that solves the problem. Do not reformat unrelated code.
-3. Push the branch. CI runs `./gradlew lintRelease` and must pass.
+3. Push the branch. CI runs `./gradlew ktlintCheck` and `./gradlew lintRelease`, and both must
+   pass. `./gradlew ktlintFormat` fixes the mechanical style violations before you push.
 4. Open a **draft** pull request. A maintainer merges it.
 
 A clear commit message helps the release notes. The version bump reads conventional commit

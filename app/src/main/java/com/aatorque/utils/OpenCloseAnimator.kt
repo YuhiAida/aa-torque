@@ -38,5 +38,4 @@ class OpenCloseAnimator : ValueAnimator() {
             return anim
         }
     }
-
 }

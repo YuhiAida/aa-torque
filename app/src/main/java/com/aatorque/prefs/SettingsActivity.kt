@@ -34,12 +34,6 @@ import com.aatorque.stats.CreditsFragment
 import com.aatorque.stats.R
 import com.google.android.material.snackbar.Snackbar
 import com.google.protobuf.InvalidProtocolBufferException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import org.json.JSONException
-import org.json.JSONObject
-import timber.log.Timber
 import java.io.IOException
 import java.net.ConnectException
 import java.net.HttpURLConnection
@@ -47,9 +41,15 @@ import java.net.URL
 import java.net.UnknownHostException
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import org.json.JSONException
+import org.json.JSONObject
+import timber.log.Timber
 
-
-class SettingsActivity : AppCompatActivity(),
+class SettingsActivity :
+    AppCompatActivity(),
     PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
 
     val br: BroadcastReceiver = object : BroadcastReceiver() {
@@ -57,31 +57,45 @@ class SettingsActivity : AppCompatActivity(),
             if (intent?.`package` == BuildConfig.APPLICATION_ID) {
                 AlertDialog.Builder(this@SettingsActivity).setTitle(R.string.download_complete)
                     .setMessage(R.string.download_dialog)
-                    .setPositiveButton(android.R.string.ok, object: DialogInterface.OnClickListener{
-                        override fun onClick(p0: DialogInterface?, p1: Int) {
-                            val downloadId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
-                            if (downloadId == -1L) return
-                            val uri = (getSystemService(DOWNLOAD_SERVICE) as DownloadManager).getUriForDownloadedFile(downloadId)
-                            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                                Intent(Intent.ACTION_INSTALL_PACKAGE).also {
-                                    it.data = uri
-                                    it.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+                    .setPositiveButton(
+                        android.R.string.ok,
+                        object : DialogInterface.OnClickListener {
+                            override fun onClick(p0: DialogInterface?, p1: Int) {
+                                val downloadId = intent.getLongExtra(
+                                    DownloadManager.EXTRA_DOWNLOAD_ID,
+                                    -1L
+                                )
+                                if (downloadId == -1L) return
+                                val uri = (
+                                    getSystemService(
+                                        DOWNLOAD_SERVICE
+                                    ) as DownloadManager
+                                    ).getUriForDownloadedFile(downloadId)
+                                val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                    Intent(Intent.ACTION_INSTALL_PACKAGE).also {
+                                        it.data = uri
+                                        it.flags =
+                                            Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                                            Intent.FLAG_ACTIVITY_NEW_TASK
+                                    }
+                                } else {
+                                    Intent(Intent.ACTION_VIEW).also {
+                                        it.setDataAndTypeAndNormalize(
+                                            uri,
+                                            "application/vnd.android.package-archive"
+                                        )
+                                        it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
                                 }
-                            } else {
-                                Intent(Intent.ACTION_VIEW).also {
-                                    it.setDataAndTypeAndNormalize(
-                                        uri,
-                                        "application/vnd.android.package-archive"
-                                    )
-                                    it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
+                                intent.putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
+                                intent.putExtra(
+                                    Intent.EXTRA_INSTALLER_PACKAGE_NAME,
+                                    "com.android.vending"
+                                )
+                                applicationContext.startActivity(intent)
                             }
-                            intent.putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
-                            intent.putExtra(Intent.EXTRA_INSTALLER_PACKAGE_NAME, "com.android.vending")
-                            applicationContext.startActivity(intent)
                         }
-                    }).setNegativeButton(android.R.string.cancel
-                    ) { p0, p1 -> p0?.dismiss() }.show()
+                    ).setNegativeButton(android.R.string.cancel) { p0, p1 -> p0?.dismiss() }.show()
             }
         }
     }
@@ -121,7 +135,8 @@ class SettingsActivity : AppCompatActivity(),
                     }
                     supportActionBar!!.setDisplayHomeAsUpEnabled(f !is SettingsFragment)
                 }
-            }, false
+            },
+            false
         )
     }
 
@@ -163,7 +178,11 @@ class SettingsActivity : AppCompatActivity(),
                 lifecycleScope.launch(Dispatchers.IO) {
                     if (!checkUpdate(true)) {
                         runOnUiThread {
-                            Toast.makeText(this@SettingsActivity, R.string.update_failed, Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                this@SettingsActivity,
+                                R.string.update_failed,
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                 }
@@ -187,10 +206,7 @@ class SettingsActivity : AppCompatActivity(),
         exportFileLauncher.launch("")
     }
 
-    private fun launchFragment(
-        tag: String,
-        fragment: Fragment
-    ) {
+    private fun launchFragment(tag: String, fragment: Fragment) {
         val existing = supportFragmentManager.findFragmentByTag(tag)
         if (existing?.isVisible == true) return
         supportFragmentManager.beginTransaction()
@@ -222,7 +238,6 @@ class SettingsActivity : AppCompatActivity(),
         }
     }
 
-
     private val importFileLauncher = registerForActivityResult(ImportFileContract()) { uri: Uri? ->
         if (uri != null) {
             val inStream = contentResolver.openInputStream(uri)
@@ -244,41 +259,37 @@ class SettingsActivity : AppCompatActivity(),
 
     class ExportFileContract : ActivityResultContract<String, Uri?>() {
 
-        override fun createIntent(context: Context, input: String): Intent {
-            return Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+        override fun createIntent(context: Context, input: String): Intent =
+            Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                 type = EXPORT_MIME
                 // Suggest a file name based on the original file name
                 putExtra(Intent.EXTRA_TITLE, "dashboards.pb")
             }
-        }
 
         // This function parses the activity result and returns the URI of the user selected location
-        override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
-            return if (resultCode == Activity.RESULT_OK) {
+        override fun parseResult(resultCode: Int, intent: Intent?): Uri? =
+            if (resultCode == Activity.RESULT_OK) {
                 intent?.data
             } else {
                 null
             }
-        }
     }
 
     class ImportFileContract : ActivityResultContract<String, Uri?>() {
 
-        override fun createIntent(context: Context, input: String): Intent {
-            return Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+        override fun createIntent(context: Context, input: String): Intent =
+            Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE)
                 type = input
             }
-        }
 
         // This function parses the activity result and returns the URI of the user selected location
-        override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
-            return if (resultCode == Activity.RESULT_OK) {
+        override fun parseResult(resultCode: Int, intent: Intent?): Uri? =
+            if (resultCode == Activity.RESULT_OK) {
                 intent?.data
             } else {
                 null
             }
-        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -298,9 +309,7 @@ class SettingsActivity : AppCompatActivity(),
             requestPermissions(permissionsToRequest.toTypedArray(), REQUEST_PERMISSIONS)
             return
         }
-
     }
-
 
     override fun onPreferenceStartFragment(
         caller: PreferenceFragmentCompat,
@@ -335,7 +344,7 @@ class SettingsActivity : AppCompatActivity(),
         return true
     }
 
-    private fun checkUpdate(force: Boolean =false): Boolean {
+    private fun checkUpdate(force: Boolean = false): Boolean {
         Timber.i("Checking for update")
 
         var needsUpdate: Boolean? = if (!force) null else true
@@ -386,7 +395,6 @@ class SettingsActivity : AppCompatActivity(),
             urlConnection.disconnect()
         }
 
-
         if (needsUpdate == true) {
             assert(downloadItem != null)
             Snackbar.make(
@@ -408,7 +416,9 @@ class SettingsActivity : AppCompatActivity(),
                         Environment.DIRECTORY_DOWNLOADS,
                         "aa-torque.apk"
                     )
-                    downloadRequest.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                    downloadRequest.setNotificationVisibility(
+                        DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+                    )
                     val dm = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
                     dm.enqueue(downloadRequest)
 
@@ -429,7 +439,6 @@ class SettingsActivity : AppCompatActivity(),
         clipboard.setPrimaryClip(ClipData.newPlainText("AA Torque Log", logs.joinToString("\n")))
     }
 
-
     companion object {
         private const val REQUEST_PERMISSIONS = 0
         private const val PERMISSION_CAR_VENDOR_EXTENSION =
@@ -437,4 +446,3 @@ class SettingsActivity : AppCompatActivity(),
         const val EXPORT_MIME = "application/octet-stream"
     }
 }
-

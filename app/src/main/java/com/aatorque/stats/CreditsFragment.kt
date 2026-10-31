@@ -14,7 +14,8 @@ import timber.log.Timber
 
 class CreditsFragment : Fragment() {
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         Timber.i("onCreateView")

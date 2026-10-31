@@ -6,9 +6,8 @@ import androidx.core.app.NotificationManagerCompat
 
 class NotiService : NotificationListenerService() {
     companion object {
-        fun isNotificationAccessEnabled(context: Context): Boolean {
-            return NotificationManagerCompat.getEnabledListenerPackages(context)
+        fun isNotificationAccessEnabled(context: Context): Boolean =
+            NotificationManagerCompat.getEnabledListenerPackages(context)
                 .contains(BuildConfig.APPLICATION_ID)
-        }
     }
 }

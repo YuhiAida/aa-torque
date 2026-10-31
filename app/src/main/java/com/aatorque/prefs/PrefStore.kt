@@ -10,10 +10,9 @@ import com.aatorque.datastore.Display
 import com.aatorque.datastore.Screen
 import com.aatorque.datastore.UserPreference
 import com.google.protobuf.TextFormat
-import timber.log.Timber
 import java.io.InputStream
 import java.io.OutputStream
-
+import timber.log.Timber
 
 const val DEFAULT_SETTINGS = """
 screens {
@@ -102,12 +101,9 @@ object UserPreferenceSerializer : Serializer<UserPreference> {
     }
 
     override suspend fun writeTo(t: UserPreference, output: OutputStream) = t.writeTo(output)
-
 }
-
 
 val Context.dataStore: DataStore<UserPreference> by dataStore(
     fileName = "user_prefs.pb",
     serializer = UserPreferenceSerializer
 )
-

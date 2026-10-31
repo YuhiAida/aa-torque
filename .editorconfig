@@ -1,0 +1,7 @@
+root = true
+
+[*.{kt,kts}]
+# Matches the Android Studio formatter (Ctrl+Alt+L), so IDE edits and ktlint agree.
+ktlint_code_style = android_studio
+# Compose functions are PascalCase by convention.
+ktlint_function_naming_ignore_when_annotated_with = Composable

@@ -36,7 +36,7 @@ abstract class AlbumArt : CarFragment() {
                     metaDataToArt(it).hashCode()
                 }
                 .collect {
-                    Timber.i("Sending new metadata ${it}")
+                    Timber.i("Sending new metadata $it")
                     onMediaChanged(it)
                 }
         }
@@ -91,28 +91,24 @@ abstract class AlbumArt : CarFragment() {
         }
     }
 
-    open fun isActive(state: PlaybackState?): Boolean {
-        return when (state?.state) {
-            PlaybackState.STATE_FAST_FORWARDING,
-            PlaybackState.STATE_REWINDING,
-            PlaybackState.STATE_SKIPPING_TO_PREVIOUS,
-            PlaybackState.STATE_SKIPPING_TO_NEXT,
-            PlaybackState.STATE_SKIPPING_TO_QUEUE_ITEM,
-            PlaybackState.STATE_BUFFERING,
-            PlaybackState.STATE_CONNECTING,
-            PlaybackState.STATE_PLAYING -> true
+    open fun isActive(state: PlaybackState?): Boolean = when (state?.state) {
+        PlaybackState.STATE_FAST_FORWARDING,
+        PlaybackState.STATE_REWINDING,
+        PlaybackState.STATE_SKIPPING_TO_PREVIOUS,
+        PlaybackState.STATE_SKIPPING_TO_NEXT,
+        PlaybackState.STATE_SKIPPING_TO_QUEUE_ITEM,
+        PlaybackState.STATE_BUFFERING,
+        PlaybackState.STATE_CONNECTING,
+        PlaybackState.STATE_PLAYING -> true
 
-            else -> false
-        }
+        else -> false
     }
 
-    fun metaDataToArt(medadata: MediaMetadata?): Bitmap? {
-        return medadata?.getBitmap(
-            MediaMetadata.METADATA_KEY_ART
-        ) ?: medadata?.getBitmap(
-            MediaMetadata.METADATA_KEY_ALBUM_ART
-        )
-    }
+    fun metaDataToArt(medadata: MediaMetadata?): Bitmap? = medadata?.getBitmap(
+        MediaMetadata.METADATA_KEY_ART
+    ) ?: medadata?.getBitmap(
+        MediaMetadata.METADATA_KEY_ALBUM_ART
+    )
 
     abstract suspend fun onMediaChanged(medadata: MediaMetadata?)
 }

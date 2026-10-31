@@ -4,7 +4,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 
-abstract class AwareObserver<T>: Observer<T?> {
+abstract class AwareObserver<T> : Observer<T?> {
     var attachedTo: MutableLiveData<T?>? = null
     fun bind(viewLifecycleOwner: LifecycleOwner, binder: MutableLiveData<T?>) {
         unbind()

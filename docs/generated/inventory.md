@@ -6,67 +6,67 @@ Every source file under `app/src/main/java`, grouped by package. CI regenerates
 this file on each push, so it always matches the tree.
 
 - Files: 40 (37 Kotlin, 3 Java)
-- Lines: 7971
+- Lines: 8002
 - Packages: 5
 
 ## `com/aatorque/prefs`
 
 | File | Lines |
 |---|---|
-| `AlarmFragment.kt` | 452 |
-| `ColorPreference.kt` | 45 |
-| `DashboardPreviewFragment.kt` | 82 |
-| `FormulaPreference.kt` | 124 |
-| `ImageListPreference.kt` | 131 |
-| `PrefStore.kt` | 113 |
-| `SettingsActivity.kt` | 440 |
-| `SettingsDashboard.kt` | 137 |
-| `SettingsFragment.kt` | 213 |
-| `SettingsPIDFragment.kt` | 315 |
+| `AlarmFragment.kt` | 443 |
+| `ColorPreference.kt` | 46 |
+| `DashboardPreviewFragment.kt` | 81 |
+| `FormulaPreference.kt` | 117 |
+| `ImageListPreference.kt` | 126 |
+| `PrefStore.kt` | 109 |
+| `SettingsActivity.kt` | 448 |
+| `SettingsDashboard.kt` | 145 |
+| `SettingsFragment.kt` | 214 |
+| `SettingsPIDFragment.kt` | 311 |
 | `SettingsViewModel.kt` | 22 |
 
 ## `com/aatorque/stats`
 
 | File | Lines |
 |---|---|
-| `AlbumArt.kt` | 118 |
-| `App.kt` | 55 |
+| `AlbumArt.kt` | 114 |
+| `App.kt` | 53 |
 | `CacheLogTree.kt` | 52 |
 | `CarFragment.kt` | 15 |
 | `CarService.java` | 10 |
-| `CreditsFragment.kt` | 43 |
-| `DashboardFragment.kt` | 473 |
-| `LegendAdatper.kt` | 45 |
+| `CreditsFragment.kt` | 44 |
+| `DashboardFragment.kt` | 480 |
+| `LegendAdapter.kt` | 46 |
 | `ListMenuAdapter.java` | 90 |
-| `MainCarActivity.kt` | 183 |
-| `NoninteractiveGraphView.kt` | 18 |
-| `NotiService.kt` | 14 |
-| `SizedImageIndicator.kt` | 28 |
-| `TorqueChart.kt` | 171 |
-| `TorqueData.kt` | 152 |
-| `TorqueDisplay.kt` | 105 |
-| `TorqueGauge.kt` | 300 |
-| `TorqueRefresher.kt` | 120 |
-| `TorqueService.kt` | 103 |
-| `TorqueServiceWrapper.kt` | 157 |
-| `TorqueSpeedometer.kt` | 107 |
-| `ViewAdapter.kt` | 127 |
+| `MainCarActivity.kt` | 192 |
+| `NoninteractiveGraphView.kt` | 16 |
+| `NotiService.kt` | 13 |
+| `SizedImageIndicator.kt` | 29 |
+| `TorqueChart.kt` | 172 |
+| `TorqueData.kt` | 154 |
+| `TorqueDisplay.kt` | 109 |
+| `TorqueGauge.kt` | 314 |
+| `TorqueRefresher.kt` | 121 |
+| `TorqueService.kt` | 105 |
+| `TorqueServiceWrapper.kt` | 154 |
+| `TorqueSpeedometer.kt` | 105 |
+| `ViewAdapter.kt` | 152 |
 
 ## `com/aatorque/ui/theme`
 
 | File | Lines |
 |---|---|
-| `Color.kt` | 67 |
-| `Theme.kt` | 90 |
+| `Color.kt` | 66 |
+| `Theme.kt` | 85 |
 
 ## `com/aatorque/utils`
 
 | File | Lines |
 |---|---|
-| `AnimatedLine.kt` | 74 |
+| `AnimatedLine.kt` | 72 |
 | `AwareObserver.kt` | 19 |
-| `CountdownLatch.kt` | 50 |
-| `OpenCloseAnimator.kt` | 42 |
+| `CountDownLatch.kt` | 48 |
+| `OpenCloseAnimator.kt` | 41 |
 
 ## `org/prowl/torque/remote`
 

@@ -35,13 +35,12 @@ import com.aatorque.prefs.dataStore
 import com.aatorque.stats.databinding.FragmentDashboardBinding
 import com.aatorque.utils.CountDownLatch
 import com.google.android.apps.auto.sdk.StatusBarController
+import kotlin.math.abs
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import kotlin.math.abs
-
 
 open class DashboardFragment : AlbumArt() {
     lateinit var rootView: View
@@ -95,7 +94,6 @@ open class DashboardFragment : AlbumArt() {
         const val DISPLAY_OFFSET = 3
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         settingsViewModel = ViewModelProvider(this)[SettingsViewModel::class.java]
@@ -107,22 +105,22 @@ open class DashboardFragment : AlbumArt() {
                 call(context.dataStore.data)
             }
         }
-        registerWithView {
-            data -> data.map {
+        registerWithView { data ->
+            data.map {
                 it.selectedBackground
             }.distinctUntilChanged().collect {
                 setupBackground(it)
                 albumArtReady.countDown()
             }
         }
-        registerWithView {
-            data -> data.collect {
+        registerWithView { data ->
+            data.collect {
                 val screenIndex = abs(it.currentScreen) % it.screensCount
                 val screens = it.screensList[screenIndex]
                 val showChartChanged = binding.showChart != it.showChart
-            binding.title = screens.title
-            binding.showBtns = false
-            settingsViewModel.chartVisible.value = it.showChart
+                binding.title = screens.title
+                binding.showBtns = false
+                settingsViewModel.chartVisible.value = it.showChart
                 settingsViewModel.minMaxBelow.value = it.minMaxBelow
                 shouldDisplayArtwork = it.albumArt
 
@@ -155,55 +153,60 @@ open class DashboardFragment : AlbumArt() {
                 torqueRefresher.makeExecutors(torqueService)
             }
         }
-        registerWithView {
-            data -> data.map {
+        registerWithView { data ->
+            data.map {
                 it.opacity
             }.distinctUntilChanged().collect {
                 binding.gaugeAlpha = if (it == 0) 1f else 0.01f * it
             }
         }
-        registerWithView {
-            data -> data.map {
+        registerWithView { data ->
+            data.map {
                 it.darkenArt
             }.distinctUntilChanged().collect {
                 albumColorFilter = if (it != 0) {
                     PorterDuffColorFilter(
                         Color.valueOf(0f, 0f, 0f, it * 0.01f).toArgb(),
-                        PorterDuff.Mode.DARKEN,
+                        PorterDuff.Mode.DARKEN
                     )
-                } else null
+                } else {
+                    null
+                }
             }
         }
         if (Build.VERSION.SDK_INT >= 31) {
-            registerWithView {
-                data -> data.map {
+            registerWithView { data ->
+                data.map {
                     it.blurArt
                 }.distinctUntilChanged().collect {
                     albumBlurEffect = if (it != 0) {
                         val blurFloat = it.toFloat()
                         RenderEffect.createBlurEffect(
-                            blurFloat, blurFloat,
+                            blurFloat,
+                            blurFloat,
                             Shader.TileMode.MIRROR
                         )
-                    } else null
+                    } else {
+                        null
+                    }
                 }
             }
         }
-        registerWithView {
-            data -> data.map {
+        registerWithView { data ->
+            data.map {
                 it.selectedFont
             }.distinctUntilChanged().collect(
                 this@DashboardFragment::setupTypeface
             )
         }
-        registerWithView {
-            data -> data.map {
+        registerWithView { data ->
+            data.map {
                 it.centerGaugeLarge
             }.distinctUntilChanged().collect(
                 this@DashboardFragment::updateScale
             )
         }
-        registerWithView{
+        registerWithView {
             torqueRefresher.connectStatus.collect {
                 binding.status = when (it) {
                     ConnectStatus.CONNECTING_TORQUE -> R.string.status_connecting_torque
@@ -216,7 +219,8 @@ open class DashboardFragment : AlbumArt() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         Timber.i("onCreateView")
@@ -238,8 +242,8 @@ open class DashboardFragment : AlbumArt() {
         mBtnNext = binding.nextBtn
         mBtnPrev = binding.prevButton
         mBtnNext.setOnClickListener { setScreen(1) }
-        mBtnPrev.setOnClickListener  { setScreen(-1) }
-        binding.chartBtn.setOnClickListener { toggleShowChart(binding.showChart != true)  }
+        mBtnPrev.setOnClickListener { setScreen(-1) }
+        binding.chartBtn.setOnClickListener { toggleShowChart(binding.showChart != true) }
         mTitleElement = binding.textTitle
         mWrapper = binding.includeWrap
         mConStatus = binding.conStatus
@@ -259,42 +263,48 @@ open class DashboardFragment : AlbumArt() {
         torqueChart = childFragmentManager.findFragmentById(R.id.chartFrag)!! as TorqueChart
         val filter = IntentFilter().apply { addAction("KEY_DOWN") }
         LocalBroadcastManager.getInstance(requireContext())
-            .registerReceiver(object : BroadcastReceiver() {
-                override fun onReceive(p0: Context?, intent: Intent?) {
-                    if (intent?.getIntExtra("KEY_CODE", 0) == KeyEvent.KEYCODE_DPAD_CENTER) {
-                        toggleShowChart(binding.showChart != true)
-                    }
-                }
-            }, filter)
-        val gestureDetector =
-            GestureDetector(rootView.context, object : GestureDetector.SimpleOnGestureListener() {
-                override fun onFling(
-                    e1: MotionEvent?,
-                    e2: MotionEvent,
-                    velocityX: Float,
-                    velocityY: Float
-                ): Boolean {
-                    if (e1 != null) {
-                        val diffX = e2.x - e1.x
-                        val diffY = e2.y - e1.y
-
-                        // Set a minimum swipe distance threshold (e.g., 100 pixels)
-                        if (abs(diffX) > abs(diffY) && abs(diffX) > 100) {
-                            if (diffX > 0) {
-                                // Swipe Right
-                                setScreen(-1)
-                            } else {
-                                // Swipe Left
-                                setScreen(1)
-                            }
-                            return true
-                        } else if (abs(diffY) > abs(diffX) && abs(diffY) > 100) {
+            .registerReceiver(
+                object : BroadcastReceiver() {
+                    override fun onReceive(p0: Context?, intent: Intent?) {
+                        if (intent?.getIntExtra("KEY_CODE", 0) == KeyEvent.KEYCODE_DPAD_CENTER) {
                             toggleShowChart(binding.showChart != true)
                         }
                     }
-                    return false
+                },
+                filter
+            )
+        val gestureDetector =
+            GestureDetector(
+                rootView.context,
+                object : GestureDetector.SimpleOnGestureListener() {
+                    override fun onFling(
+                        e1: MotionEvent?,
+                        e2: MotionEvent,
+                        velocityX: Float,
+                        velocityY: Float
+                    ): Boolean {
+                        if (e1 != null) {
+                            val diffX = e2.x - e1.x
+                            val diffY = e2.y - e1.y
+
+                            // Set a minimum swipe distance threshold (e.g., 100 pixels)
+                            if (abs(diffX) > abs(diffY) && abs(diffX) > 100) {
+                                if (diffX > 0) {
+                                    // Swipe Right
+                                    setScreen(-1)
+                                } else {
+                                    // Swipe Left
+                                    setScreen(1)
+                                }
+                                return true
+                            } else if (abs(diffY) > abs(diffX) && abs(diffY) > 100) {
+                                toggleShowChart(binding.showChart != true)
+                            }
+                        }
+                        return false
+                    }
                 }
-            })
+            )
         rootView.setOnTouchListener { v, event ->
             gestureDetector.onTouchEvent(event)
             if (event.action == MotionEvent.ACTION_UP) {
@@ -306,7 +316,6 @@ open class DashboardFragment : AlbumArt() {
         return rootView
     }
 
-
     fun setScreen(direction: Int) {
         if (screensAnimating) return
         screensAnimating = true
@@ -317,13 +326,13 @@ open class DashboardFragment : AlbumArt() {
         ).alpha(0f).setListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator) {
                 lifecycleScope.launch {
-                    requireContext().dataStore.updateData {
-                            currentSettings ->
+                    requireContext().dataStore.updateData { currentSettings ->
                         currentSettings.toBuilder().setCurrentScreen(
-                            (currentSettings.screensCount +
+                            (
+                                currentSettings.screensCount +
                                     currentSettings.currentScreen +
                                     direction
-                                    ) % currentSettings.screensCount
+                                ) % currentSettings.screensCount
                         ).build()
                     }
                     mWrapper.translationX = (rootView.width * direction).toFloat()
@@ -468,6 +477,4 @@ open class DashboardFragment : AlbumArt() {
         }
         settingsViewModel.setFont(font)
     }
-
-
 }

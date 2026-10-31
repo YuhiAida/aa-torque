@@ -27,8 +27,7 @@ import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import kotlin.properties.Delegates
 
-
-class TorqueChart: Fragment() {
+class TorqueChart : Fragment() {
 
     class LegendBinding : ViewModel() {
         var color = MutableLiveData<Int>()
@@ -67,7 +66,7 @@ class TorqueChart: Fragment() {
         graph.legendRenderer.width = graph.width
         graph.viewport.isScalable = true
         graph.viewport.isScrollable = true
-        graph.gridLabelRenderer.labelFormatter = object: DefaultLabelFormatter() {
+        graph.gridLabelRenderer.labelFormatter = object : DefaultLabelFormatter() {
             override fun formatLabel(value: Double, isValueX: Boolean): String {
                 if (isValueX) {
                     val diff = (value * 0.001) - (startDate * 0.001)
@@ -85,7 +84,6 @@ class TorqueChart: Fragment() {
         graph.gridLabelRenderer.verticalLabelsColor = Color.WHITE
         graph.gridLabelRenderer.isHorizontalLabelsVisible = true
         graph.gridLabelRenderer.isVerticalLabelsVisible = false
-
 
         view.viewTreeObserver.addOnGlobalLayoutListener(object :
             ViewTreeObserver.OnGlobalLayoutListener {
@@ -113,7 +111,9 @@ class TorqueChart: Fragment() {
             td.display.chartColor.let {
                 if (it == 0) {
                     defaultColors.getColor(index, Color.WHITE)
-                } else it
+                } else {
+                    it
+                }
             }
         }
         defaultColors.recycle()
@@ -131,7 +131,7 @@ class TorqueChart: Fragment() {
                 resources.getIdentifier(
                     data.getDrawableName(),
                     "drawable",
-                    requireContext().packageName,
+                    requireContext().packageName
                 )
             } catch (e: Resources.NotFoundException) {
                 R.drawable.ic_none
@@ -165,7 +165,8 @@ class TorqueChart: Fragment() {
         val now = Date()
         val scaled = (data.lastData / (data.display.maxValue - data.display.minValue)) * 100f
         line?.appendData(DataPoint(now, scaled), true, 100)
-        if (data.hasReceivedNonZero)
+        if (data.hasReceivedNonZero) {
             binding.value.value = "${data.lastDataStr}${data.display.unit}"
+        }
     }
 }
