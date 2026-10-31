@@ -66,6 +66,17 @@ This also applies when you move from the upstream build to this fork: both use t
 name `com.aatorque.stats`, so the fork replaces upstream and the record is rewritten. Install
 the fork through KingInstaller, not by tapping the APK.
 
+### The record is set per install, not kept (measured, Android 16)
+
+| Install path | `installerPackageName` | `initiatingPackageName` |
+|---|---|---|
+| `adb install -i com.android.vending` | `com.android.vending` | `com.android.shell` |
+| update **without** `-i` | `null` | `com.android.shell` |
+| update **with** `-i com.android.vending` | `com.android.vending` | `com.android.shell` |
+
+The installer field is not sticky: an update rewritten by another path clears it. That is why an
+update always has to go through KingInstaller, even when the version only moves by a patch.
+
 ## When it still does not appear
 
 - Check both fields again. A phone update, or an app that reinstalls packages, can reset the
