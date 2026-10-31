@@ -9,7 +9,8 @@ import androidx.preference.Preference
 import com.aatorque.stats.R
 import com.rarepebble.colorpicker.ColorPickerView
 
-class ColorPreference(context: Context, attributeSet: AttributeSet) : Preference(context, attributeSet) {
+class ColorPreference(context: Context, attributeSet: AttributeSet) :
+    Preference(context, attributeSet) {
 
     var colorValue = 0
         set(value) {

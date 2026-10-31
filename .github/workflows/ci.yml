@@ -23,8 +23,14 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
 
-      - name: Build Release apk
-        run: echo "" >> ./local.properties && ./gradlew lintRelease
+      - name: Prepare Gradle
+        run: echo "" >> ./local.properties
+
+      - name: Check Kotlin style
+        run: ./gradlew ktlintCheck
+
+      - name: Lint the release variant
+        run: ./gradlew lintRelease
 
       - name: Generate source inventory
         run: python3 tools/gen_inventory.py

@@ -1,4 +1,5 @@
 @file:Suppress("MISSING_DEPENDENCY_CLASS", "MISSING_DEPENDENCY_SUPERCLASS")
+
 package com.aatorque.stats
 
 import android.content.Intent
@@ -18,7 +19,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import timber.log.Timber
-
 
 class MainCarActivity : CarActivity() {
     private var mCurrentFragmentTag: String? = null
@@ -73,7 +73,7 @@ class MainCarActivity : CarActivity() {
 */
         val fragmentManager = supportFragmentManager
 
-        //set fragments:
+        // set fragments:
         val carfragment: CarFragment = DashboardFragment()
         fragmentManager.beginTransaction()
             .add(R.id.fragment_container, carfragment, FRAGMENT_CAR)
@@ -93,7 +93,6 @@ class MainCarActivity : CarActivity() {
         carfragment.setupStatusBar(statusBarController)
         setIgnoreConfigChanges(0xFFFF)
     }
-
 
     override fun onSaveInstanceState(bundle: Bundle) {
         bundle.putString(CURRENT_FRAGMENT_KEY, mCurrentFragmentTag)
@@ -115,9 +114,13 @@ class MainCarActivity : CarActivity() {
 
         val manager = supportFragmentManager
         val currentFragment =
-            if (mCurrentFragmentTag == null) null else manager.findFragmentByTag(
-                mCurrentFragmentTag
-            )
+            if (mCurrentFragmentTag == null) {
+                null
+            } else {
+                manager.findFragmentByTag(
+                    mCurrentFragmentTag
+                )
+            }
         if (currentFragment != null) {
             val trans = manager.beginTransaction().detach(currentFragment)
             if (mCurrentFragmentTag == MENU_DASHBOARD) {
@@ -145,7 +148,13 @@ class MainCarActivity : CarActivity() {
         }
         val manager = supportFragmentManager
         val currentFragment =
-            if (mCurrentFragmentTag == null) null else manager.findFragmentByTag(mCurrentFragmentTag)
+            if (mCurrentFragmentTag ==
+                null
+            ) {
+                null
+            } else {
+                manager.findFragmentByTag(mCurrentFragmentTag)
+            }
         val newFragment = manager.findFragmentByTag(tag)
         val transaction = supportFragmentManager.beginTransaction()
         if (currentFragment != null) {
@@ -171,7 +180,7 @@ class MainCarActivity : CarActivity() {
     }
 
     companion object {
-        //menu stuff//
+        // menu stuff//
         const val MENU_DASHBOARD = "dashboard"
         const val MENU_CREDITS = "credits"
         const val MENU_STOPWATCH = "stopwatch"

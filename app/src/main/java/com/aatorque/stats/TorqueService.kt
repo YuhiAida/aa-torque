@@ -7,10 +7,10 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.DeadObjectException
 import android.os.IBinder
-import org.prowl.torque.remote.ITorqueService
-import timber.log.Timber
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import org.prowl.torque.remote.ITorqueService
+import timber.log.Timber
 
 class TorqueService {
     var torqueService: ITorqueService? = null
@@ -36,7 +36,7 @@ class TorqueService {
     }
 
     private val torqueConnection = object : ServiceConnection {
-        var forceReconnect: (()-> Unit)? = null
+        var forceReconnect: (() -> Unit)? = null
 
         /**
          * What to do when we get connected to Torque.
@@ -94,10 +94,12 @@ class TorqueService {
             onDestroy(context)
             context.bindService(intent, torqueConnection, Activity.BIND_AUTO_CREATE)
         }
-        Timber.i(
-            if (hasBound) "Connected to torque service!" else "Unable to connect to Torque plugin service"
-        )
+        val message = if (hasBound) {
+            "Connected to torque service!"
+        } else {
+            "Unable to connect to Torque plugin service"
+        }
+        Timber.i(message)
         return hasBound
     }
-
 }

@@ -75,27 +75,22 @@ val Operation.op: String
 data class FormData(
     var operation: Operation = Operation.GT,
     var value: Double = 0.0,
-    var color: Int = Color(255, 0, 0, 255).toArgb(),
+    var color: Int = Color(255, 0, 0, 255).toArgb()
 ) : Parcelable {
-    fun toColoring(): Coloring {
-        return Coloring.newBuilder()
-            .setColor(color)
-            .setOperation(operation)
-            .setValue(value)
-            .build()
-    }
+    fun toColoring(): Coloring = Coloring.newBuilder()
+        .setColor(color)
+        .setOperation(operation)
+        .setValue(value)
+        .build()
 
     companion object {
-        fun fromColoring(coloring: Coloring): FormData {
-            return FormData(
-                value=coloring.value,
-                operation=coloring.operation,
-                color=coloring.color,
-            )
-        }
+        fun fromColoring(coloring: Coloring): FormData = FormData(
+            value = coloring.value,
+            operation = coloring.operation,
+            color = coloring.color
+        )
     }
 }
-
 
 class StateModel : ViewModel() {
 
@@ -129,7 +124,7 @@ class AlarmFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?,
+        savedInstanceState: Bundle?
     ): View {
         val view = ComposeView(requireContext())
         view.apply {
@@ -144,7 +139,6 @@ class AlarmFragment : Fragment() {
     }
 }
 
-
 @Composable
 fun NewItemDialog(
     onConfirmation: (FormData) -> Unit,
@@ -158,7 +152,7 @@ fun NewItemDialog(
         onDismissRequest = {},
         title = {
             Text(
-                text = stringResource(R.string.add_item),
+                text = stringResource(R.string.add_item)
             )
         },
         text = {
@@ -185,7 +179,6 @@ fun NewItemDialog(
     )
 }
 
-
 @Composable
 fun OperationForm(state: MutableState<FormData>) {
     val expanded = remember { mutableStateOf(false) }
@@ -197,15 +190,14 @@ fun OperationForm(state: MutableState<FormData>) {
                 modifier = firstColWidth
             ) {
                 Text(text = stringResource(id = R.string.condition))
-                Button(
-                    onClick = {
-                        expanded.value = !expanded.value
-                    }) {
+                Button(onClick = {
+                    expanded.value = !expanded.value
+                }) {
                     Text(text = state.value.operation.op)
                 }
                 DropdownMenu(
                     expanded = expanded.value,
-                    onDismissRequest = { expanded.value = false },
+                    onDismissRequest = { expanded.value = false }
                 ) {
                     Operation.entries.forEach { s ->
                         if (s != Operation.UNRECOGNIZED) {
@@ -254,22 +246,21 @@ fun OperationForm(state: MutableState<FormData>) {
 }
 
 @Composable
-fun NumberField(
-    value: Number?,
-    onNumberChange: (Number?) -> Unit,
-) {
+fun NumberField(value: Number?, onNumberChange: (Number?) -> Unit) {
     val number = remember { mutableStateOf(value) }
     val textValue = remember {
         number.value = value
-        mutableStateOf(value?.toDouble()?.let {
-            if (it == 0.0) {
-                ""
-            } else if (it % 1.0 == 0.0) {
-                it.toInt().toString()
-            } else {
-                it.toString()
-            }
-        } ?: "")
+        mutableStateOf(
+            value?.toDouble()?.let {
+                if (it == 0.0) {
+                    ""
+                } else if (it % 1.0 == 0.0) {
+                    it.toInt().toString()
+                } else {
+                    it.toString()
+                }
+            } ?: ""
+        )
     }
 
     val numberRegex = remember { "[-]?[\\d]*[.]?[\\d]*".toRegex() }
@@ -293,7 +284,7 @@ fun NumberField(
 fun MainView(
     arguments: Bundle,
     model: StateModel = viewModel(),
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = isSystemInDarkTheme()
 ) {
     val openAlertDialog = remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -302,7 +293,9 @@ fun MainView(
     val screen = arguments.getInt("screen")
     val index = arguments.getInt("index")
 
-    fun getCurrentDisplay(pref: UserPreferenceOrBuilder): Pair<Display, (Int, Display.Builder) -> Screen.Builder> {
+    fun getCurrentDisplay(
+        pref: UserPreferenceOrBuilder
+    ): Pair<Display, (Int, Display.Builder) -> Screen.Builder> {
         val screenObj = pref.getScreens(screen).toBuilder()
         return if (isClock) {
             Pair(screenObj.getGauges(index), screenObj::setGauges)
@@ -310,7 +303,6 @@ fun MainView(
             Pair(screenObj.getDisplays(index), screenObj::setDisplays)
         }
     }
-
 
     LaunchedEffect(Unit) {
         context.dataStore.data.map {
@@ -322,7 +314,7 @@ fun MainView(
     }
     DisposableEffect(Unit) {
         onDispose {
-             CoroutineScope(Dispatchers.IO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 context.dataStore.updateData { currentSettings ->
                     return@updateData currentSettings.toBuilder().also { set1 ->
                         val toUpdate = getCurrentDisplay(set1)
@@ -350,7 +342,7 @@ fun MainView(
                         openAlertDialog.value = false
                         println("Confirmation registered") // Add logic here to handle confirmation.
                     },
-                    onDismissRequest = { openAlertDialog.value = false },
+                    onDismissRequest = { openAlertDialog.value = false }
                 )
             }
         }
@@ -364,7 +356,7 @@ fun MainView(
                 ) {
                     Icon(
                         Icons.Rounded.Add,
-                        contentDescription = stringResource(R.string.add_item),
+                        contentDescription = stringResource(R.string.add_item)
                     )
                     Text(text = stringResource(R.string.add_item))
                 }
@@ -376,7 +368,7 @@ fun MainView(
                     .padding(3.dp),
                 elevation = CardDefaults.cardElevation(
                     defaultElevation = 6.dp
-                ),
+                )
             ) {
                 Text(
                     text = stringResource(id = R.string.color_instruct),
@@ -399,17 +391,17 @@ fun VerticalReorderList(model: StateModel = viewModel()) {
         openAlertDialog.value != null -> {
             val willRemove = openAlertDialog.value!!
             NewItemDialog(
-                update=willRemove.copy(),
+                update = willRemove.copy(),
                 onDismissRequest = { openAlertDialog.value = null },
                 onConfirmation = {
                     model.delete(willRemove)
                     model.prependItem(it)
                     openAlertDialog.value = null
-                },
+                }
             )
         }
     }
-    Column{
+    Column {
         model.uiState.forEach { current ->
             ListItem(
                 headlineContent = {
@@ -430,7 +422,6 @@ fun VerticalReorderList(model: StateModel = viewModel()) {
                             .height(50.dp)
                             .width(50.dp)
                     ) {
-
                     }
                 },
 
@@ -440,12 +431,12 @@ fun VerticalReorderList(model: StateModel = viewModel()) {
                     }) {
                         Icon(
                             Icons.Filled.Delete,
-                            contentDescription = Icons.Filled.Delete.toString(),
+                            contentDescription = Icons.Filled.Delete.toString()
                         )
                     }
                 },
-                shadowElevation=3.dp,
-                tonalElevation=1.dp,
+                shadowElevation = 3.dp,
+                tonalElevation = 1.dp
             )
         }
     }

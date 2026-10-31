@@ -16,7 +16,6 @@ import com.github.anastr.speedviewlib.Gauge
 import com.github.anastr.speedviewlib.ImageSpeedometer
 import kotlin.math.roundToInt
 
-
 @BindingAdapter(
     "layout_constraintTop_toBottomOf",
     "layout_constraintBottom_toTopOf",
@@ -28,7 +27,17 @@ import kotlin.math.roundToInt
     "layout_constraintLeft_toLeftOf",
     requireAll = false
 )
-fun setConstraintTopToBottomOf(view: View, topBottom: Int?, bottomTop: Int?, rightLeft: Int?, topTop: Int?, leftRight: Int?, rightRight: Int?, bottomBottom: Int?, leftLeft: Int?) {
+fun setConstraintTopToBottomOf(
+    view: View,
+    topBottom: Int?,
+    bottomTop: Int?,
+    rightLeft: Int?,
+    topTop: Int?,
+    leftRight: Int?,
+    rightRight: Int?,
+    bottomBottom: Int?,
+    leftLeft: Int?
+) {
     val params = view.layoutParams as ConstraintLayout.LayoutParams
     params.topToBottom = topBottom ?: params.topToBottom
     params.bottomToTop = bottomTop ?: params.bottomToTop
@@ -42,14 +51,21 @@ fun setConstraintTopToBottomOf(view: View, topBottom: Int?, bottomTop: Int?, rig
     view.requestLayout()
 }
 
-
 @BindingAdapter("tickNumber")
 fun setBackground(view: ImageSpeedometer, tickNumber: Int) {
     view.tickNumber = tickNumber
     val typedArray =
-        view.context.theme.obtainStyledAttributes(intArrayOf(
-            if (tickNumber == 0) R.attr.themedEmptyDialBackground else R.attr.themedDialBackground
-        ))
+        view.context.theme.obtainStyledAttributes(
+            intArrayOf(
+                if (tickNumber ==
+                    0
+                ) {
+                    R.attr.themedEmptyDialBackground
+                } else {
+                    R.attr.themedDialBackground
+                }
+            )
+        )
     view.setBackgroundResource(typedArray.getResourceId(0, 0))
 }
 
@@ -79,16 +95,25 @@ fun setLayoutHeight(view: View, height: Int?, width: Int?) {
     view.layoutParams = layoutParams
 }
 
-fun convertDp(value: Int?): Int? {
-    return value?.let {
-        (it / (Resources.getSystem().displayMetrics.densityDpi.toFloat() / DisplayMetrics.DENSITY_DEFAULT)).roundToInt()
-    }
+fun convertDp(value: Int?): Int? = value?.let {
+    (
+        it /
+            (
+                Resources.getSystem().displayMetrics.densityDpi.toFloat() /
+                    DisplayMetrics.DENSITY_DEFAULT
+                )
+        ).roundToInt()
 }
 
-
-@BindingAdapter("android:layout_marginTop", "android:layout_marginLeft", "android:layout_marginRight", "android:layout_marginBottom", requireAll = false)
+@BindingAdapter(
+    "android:layout_marginTop",
+    "android:layout_marginLeft",
+    "android:layout_marginRight",
+    "android:layout_marginBottom",
+    requireAll = false
+)
 fun setLayoutMargin(view: View, top: Int?, left: Int?, right: Int?, bottom: Int?) {
-    val lp =  view.layoutParams as MarginLayoutParams?
+    val lp = view.layoutParams as MarginLayoutParams?
     lp?.setMargins(
         convertDp(left) ?: lp.leftMargin,
         convertDp(top) ?: lp.topMargin,

@@ -9,7 +9,6 @@ import android.view.View
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 
-
 class AnimatedLine(context: Context, attributeSet: AttributeSet) : View(context, attributeSet) {
 
     var lastRect: RectF? = null
@@ -42,7 +41,8 @@ class AnimatedLine(context: Context, attributeSet: AttributeSet) : View(context,
         lastRect?.let { lr ->
             paint?.let {
                 canvas.drawRect(
-                    lr, it
+                    lr,
+                    it
                 )
             }
         }
@@ -69,6 +69,4 @@ class AnimatedLine(context: Context, attributeSet: AttributeSet) : View(context,
             }
         }
     }
-
-
 }

@@ -83,6 +83,24 @@ wrong. Repair it as described in [aa-install-gate.md](aa-install-gate.md).
 build shows plausible values without Torque or an adapter. Do not use a debug build to judge
 whether the Torque binding works; use a release build and a real adapter.
 
+## Code style
+
+ktlint enforces style and CI blocks on it.
+
+```
+./gradlew ktlintCheck     # what CI runs
+./gradlew ktlintFormat    # fix the mechanical violations
+```
+
+The rules come from `.editorconfig` at the repository root: `android_studio` code style, so
+the Android Studio formatter and ktlint produce the same result. Compose functions are exempt
+from the lowercase naming rule. `org/prowl/torque` (Torque's AIDL mirror) and the
+`speedviewlib` submodule are excluded — both are third-party code.
+
+The plugin is `org.jlleitschuh.gradle.ktlint` with the ktlint CLI pinned to `1.8.0` in
+`app/build.gradle`. ktlint only fixes part of the rule set; the rest — naming, long lines,
+file names — needs a manual change.
+
 ## `dist/`
 
 `dist/` is git-ignored. A downloaded CI artifact usually lands there. It is scratch space,

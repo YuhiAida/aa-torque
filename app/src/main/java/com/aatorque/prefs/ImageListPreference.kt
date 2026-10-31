@@ -1,6 +1,5 @@
 package com.aatorque.prefs
 
-
 import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
@@ -16,12 +15,7 @@ import androidx.core.graphics.drawable.DrawableCompat
 import androidx.preference.ListPreference
 import com.aatorque.stats.R
 
-
-
-class ImageListPreference(
-    context: Context,
-    attrs: AttributeSet?
-) : ListPreference(context, attrs) {
+class ImageListPreference(context: Context, attrs: AttributeSet?) : ListPreference(context, attrs) {
     private var lastIconResource: Int? = null
 
     data class CustomListItem(
@@ -29,16 +23,17 @@ class ImageListPreference(
         val value: String,
         val iconRes: Int,
         var checked: Boolean,
-        val origIndex: Int,
+        val origIndex: Int
     )
     class CustomListAdapter(
         context: Context,
         private val layoutResource: Int,
         private val items: List<CustomListItem>,
-        private val tintColor: Int?,
+        private val tintColor: Int?
     ) : ArrayAdapter<CustomListItem>(context, layoutResource, items) {
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-            val view = convertView ?: LayoutInflater.from(context).inflate(layoutResource, parent, false)
+            val view =
+                convertView ?: LayoutInflater.from(context).inflate(layoutResource, parent, false)
             val item = items[position]
             val icon = view.findViewById<ImageView>(R.id.icon)
             val title = view.findViewById<TextView>(R.id.title)
@@ -49,7 +44,6 @@ class ImageListPreference(
             title.text = item.title
             return view
         }
-
     }
 
     var iconResArray: IntArray
@@ -58,16 +52,17 @@ class ImageListPreference(
     init {
         val typedArray = context.obtainStyledAttributes(attrs, R.styleable.ImageListPreference)
         tint = typedArray.getColor(R.styleable.ImageListPreference_tint, 0)
-        iconResArray = typedArray.getResourceId(R.styleable.ImageListPreference_entryImages, 0).let {
-            context.resources.obtainTypedArray(it).run {
-                val array = IntArray(length())
-                for (i in 0 until length()) {
-                    array[i] = getResourceId(i, 0)
+        iconResArray =
+            typedArray.getResourceId(R.styleable.ImageListPreference_entryImages, 0).let {
+                context.resources.obtainTypedArray(it).run {
+                    val array = IntArray(length())
+                    for (i in 0 until length()) {
+                        array[i] = getResourceId(i, 0)
+                    }
+                    recycle()
+                    array
                 }
-                recycle()
-                array
             }
-        }
         typedArray.recycle()
     }
 

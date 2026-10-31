@@ -16,9 +16,9 @@ import android.widget.Spinner
 import androidx.preference.Preference
 import com.aatorque.stats.R
 
-
 // A subclass of PreferenceDialogFragmentCompat that corresponds to ScriptPreference
-class FormulaPreference(context: Context, attributeSet: AttributeSet) : Preference(context, attributeSet) {
+class FormulaPreference(context: Context, attributeSet: AttributeSet) :
+    Preference(context, attributeSet) {
     lateinit var mSpinner: Spinner
     lateinit var mTextField: EditText
     val scriptNames: Array<String>
@@ -36,7 +36,7 @@ class FormulaPreference(context: Context, attributeSet: AttributeSet) : Preferen
         }
     }
 
-    fun valueToName(value: String, default: String =""): String {
+    fun valueToName(value: String, default: String = ""): String {
         val pos = scripts.indexOf(value.trim())
         return if (pos != -1) {
             scriptNames[pos]
@@ -55,14 +55,13 @@ class FormulaPreference(context: Context, attributeSet: AttributeSet) : Preferen
         mTextField = view.findViewById(R.id.text_field)
         view.findViewById<Button>(R.id.openDocumentation).setOnClickListener {
             context.startActivity(
-                    Intent(
+                Intent(
                     Intent.ACTION_VIEW,
-                    Uri.parse("https://ezylang.github.io/EvalEx/references/functions.html"),
+                    Uri.parse("https://ezylang.github.io/EvalEx/references/functions.html")
                 )
             )
         }
         mTextField.text = Editable.Factory.getInstance().newEditable(getValue())
-
 
         // Create an adapter for the spinner with the script names
         val adapter = ArrayAdapter(context, android.R.layout.simple_spinner_item, scriptNames)
@@ -96,11 +95,7 @@ class FormulaPreference(context: Context, attributeSet: AttributeSet) : Preferen
         mText = value
     }
 
-
-
-    fun getValue(): String {
-        return mText
-    }
+    fun getValue(): String = mText
 
     override fun onClick() {
         super.onClick()
@@ -119,6 +114,4 @@ class FormulaPreference(context: Context, attributeSet: AttributeSet) : Preferen
             .create()
             .show()
     }
-
-
 }

@@ -17,7 +17,6 @@ import com.aatorque.stats.databinding.FragmentDisplayBinding
 import com.aatorque.utils.AwareObserver
 import timber.log.Timber
 
-
 class TorqueDisplay : Fragment() {
     lateinit var rootView: View
     private var unit = ""
@@ -33,11 +32,13 @@ class TorqueDisplay : Fragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        settingsViewModel = ViewModelProvider(requireParentFragment())[SettingsViewModel::class.java]
+        settingsViewModel =
+            ViewModelProvider(requireParentFragment())[SettingsViewModel::class.java]
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         Timber.i("onCreateView")
@@ -53,6 +54,7 @@ class TorqueDisplay : Fragment() {
         }
         return binding.root
     }
+
     // this sets all the labels/values in an initial state, depending on the chosen options
     fun setupElement(data: TorqueData) {
         unit = data.display.unit
@@ -65,7 +67,9 @@ class TorqueDisplay : Fragment() {
         binding.icon = null
 
         if (data.pid != null) {
-            if (data.display.showLabel || data.display.icon == "" || data.display.icon == "ic_none") {
+            if (data.display.showLabel || data.display.icon == "" ||
+                data.display.icon == "ic_none"
+            ) {
                 binding.iconText = data.display.label
                 binding.icon = R.drawable.ic_none
             } else {
@@ -75,12 +79,12 @@ class TorqueDisplay : Fragment() {
                         resources.getIdentifier(
                             icon,
                             "drawable",
-                            requireContext().packageName,
+                            requireContext().packageName
                         )
                     } catch (e: Resources.NotFoundException) {
                         R.drawable.ic_none
                     }
-                )
+                    )
             }
             binding.value = "-"
         }

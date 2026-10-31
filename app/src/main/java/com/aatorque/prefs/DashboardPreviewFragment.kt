@@ -17,11 +17,11 @@ import com.aatorque.stats.R
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 
-
-class DashboardPreviewFragment: Fragment() {
+class DashboardPreviewFragment : Fragment() {
     val handler = Handler(Looper.getMainLooper())
     companion object {
-        val hideBars = WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.navigationBars()
+        val hideBars =
+            WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.navigationBars()
     }
 
     override fun onCreateView(
@@ -39,7 +39,7 @@ class DashboardPreviewFragment: Fragment() {
     }
 
     fun forceRotate(isOn: Boolean) {
-        requireActivity().requestedOrientation = if(isOn) {
+        requireActivity().requestedOrientation = if (isOn) {
             ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         } else {
             ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
@@ -64,15 +64,14 @@ class DashboardPreviewFragment: Fragment() {
         WindowCompat.setDecorFitsSystemWindows(window, true)
         WindowInsetsControllerCompat(window, window.decorView).show(hideBars)
     }
-
 }
 
 @StyleRes
-fun mapTheme(context: Context, theme: String?):  Int {
+fun mapTheme(context: Context, theme: String?): Int {
     val findIndex = context.resources.getStringArray(R.array.Themes).indexOf(theme)
     if (findIndex != -1) {
         val arr = context.resources.obtainTypedArray(R.array.ThemeList)
-        try{
+        try {
             return arr.getResourceId(findIndex, R.style.AppTheme_AudiVC)
         } finally {
             arr.recycle()

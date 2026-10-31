@@ -1,14 +1,12 @@
 package com.aatorque.utils
 
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlin.coroutines.Continuation
-import kotlin.coroutines.resume
 
-class CountDownLatch(
-    initialCount: Int
-) {
+class CountDownLatch(initialCount: Int) {
     private var count = initialCount
     private val mutex = Mutex()
     private val awaiters = mutableSetOf<Continuation<Unit>>()

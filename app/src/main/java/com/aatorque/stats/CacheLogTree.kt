@@ -3,7 +3,7 @@ package com.aatorque.stats
 import android.util.Log
 import timber.log.Timber
 
-class CacheLogTree: Timber.DebugTree() {
+class CacheLogTree : Timber.DebugTree() {
 
     companion object {
         const val KEEP_LOGS = 1_000
@@ -13,7 +13,7 @@ class CacheLogTree: Timber.DebugTree() {
         val priority: Int,
         val tag: String?,
         val message: String,
-        val throwable: Throwable?,
+        val throwable: Throwable?
     )
 
     val logCache = ArrayDeque<LogDesc>(KEEP_LOGS)

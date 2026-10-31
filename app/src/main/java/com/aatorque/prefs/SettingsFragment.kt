@@ -16,13 +16,13 @@ import androidx.preference.SeekBarPreference
 import com.aatorque.datastore.UserPreference
 import com.aatorque.stats.NotiService
 import com.aatorque.stats.R
+import java.util.Collections
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.Collections
 
 class SettingsFragment : PreferenceFragmentCompat() {
     lateinit var numScreensPref: EditTextPreference
@@ -70,7 +70,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                                 UserPreferenceSerializer.defaultScreen.build()
                             )
                             bldr = bldr.addAllScreens(newItms.toMutableList())
-                            Timber.i("${newItms.size} added, ${intVal} specified")
+                            Timber.i("${newItms.size} added, $intVal specified")
                         }
                         return@updateData bldr.build()
                     }
@@ -80,30 +80,26 @@ class SettingsFragment : PreferenceFragmentCompat() {
             return@setOnPreferenceChangeListener false
         }
 
-        themePref.setOnPreferenceChangeListener {
-            _, newValue ->
+        themePref.setOnPreferenceChangeListener { _, newValue ->
             updateDatastorePref {
                 it.setSelectedTheme(newValue as String)
             }
             return@setOnPreferenceChangeListener true
         }
-        fontPref.setOnPreferenceChangeListener {
-                preference, newValue ->
+        fontPref.setOnPreferenceChangeListener { preference, newValue ->
             updateDatastorePref {
                 it.setSelectedFont(newValue as String)
             }
             Timber.i("Setting font $newValue")
             return@setOnPreferenceChangeListener true
         }
-        backgroundPref.setOnPreferenceChangeListener {
-                preference, newValue ->
+        backgroundPref.setOnPreferenceChangeListener { preference, newValue ->
             updateDatastorePref {
                 it.setSelectedBackground(newValue as String)
             }
             return@setOnPreferenceChangeListener true
         }
-        centerGaugeLargePref.setOnPreferenceChangeListener {
-                preference, newValue ->
+        centerGaugeLargePref.setOnPreferenceChangeListener { preference, newValue ->
             updateDatastorePref {
                 it.setCenterGaugeLarge(newValue as Boolean)
             }
@@ -117,7 +113,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
         mediaBgPref.setOnPreferenceChangeListener { preference, newValue ->
             updateDatastorePref {
-                if (newValue as Boolean && !NotiService.isNotificationAccessEnabled(requireContext())) {
+                if (newValue as Boolean &&
+                    !NotiService.isNotificationAccessEnabled(requireContext())
+                ) {
                     startActivity(
                         Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS").apply {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -172,29 +170,32 @@ class SettingsFragment : PreferenceFragmentCompat() {
             }
         }
         lifecycleScope.launch {
-            requireContext().dataStore.data.distinctUntilChangedBy{
+            requireContext().dataStore.data.distinctUntilChangedBy {
                 it.screensList.map { it.title }
             }.collect { userPreference ->
                 numScreensPref.text = userPreference.screensCount.toString()
                 dashboardsCat.removeAll()
-                userPreference.screensList.forEachIndexed {
-                        i, screen ->
-                    dashboardsCat.addPreference(Preference(requireContext()).also {
-                        it.title = requireContext().getString(
-                            R.string.pref_data_element_settings,
-                             i + 1
-                        )
-                        it.key = "dashboard_$i"
-                        it.fragment = SettingsDashboard::class.java.canonicalName
-                        it.summary = screen.title
-                    })
+                userPreference.screensList.forEachIndexed { i, screen ->
+                    dashboardsCat.addPreference(
+                        Preference(requireContext()).also {
+                            it.title = requireContext().getString(
+                                R.string.pref_data_element_settings,
+                                i + 1
+                            )
+                            it.key = "dashboard_$i"
+                            it.fragment = SettingsDashboard::class.java.canonicalName
+                            it.summary = screen.title
+                        }
+                    )
                 }
             }
         }
     }
 
     @OptIn(DelicateCoroutinesApi::class)
-    private fun updateDatastorePref(updateBuilder: (obj: UserPreference.Builder) -> UserPreference.Builder) {
+    private fun updateDatastorePref(
+        updateBuilder: (obj: UserPreference.Builder) -> UserPreference.Builder
+    ) {
         GlobalScope.launch(Dispatchers.IO) {
             requireContext().dataStore.updateData { currentSettings ->
                 updateBuilder(currentSettings.toBuilder()).build()

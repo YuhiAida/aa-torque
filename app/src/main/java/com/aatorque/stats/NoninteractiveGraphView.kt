@@ -12,7 +12,5 @@ class NoninteractiveGraphView @JvmOverloads constructor(
     defStyle: Int = 0
 ) : GraphView(context, attrs, defStyle) {
     @SuppressLint("ClickableViewAccessibility")
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        return false
-    }
+    override fun onTouchEvent(event: MotionEvent?): Boolean = false
 }

@@ -6,14 +6,15 @@ import android.graphics.drawable.Drawable
 import com.github.anastr.speedviewlib.components.indicators.ImageIndicator
 import com.github.anastr.speedviewlib.components.indicators.Indicator
 
-class SizedImageIndicator
 /**
  * create indicator from bitmap, the indicator direction must be up.
  *
  * center indicator position will be center of speedometer.
  * @param context you can use `applicationContext`.
  * @param bitmapIndicator the indicator.
- */(context: Context, private val bitmapIndicator: Drawable) : Indicator<ImageIndicator>(context) {
+ */
+class SizedImageIndicator(context: Context, private val bitmapIndicator: Drawable) :
+    Indicator<ImageIndicator>(context) {
 
     override fun draw(canvas: Canvas) {
         bitmapIndicator.draw(canvas)

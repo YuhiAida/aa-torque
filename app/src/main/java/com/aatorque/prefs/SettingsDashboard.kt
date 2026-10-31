@@ -25,18 +25,18 @@ class SettingsDashboard : PreferenceFragmentCompat() {
     val clockText = arrayOf(
         R.string.pref_leftclock,
         R.string.pref_centerclock,
-        R.string.pref_rightclock,
+        R.string.pref_rightclock
     )
     val clockIcon = arrayOf(
         R.drawable.ic_settings_clockl,
         R.drawable.ic_settings_clockc,
-        R.drawable.ic_settings_clockr,
+        R.drawable.ic_settings_clockr
     )
     val displayIcon = arrayOf(
         R.drawable.ic_settings_view1,
         R.drawable.ic_settings_view2,
         R.drawable.ic_settings_view3,
-        R.drawable.ic_settings_view4,
+        R.drawable.ic_settings_view4
     )
     var mBound = false
 
@@ -53,7 +53,11 @@ class SettingsDashboard : PreferenceFragmentCompat() {
                             requireContext().dataStore.data.collect { userPreference ->
                                 val screen = userPreference.getScreens(dbIndex)
                                 performanceTitle.text = screen.title
-                                performanceTitle.title = resources.getString(R.string.pref_title_performance, dbIndex + 1)
+                                performanceTitle.title =
+                                    resources.getString(
+                                        R.string.pref_title_performance,
+                                        dbIndex + 1
+                                    )
                                 optionsCat.removeAll()
                                 val sources = arrayOf(screen.gaugesList, screen.displaysList)
                                 val texts = arrayOf(
@@ -67,7 +71,7 @@ class SettingsDashboard : PreferenceFragmentCompat() {
                                     sources[i].forEachIndexed { j, screen ->
                                         optionsCat.addPreference(
                                             Preference(requireContext()).also {
-                                                it.key = "${type}_${dbIndex}_${j}"
+                                                it.key = "${type}_${dbIndex}_$j"
                                                 it.summary = pids.firstOrNull { pid ->
                                                     "torque_${pid.first}" == screen.pid
                                                 }?.second?.get(0) ?: ""
@@ -76,8 +80,15 @@ class SettingsDashboard : PreferenceFragmentCompat() {
                                                     requireContext(),
                                                     icons[i][j]
                                                 )
-                                                DrawableCompat.setTint(it.icon!!, resources.getColor(R.color.tintColor, requireContext().theme))
-                                                it.fragment = SettingsPIDFragment::class.java.canonicalName
+                                                DrawableCompat.setTint(
+                                                    it.icon!!,
+                                                    resources.getColor(
+                                                        R.color.tintColor,
+                                                        requireContext().theme
+                                                    )
+                                                )
+                                                it.fragment =
+                                                    SettingsPIDFragment::class.java.canonicalName
                                             }
                                         )
                                     }
@@ -85,7 +96,6 @@ class SettingsDashboard : PreferenceFragmentCompat() {
                             }
                         }
                     }
-
                 }
             }
         }
@@ -95,9 +105,8 @@ class SettingsDashboard : PreferenceFragmentCompat() {
         }
     }
 
-    fun dashboardIndex(): Int {
-        return requireArguments().getCharSequence("prefix")?.split("_")!!.last().toInt()
-    }
+    fun dashboardIndex(): Int =
+        requireArguments().getCharSequence("prefix")?.split("_")!!.last().toInt()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -133,5 +142,4 @@ class SettingsDashboard : PreferenceFragmentCompat() {
             mBound = false
         }
     }
-
 }

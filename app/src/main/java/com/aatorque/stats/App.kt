@@ -8,18 +8,16 @@ import org.acra.data.StringFormat
 import org.acra.ktx.initAcra
 import timber.log.Timber
 
-
 class App : Application() {
 
     val logTree = CacheLogTree()
-
 
     override fun onCreate() {
         super.onCreate()
         Timber.plant(logTree)
         fixAndroid14Perms()
     }
-    
+
     fun fixAndroid14Perms() {
         for (file in getDir("car_sdk_impl", Context.MODE_PRIVATE).listFiles() ?: emptyArray()) {
             if (file.isDirectory) {
@@ -33,7 +31,7 @@ class App : Application() {
         }
     }
 
-    override fun attachBaseContext(base:Context) {
+    override fun attachBaseContext(base: Context) {
         super.attachBaseContext(base)
 
         initAcra {
@@ -43,11 +41,11 @@ class App : Application() {
                 text = "App crashed. Tap to report."
             }
             mailSender {
-                //required
+                // required
                 mailTo = "zgronick+zcrz@gmzil.com".replace("z", "a")
-                //defaults to true
+                // defaults to true
                 reportAsFile = false
-                //defaults to ACRA-report.stacktrace
+                // defaults to ACRA-report.stacktrace
                 reportFileName = "Crash.txt"
             }
         }

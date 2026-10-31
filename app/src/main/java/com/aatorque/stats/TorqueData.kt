@@ -9,8 +9,8 @@ import com.aatorque.datastore.Operation
 import com.ezylang.evalex.BaseException
 import com.ezylang.evalex.Expression
 import com.ezylang.evalex.data.EvaluationValue
-import timber.log.Timber
 import java.util.concurrent.ScheduledFuture
+import timber.log.Timber
 
 class TorqueData(var display: Display) {
     companion object {
@@ -80,7 +80,6 @@ class TorqueData(var display: Display) {
         }
     }
 
-
     init {
         val value = display.pid
         if (value.startsWith(PREFIX)) {
@@ -91,12 +90,15 @@ class TorqueData(var display: Display) {
     private fun convertValue(value: Double): Pair<Double, String> {
         val numberFormatter = if (display.wholeNumbers) intPlaces else twoPlaces
         if (!display.enableScript || display.customScript == "") {
-            return Pair(value, try{
-                numberFormatter.format(value)
-            } catch (ex: IllegalArgumentException) {
-                Timber.e("Exception formatting unconverted value $value", ex)
-                value.toString()
-            })
+            return Pair(
+                value,
+                try {
+                    numberFormatter.format(value)
+                } catch (ex: IllegalArgumentException) {
+                    Timber.e("Exception formatting unconverted value $value", ex)
+                    value.toString()
+                }
+            )
         }
         if (expression == null) {
             val strExp = display.customScript.replace("[x×]".toRegex(), "*")
@@ -112,12 +114,13 @@ class TorqueData(var display: Display) {
             }
             Pair(result.numberValue.toDouble(), asString)
         } catch (ex: Exception) {
-            when(ex) {
+            when (ex) {
                 is BaseException, is NoSuchElementException, is NumberFormatException -> {
                     Timber.e("Unable to parse", ex)
                     ex.printStackTrace()
                     Pair(0.0, "Error")
                 }
+
                 else -> throw ex
             }
         }
@@ -148,5 +151,4 @@ class TorqueData(var display: Display) {
             notifyUpdate = null
         }
     }
-
 }
