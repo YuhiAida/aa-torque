@@ -81,11 +81,18 @@ jobs:
 
       - name: Restore keystore
         run: |
-          echo ${{ secrets.DEBUG_KEYSTORE }} | base64 -d > $HOME/debug.keystore
+          # app/build.gradle sets `signingConfig signingConfigs.debug` on the release build
+          # type, and AGP ignores the -Pandroid.injected.signing.* flags when a signingConfig
+          # is already declared. So the key has to be the debug keystore AGP looks for, or
+          # every run signs with a freshly generated one and releases cannot update each other.
+          mkdir -p "$HOME/.android"
+          echo ${{ secrets.DEBUG_KEYSTORE }} | base64 -d > "$HOME/.android/debug.keystore"
+          # Kept for the upstream build path, which passes the file explicitly.
+          cp "$HOME/.android/debug.keystore" "$HOME/debug.keystore"
           # JKS magic is fe ed fe ed; PKCS12 starts with 30 (ASN.1 SEQUENCE). Printing the
           # first bytes makes a wrong keystore type fail here and not inside packageRelease.
-          ls -l $HOME/debug.keystore
-          od -An -tx1 -N4 $HOME/debug.keystore
+          ls -l "$HOME/.android/debug.keystore"
+          od -An -tx1 -N4 "$HOME/.android/debug.keystore"
 
       - name: Cache Gradle and wrapper
         uses: actions/cache@v4
@@ -143,6 +150,9 @@ jobs:
 
       - name: Rename release
         run: mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/aa-torque.apk
+
+      - name: Verify the release is signed with the project key
+        run: python3 tools/verify_signer.py app/build/outputs/apk/release/aa-torque.apk
 
       - name: Read the release version
         id: version
