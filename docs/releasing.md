@@ -18,7 +18,7 @@ branch without relaxing that condition; see "Changing the workflow" below.
 
 1. Restore the debug keystore from the `DEBUG_KEYSTORE` secret (base64).
 2. Bump the version (`oflynned/android-version-bump@v2.0.0`). See "Version numbers" below.
-3. Force-push the tag `latest` to the current commit (`rickstaa/action-create-tag`).
+3. Move the tag `latest` to the current commit (plain `git tag -f latest` + `git push -f`), so it points at the same commit as the version tag the bump produced.
 4. `./gradlew assembleRelease`. Forked repositories build unsigned by the runner and fall
    back to the `signingConfig signingConfigs.debug` in `app/build.gradle`, so the artifact is
    debug-signed and installs over earlier builds.
