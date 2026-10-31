@@ -35,12 +35,16 @@ version.
 6. Rename the artifact to `aa-torque.apk`.
 7. Create a GitHub release with `softprops/action-gh-release`: APK plus
    `app/build/outputs/mapping/release/mapping.txt`, `generate_release_notes: true`,
-   **`draft: true`**. The release tag is read from `version.properties`, so it is correct
-   whether or not this run performed the bump.
+   **`draft: false`** — published immediately. The release tag is read from
+   `version.properties`, so it is correct whether or not this run performed the bump.
 
-A push to `master` therefore produces a **draft** release named after the new version. It is
-not visible to users until a maintainer publishes it. Publishing is a manual step on the
-Releases page.
+A push to `master` therefore publishes a release named after the new version, with the APK
+attached. Users can install it as soon as the run finishes, and the in-app update check sees
+it because `GET /releases/latest` only returns published releases.
+
+Because the `concurrency` group lets one run survive a burst, a burst of merges publishes one
+release, not one per merge. Merges spaced more than a run apart (~4 minutes) each publish
+their own.
 
 ## Version numbers
 
@@ -92,10 +96,18 @@ Safe way to test a workflow change:
 
 Never leave the relaxation in a merged change: it lets any branch push create a release.
 
-## Publishing
+## Checking a published release
 
-Publishing a draft release makes the APK downloadable. Check three things first:
+A release goes out on its own, with no human step. If a bad one ships, check three things and
+then fix forward:
 
 1. The APK installs and starts.
 2. The version shown in the app matches `version.properties`.
 3. The release notes describe the actual changes, not just the commit list.
+
+Fixing forward is normal: revert the change on `master` and the next run publishes the next
+patch. Do not delete a published release and its tag — someone may already have installed it,
+and reusing a version number breaks the version ordering on every phone that has it.
+
+The only manual release action left is unpublishing a release that must not be visible
+(Releases page → the release → edit → uncheck publish), which keeps the tag.
