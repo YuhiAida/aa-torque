@@ -54,6 +54,9 @@ class ThemeRenderSpikeTest {
         binding.showLimitBelow = MaxControl.OFF
         binding.font = Typeface.DEFAULT
         binding.tickFormatter = { _, speed -> speed.toString() }
+        // The layout's attributes are @{} expressions; setting the variables schedules a rebind.
+        // Run it now so the theme's background and attrs are applied before the draw.
+        binding.executePendingBindings()
 
         val view: View = binding.root
         view.measure(
