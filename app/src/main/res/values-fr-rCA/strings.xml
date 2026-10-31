@@ -140,10 +140,8 @@
     <string name="pref_shrink_gauge_off">Jauge de format égal</string>
     <string name="pref_shrink_gauge_on">Emphase jauge centrale</string>
     <string name="new_version">Nouvelle version disponible</string>
-    <string name="download">Télécharger</string>
 
     <!-- Fuzzy -->
-    <string name="download_instructions">Téléchargement de MàJ. Installer avec Kingstaller.</string>
     <string name="expressionDocumentation">Voir documentation</string>
     <string name="copy_logs">Copier journaux dans le presse-papier</string>
     <string name="convert_f_to_c">Fahrenheit à Celcius</string>
@@ -164,7 +162,6 @@
     <string name="element_transmission">Transmission</string>
 
     <!-- Fuzzy -->
-    <string name="download_complete">Téléchargement_complet</string>
     <string name="icon_credits">Icône_crédits</string>
     <string name="pref_view">Vue %1$d</string>
 </resources>

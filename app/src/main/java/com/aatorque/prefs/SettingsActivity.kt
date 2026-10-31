@@ -2,25 +2,18 @@ package com.aatorque.prefs
 
 import android.app.Activity
 import android.app.AlertDialog
-import android.app.DownloadManager
-import android.content.BroadcastReceiver
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.os.Environment
 import android.view.Menu
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.core.text.isDigitsOnly
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
@@ -32,7 +25,6 @@ import com.aatorque.stats.App
 import com.aatorque.stats.BuildConfig
 import com.aatorque.stats.CreditsFragment
 import com.aatorque.stats.R
-import com.google.android.material.snackbar.Snackbar
 import com.google.protobuf.InvalidProtocolBufferException
 import java.io.IOException
 import java.net.URL
@@ -45,54 +37,6 @@ import timber.log.Timber
 class SettingsActivity :
     AppCompatActivity(),
     PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
-
-    val br: BroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.`package` == BuildConfig.APPLICATION_ID) {
-                AlertDialog.Builder(this@SettingsActivity).setTitle(R.string.download_complete)
-                    .setMessage(R.string.download_dialog)
-                    .setPositiveButton(
-                        android.R.string.ok,
-                        object : DialogInterface.OnClickListener {
-                            override fun onClick(p0: DialogInterface?, p1: Int) {
-                                val downloadId = intent.getLongExtra(
-                                    DownloadManager.EXTRA_DOWNLOAD_ID,
-                                    -1L
-                                )
-                                if (downloadId == -1L) return
-                                val uri = (
-                                    getSystemService(
-                                        DOWNLOAD_SERVICE
-                                    ) as DownloadManager
-                                    ).getUriForDownloadedFile(downloadId)
-                                val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                                    Intent(Intent.ACTION_INSTALL_PACKAGE).also {
-                                        it.data = uri
-                                        it.flags =
-                                            Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                                            Intent.FLAG_ACTIVITY_NEW_TASK
-                                    }
-                                } else {
-                                    Intent(Intent.ACTION_VIEW).also {
-                                        it.setDataAndTypeAndNormalize(
-                                            uri,
-                                            "application/vnd.android.package-archive"
-                                        )
-                                        it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    }
-                                }
-                                intent.putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
-                                intent.putExtra(
-                                    Intent.EXTRA_INSTALLER_PACKAGE_NAME,
-                                    "com.android.vending"
-                                )
-                                applicationContext.startActivity(intent)
-                            }
-                        }
-                    ).setNegativeButton(android.R.string.cancel) { p0, p1 -> p0?.dismiss() }.show()
-            }
-        }
-    }
 
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -165,21 +109,6 @@ class SettingsActivity :
 
             R.id.action_credits -> {
                 launchFragment("credits", CreditsFragment())
-                true
-            }
-
-            R.id.force_update -> {
-                lifecycleScope.launch(Dispatchers.IO) {
-                    if (!checkUpdate(true)) {
-                        runOnUiThread {
-                            Toast.makeText(
-                                this@SettingsActivity,
-                                R.string.update_failed,
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                }
                 true
             }
 
@@ -406,9 +335,9 @@ class SettingsActivity :
         }
     }
 
-    private fun checkUpdate(force: Boolean = false): Boolean {
+    private fun checkUpdate(): Boolean {
         Timber.i("Checking for update")
-        if (!force && !updateCheckDue()) {
+        if (!updateCheckDue()) {
             Timber.i("Update check is throttled")
             return true
         }
@@ -419,46 +348,11 @@ class SettingsActivity :
         }
         markUpdateChecked()
 
-        if (!force) {
-            if (isNewerVersion(latest, BuildConfig.VERSION_NAME)) {
-                showUpdateDialog(latest)
-            } else {
-                Timber.i("No newer release: newest $latest, installed ${BuildConfig.VERSION_NAME}")
-            }
-            return true
+        if (isNewerVersion(latest, BuildConfig.VERSION_NAME)) {
+            showUpdateDialog(latest)
+        } else {
+            Timber.i("No newer release: newest $latest, installed ${BuildConfig.VERSION_NAME}")
         }
-
-        Snackbar.make(
-            findViewById(android.R.id.content),
-            R.string.new_version,
-            Snackbar.LENGTH_LONG
-        )
-            .setDuration(10000)
-            .setActionTextColor(resources.getColor(R.color.snackbarBtnText, theme))
-            .setAction(R.string.download) {
-                ContextCompat.registerReceiver(
-                    baseContext,
-                    br,
-                    IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-                    ContextCompat.RECEIVER_EXPORTED
-                )
-                val downloadRequest = DownloadManager.Request(Uri.parse(BuildConfig.RELEASE_URL))
-                downloadRequest.setDestinationInExternalPublicDir(
-                    Environment.DIRECTORY_DOWNLOADS,
-                    "aa-torque.apk"
-                )
-                downloadRequest.setNotificationVisibility(
-                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
-                )
-                val dm = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
-                dm.enqueue(downloadRequest)
-
-                Toast.makeText(
-                    baseContext,
-                    R.string.download_instructions,
-                    Toast.LENGTH_SHORT
-                ).show()
-            }.show()
         return true
     }
 

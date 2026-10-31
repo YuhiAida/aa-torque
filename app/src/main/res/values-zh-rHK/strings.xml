@@ -129,8 +129,6 @@
     <string name="pref_shrink_gauge_off">等尺寸量規</string>
     <string name="pref_shrink_gauge_on">中心儀表強調</string>
     <string name="new_version">有新版本可用</string>
-    <string name="download">下載</string>
-    <string name="download_instructions">下載更新</string>
     <string name="expressionDocumentation">查看文件</string>
     <string name="copy_logs">將日誌複製到剪貼簿</string>
     <string name="convert_f_to_c">華氏轉為攝氏</string>
@@ -147,15 +145,11 @@
     <string name="element_cylinder">引擎汽缸</string>
     <string name="element_horsepower">馬力</string>
     <string name="element_transmission">變速系統</string>
-    <string name="download_complete">下載完成</string>
     <string name="icon_credits">圖示製作人員</string>
     <string name="action_preview">預覽</string>
     <string name="pref_view">視圖 %1$d</string>
     <string name="pref_data_element_settings">資料元素設定%1$d</string>
     <string name="pref_title_performance">標題%1$d</string>
-    <string name="download_dialog">嘗試將此應用程式安裝為 Play 商店嗎？如果失敗，您可以嘗試使用 Kingstaler。</string>
-    <string name="force_update">強制升級</string>
-    <string name="update_failed">檢查更新失敗</string>
     <string name="convert_minutes_seconds">秒轉換為分鐘</string>
     <string name="donate">請捐款！</string>
     <string name="translate">翻譯</string>

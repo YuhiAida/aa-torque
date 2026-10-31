@@ -152,8 +152,6 @@
     <string name="pref_shrink_gauge_off">Indicadores del mismo tamaño</string>
     <string name="pref_shrink_gauge_on">Enfatizar indicador central</string>
     <string name="new_version">Una nueva versión esta disponible</string>
-    <string name="download">Descargar</string>
-    <string name="download_instructions">Descargando actualización</string>
     <string name="expressionDocumentation">Ver documentación</string>
     <string name="copy_logs">Copiar logs al portapapeles</string>
     <string name="convert_f_to_c">Farenheit a Celsius</string>
@@ -172,15 +170,11 @@
     <string name="element_cylinder">Cilindro de motor</string>
     <string name="element_horsepower">Caballos de fuerza</string>
     <string name="element_transmission">Transmisión</string>
-    <string name="download_complete">Descarga completa</string>
     <string name="icon_credits">Créditos de los Íconos</string>
     <string name="action_preview">Vista previa</string>
     <string name="pref_view">Ver %1$d</string>
     <string name="pref_data_element_settings">Ajustes de item %1$d</string>
     <string name="pref_title_performance">Titulo %1$d</string>
-    <string name="download_dialog">Intenta instalar esta app como la Play Store? Si esto falla puedes intentar usar Kingstaller.</string>
-    <string name="force_update">Forzar actualización</string>
-    <string name="update_failed">Verificación de actualización falló</string>
     <string name="convert_minutes_seconds">Segundos a Minutos:Segundos</string>
 
     <!-- While "Por favor dona!" is the literal translation, this string is used inside a button in the credits activity. Because it's length, when used in spanish this button will look too long. 
