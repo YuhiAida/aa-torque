@@ -104,6 +104,19 @@ The plugin is `org.jlleitschuh.gradle.ktlint` with the ktlint CLI pinned to `1.8
 `app/build.gradle`. ktlint only fixes part of the rule set; the rest — naming, long lines,
 file names — needs a manual change.
 
+## Warnings you can ignore
+
+Two warnings come from outside this repository and are expected:
+
+- `The specified Android SDK Build Tools version (31.0.0) is ignored` — `buildToolsVersion` is
+  not set anywhere here. It comes from the `lib/speedviewlib` submodule (`agronick/SpeedView`).
+  Fixing it means patching the submodule or forking it.
+- `SDK processing. This version only understands SDK XML versions up to 3` — a mismatch between
+  runner tooling and the SDK, not repository configuration.
+
+The `[dep-ann]` warnings from `org/prowl/torque/remote/ITorqueService.java` are suppressed in the
+root `build.gradle`; that file mirrors Torque's AIDL interface and is not ours to annotate.
+
 ## `dist/`
 
 `dist/` is git-ignored. A downloaded CI artifact usually lands there. It is scratch space,

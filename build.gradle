@@ -40,6 +40,10 @@ allprojects {
         tasks.withType(JavaCompile).tap {
             configureEach {
                 options.compilerArgs << "-Xlint:unchecked"
+                // ITorqueService.java mirrors Torque's AIDL interface and carries ~28 dep-ann
+                // warnings that are not ours to fix. Kotlin sources are compiled by kotlinc, so
+                // this flag only reaches the three Java files in the app module.
+                options.compilerArgs << "-Xlint:-dep-ann"
             }
         }
     }

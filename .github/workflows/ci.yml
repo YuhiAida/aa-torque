@@ -12,21 +12,21 @@ concurrency:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
 
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
           java-version: '19'
 
       - name: Cache Gradle and wrapper
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
@@ -62,13 +62,13 @@ jobs:
 
   build_deploy:
     needs: lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       discussions: write
     if: github.ref == 'refs/heads/master'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
           # The version bump reads commit messages back to the previous tag.
@@ -83,7 +83,7 @@ jobs:
           git reset --hard origin/master
           git log --oneline -1
 
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
           java-version: '19'
@@ -104,7 +104,7 @@ jobs:
           od -An -tx1 -N4 "$HOME/.android/debug.keystore"
 
       - name: Cache Gradle and wrapper
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
