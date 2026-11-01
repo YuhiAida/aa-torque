@@ -46,6 +46,22 @@ CarService (CarActivityService)
              Torque Pro ── OBD-II adapter ── car
 ```
 
+The media card is a second, independent read path. It cannot go through the dashboard
+fragments, because Android Auto asks for it while no `CarActivity` exists:
+
+```
+CardService (MediaBrowserService)
+   └─ MediaSession, always PLAYING          no audio, no foreground service
+        └─ CardFrames                       last 64 published frames, by frame id
+             └─ CardArtworkProvider         content://com.aatorque.stats.cardart/f/<id>
+                  └─ CardArtwork            numbers only, one dial, two dials
+   ▲
+   │ getPIDValuesAsDouble(), isConnectedToECU()
+TorqueServiceWrapper
+```
+
+Details, measurements and the routes that were rejected: [aa-media-card.md](aa-media-card.md).
+
 Read it in this order:
 
 1. `stats/CarService.java` — one method. It returns `MainCarActivity` to the Android Auto
@@ -71,6 +87,10 @@ Read it in this order:
    do not confuse the two.
 7. `stats/TorqueGauge.kt`, `TorqueChart.kt`, `TorqueSpeedometer.kt`, `TorqueDisplay.kt` —
    the drawing. `ViewAdapter.kt` maps a gauge type to its view.
+8. `stats/CardService.kt` — the Android Auto media card. A `MediaBrowserService` with a session
+   that is always playing, publishing the dashboard's first five gauges as card artwork. It polls
+   on the same 300 ms tick and gates every value on `isConnectedToECU`. See
+   [aa-media-card.md](aa-media-card.md).
 
 Supporting pieces:
 

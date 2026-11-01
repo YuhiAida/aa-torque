@@ -43,6 +43,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name="com.aatorque.stats.CardPreviewActivity"
+            android:exported="false"
+            android:label="@string/pref_card_preview" />
+
         <service
             android:name="com.aatorque.stats.CarService"
             android:exported="true"
@@ -75,6 +80,26 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
+        <!-- The card is the surface Android Auto shows beside Maps. It is not a player: the
+             session exists only so AA can render the card. -->
+        <service
+            android:name="com.aatorque.stats.CardService"
+            android:exported="true"
+            android:label="@string/app_name"
+            tools:ignore="ExportedService">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
+
+        <!-- Exported because Android Auto (a different uid) fetches the artwork by content://
+             URI. It serves only the last few rendered frames, keyed by frame id. -->
+        <provider
+            android:name="com.aatorque.stats.CardArtworkProvider"
+            android:authorities="com.aatorque.stats.cardart"
+            android:exported="true"
+            android:grantUriPermissions="true" />
 
         <meta-data
             android:name="com.google.android.gms.car.application"

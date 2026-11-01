@@ -380,4 +380,16 @@
         <item>@color/graphColor2</item>
         <item>@color/graphColor3</item>
     </array>
+
+    <!-- Android Auto media card styles. Index matches CardStyle in CardArtwork.kt. -->
+    <string-array name="cardStyleEntries">
+        <item>Numbers only</item>
+        <item>One dial and numbers</item>
+        <item>Two dials and numbers</item>
+    </string-array>
+    <string-array name="cardStyleValues">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
 </resources>
