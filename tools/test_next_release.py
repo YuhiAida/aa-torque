@@ -34,6 +34,28 @@ def make_repo(messages):
     return d
 
 
+def make_repo_with_body(commits):
+    d = tempfile.mkdtemp()
+    git(d, "init", "-q")
+    git(d, "config", "user.email", "t@t.com")
+    git(d, "config", "user.name", "t")
+    path = os.path.join(d, "f.txt")
+    with open(path, "w") as f:
+        f.write("x")
+    git(d, "add", "f.txt")
+    git(d, "commit", "-q", "-m", "chore: initial")
+    git(d, "tag", "1.0.0")
+    for subject, body in commits:
+        with open(path, "a") as f:
+            f.write(subject + "\n")
+        git(d, "add", "f.txt")
+        if body:
+            git(d, "commit", "-q", "-m", subject, "-m", body)
+        else:
+            git(d, "commit", "-q", "-m", subject)
+    return d
+
+
 class NextReleaseTests(unittest.TestCase):
     def run_script(self, repo, *extra):
         r = subprocess.run(
@@ -61,6 +83,18 @@ class NextReleaseTests(unittest.TestCase):
         self.assertEqual(data["version"], "1.1.0")
         self.assertEqual(data["bump"], "minor")
         self.assertIsInstance(data["changes"], list)
+
+    def test_stray_bang_patch(self):
+        repo = make_repo(["fix: oops!"])
+        self.assertEqual(self.run_script(repo, "--print"), "1.0.1")
+
+    def test_scoped_feat_minor(self):
+        repo = make_repo(["feat(api): add thing"])
+        self.assertEqual(self.run_script(repo, "--print"), "1.1.0")
+
+    def test_breaking_change_body_major(self):
+        repo = make_repo_with_body([("fix: something", "BREAKING CHANGE: removed X")])
+        self.assertEqual(self.run_script(repo, "--print"), "2.0.0")
 
 
 if __name__ == "__main__":

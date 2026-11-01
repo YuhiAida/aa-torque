@@ -37,8 +37,10 @@ def merge_subjects(tag, head, cwd=None):
 
 def classify(tag, head, cwd=None):
     cs = commits(tag, head, cwd=cwd)
-    major = any(("!" in s) or ("BREAKING CHANGE" in b) for s, b in cs)
-    minor = (not major) and any(s.startswith("feat:") for s, b in cs)
+    major = any((re.match(r"^[A-Za-z]+(\([^)]*\))?!:", s) is not None)
+                or ("BREAKING CHANGE" in b) for s, b in cs)
+    minor = (not major) and any(re.match(r"^feat(\([^)]*\))?:", s) is not None
+                               for s, b in cs)
     if major:
         return "major"
     if minor:
