@@ -355,6 +355,10 @@ class SettingsActivity :
      *     only reports; nothing is downloaded or installed.
      */
     private fun checkUpdate(force: Boolean = false): Boolean {
+        if (BuildConfig.DEBUG) {
+            Timber.i("Skipping update check in debug build")
+            return true
+        }
         Timber.i("Checking for update")
         if (!force && !updateCheckDue()) {
             Timber.i("Update check is throttled")
