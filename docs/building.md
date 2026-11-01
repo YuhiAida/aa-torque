@@ -82,6 +82,35 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 This installs the app, but it will **not** appear in Android Auto: the install record is
 wrong. Repair it as described in [aa-install-gate.md](aa-install-gate.md).
 
+## Run the Android Auto bench
+
+The local bench is an AVD phone running Android Auto plus the Desktop Head Unit (DHU) on
+this machine. `tools/aa-bench.sh` starts both:
+
+```
+tools/aa-bench.sh          # start the phone, the port forward and the DHU
+tools/aa-bench.sh --status # report what is up
+tools/aa-bench.sh --stop   # stop the DHU and shut the phone down
+```
+
+The DHU window is the car screen. It needs the phone's head unit server: the script checks
+port 5277 and, when it is off, names the toggle (Android Auto -> gear/overflow menu -> Start
+head unit server). The port forward must be re-added after every emulator restart — the
+script does that on each run.
+
+The AVD's 1024x600 view uses the DHU's 1024x600 config (1280x720 at dpi 200), which Android
+Auto reports as 1024x576 dp: the unit's width and the Coolwalk rail. The config lives in
+`~/Android/Sdk-dhu/extras/google/auto/config/aa-1024x600.ini`; the DHU 2.1 lives in
+`~/Android/Sdk-dhu`:
+
+```
+sdkmanager --sdk_root=~/Android/Sdk-dhu --channel=2 "extras;google;auto"
+```
+
+Version 2.0 does not work with Android Auto 17.x. The app on the AVD must be installed
+through KingInstaller with the Shizuku method, as in
+[aa-install-gate.md](aa-install-gate.md), or Android Auto will hide it.
+
 ## Debug builds simulate data
 
 `debug` and `release_debug` set `SIMULATE_METRICS=true` (`app/build.gradle`), so a debug
