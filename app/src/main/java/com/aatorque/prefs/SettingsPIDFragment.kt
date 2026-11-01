@@ -141,7 +141,7 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
                 enableItems(false)
             } else {
                 val pidOnly = (newValue as String).substring("torque_".length)
-                torqueService!!.pids!!.firstOrNull {
+                torqueService?.pids?.firstOrNull {
                     it.first == pidOnly
                 }?.let { entryVal ->
                     var minVal = ceil(entryVal.second[3].toDouble()).toInt()
