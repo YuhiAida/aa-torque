@@ -27,6 +27,8 @@ props.load(new FileInputStream("$project.rootDir/version.properties"))
 def versionMajor = props.getProperty("majorVersion") as Integer
 def versionMinor = props.getProperty("minorVersion") as Integer
 def versionPatch = props.getProperty("patchVersion") as Integer
+def devVersionName = project.findProperty("devVersionName")?.toString()
+def devVersionCode = project.findProperty("devVersionCode")?.toString()?.toInteger()
 def acraVersion = '5.11.3'
 def ghOwner = "YuhiAida"
 def ghPackage = "aa-torque"
@@ -39,8 +41,8 @@ android {
         applicationId "com.aatorque.stats"
         minSdkVersion 28
         targetSdkVersion 34
-        versionCode versionMajor * 10000 + versionMinor * 100 + versionPatch
-        versionName "${versionMajor}.${versionMinor}.${versionPatch}"
+        versionCode devVersionCode ?: (versionMajor * 10000 + versionMinor * 100 + versionPatch)
+        versionName devVersionName ?: "${versionMajor}.${versionMinor}.${versionPatch}"
         vectorDrawables {
             useSupportLibrary true
         }
