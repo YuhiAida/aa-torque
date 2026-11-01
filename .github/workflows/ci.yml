@@ -107,23 +107,19 @@ jobs:
         if: needs.changes.outputs.code == 'true'
         run: python3 tools/gen_inventory.py
 
-      - name: Commit the inventory when it changed
-        # master only. A commit pushed with GITHUB_TOKEN does not start a workflow run, so
-        # on a feature branch it would move the PR head to a commit carrying no checks —
-        # and with a ruleset that has no bypass, such a PR could never be merged.
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.changes.outputs.code == 'true'
+      - name: Check the source inventory is current
+        # The file is committed through pull requests, like the version. CI cannot commit it:
+        # a push to master made by a job is a direct push, which the ruleset rejects.
+        if: needs.changes.outputs.code == 'true'
         run: |
           if git diff --quiet -- docs/generated/inventory.md; then
             echo "inventory is current"
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/generated/inventory.md
-          git commit -m "chore: refresh source inventory [skip ci]"
-          # A push made with GITHUB_TOKEN does not start another workflow run,
-          # so this commit cannot loop. `git push origin HEAD` targets master.
-          git push origin HEAD
+          echo "::error title=stale inventory::docs/generated/inventory.md is out of date."
+          echo "Run python3 tools/gen_inventory.py, commit the result, and push."
+          git diff --stat -- docs/generated/inventory.md
+          exit 1
 
       - name: No code changes
         if: needs.changes.outputs.code != 'true'
