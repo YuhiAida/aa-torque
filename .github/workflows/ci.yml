@@ -121,6 +121,9 @@ jobs:
           git diff --stat -- docs/generated/inventory.md
           exit 1
 
+      - name: Test next_release
+        run: python3 tools/test_next_release.py
+
       - name: No code changes
         if: needs.changes.outputs.code != 'true'
         run: echo "No code changes; skipping the Kotlin checks."
