@@ -216,6 +216,7 @@ jobs:
         run: echo "" >> ./local.properties
 
       - name: Restore keystore
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           # AGP's default debug signing config reads $HOME/.android/debug.keystore.
           # Restoring the shared keystore keeps consecutive pr_artifact builds signed
