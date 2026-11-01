@@ -13,11 +13,14 @@ This repository is a maintained fork of [agronick/aa-torque](https://github.com/
 Upstream is unmaintained. The fork keeps the package name `com.aatorque.stats`, so it
 **replaces** the upstream build in place. You cannot install both.
 
-> **On AI.** I build this app with AI assistance, and that is not changing. AI-assisted
-> contributions are welcome on the same bar as everything else: correct, reviewed, and green
-> in CI — not better or worse because of who or what wrote it. If AI in the tooling is a
-> deal-breaker for you, you are free not to use the app; the source is GPL-3.0, so forking it
-> is also an option. No hard feelings either way.
+> **On AI.** I did not write this app from scratch: it is the maintained fork of
+> [agronick/aa-torque](https://github.com/agronick/aa-torque) described above, which itself
+> derives from Chillout's Performance Monitor and Martoreto's aa-stats. The AI assistance is in
+> the changes I make to the fork, and that is not changing. AI-assisted contributions are
+> welcome on the same bar as everything else: correct, reviewed, and green in CI — not better
+> or worse because of who or what wrote it. If AI in the tooling is a deal-breaker for you, you
+> are free not to use the app; the source is GPL-3.0, so forking it is also an option. No hard
+> feelings either way.
 
 - [Features](#features)
 - [Install](#install)
