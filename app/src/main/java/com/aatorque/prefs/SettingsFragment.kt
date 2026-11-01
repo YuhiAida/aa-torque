@@ -14,6 +14,7 @@ import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SeekBarPreference
 import com.aatorque.datastore.UserPreference
+import com.aatorque.stats.CardPreviewActivity
 import com.aatorque.stats.NotiService
 import com.aatorque.stats.R
 import java.util.Collections
@@ -36,6 +37,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     lateinit var opacityPref: SeekBarPreference
     lateinit var darkenArtPref: SeekBarPreference
     lateinit var blurArtPref: SeekBarPreference
+    lateinit var cardStylePref: ListPreference
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,6 +53,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         opacityPref = findPreference("gaugeOpacity")!!
         blurArtPref = findPreference("blurArtwork")!!
         darkenArtPref = findPreference("darkenArtwork")!!
+        cardStylePref = findPreference("cardStyle")!!
         themePref.summaryProvider = ListPreference.SimpleSummaryProvider.getInstance()
         fontPref.summaryProvider = ListPreference.SimpleSummaryProvider.getInstance()
         backgroundPref.summaryProvider = ListPreference.SimpleSummaryProvider.getInstance()
@@ -111,6 +114,17 @@ class SettingsFragment : PreferenceFragmentCompat() {
             }
             return@setOnPreferenceChangeListener true
         }
+        cardStylePref.summaryProvider = ListPreference.SimpleSummaryProvider.getInstance()
+        cardStylePref.setOnPreferenceChangeListener { _, newValue ->
+            updateDatastorePref {
+                it.setCardStyle((newValue as String).toInt())
+            }
+            return@setOnPreferenceChangeListener true
+        }
+        findPreference<Preference>("cardPreview")?.setOnPreferenceClickListener {
+            startActivity(Intent(requireContext(), CardPreviewActivity::class.java))
+            true
+        }
         mediaBgPref.setOnPreferenceChangeListener { _, newValue ->
             updateDatastorePref {
                 if (newValue as Boolean &&
@@ -162,6 +176,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 backgroundPref.value = it.selectedBackground
                 centerGaugeLargePref.isChecked = it.centerGaugeLarge
                 minMaxBelowPref.isChecked = it.minMaxBelow
+                cardStylePref.value = it.cardStyle.toString()
                 mediaBgPref.isChecked =
                     it.albumArt && NotiService.isNotificationAccessEnabled(requireContext())
                 opacityPref.value = if (it.opacity == 0) 100 else it.opacity

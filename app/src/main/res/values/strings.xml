@@ -197,4 +197,10 @@
     <string name="value">Value</string>
     <string name="color">Color</string>
     <string name="invalid_settings">Attempted to import invalid settings file.</string>
+    <string name="pref_card_style">Android Auto card</string>
+    <string name="pref_card_style_desc">How the gauges look in the Android Auto media card, beside Maps.</string>
+    <string name="pref_card_preview">Preview the card</string>
+    <string name="pref_card_preview_desc">Draws the card here, no Android Auto needed.</string>
+    <string name="card_preview_title">Card preview</string>
+    <string name="card_preview_note">The bottom third stays empty: Android Auto draws its title, subtitle and playback controls there.</string>
 </resources>

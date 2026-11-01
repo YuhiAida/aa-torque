@@ -136,6 +136,7 @@ Both look like bugs. Both are correct. Details are in `docs/`.
 | How does data flow through the app? | `docs/architecture.md` |
 | Why does a PID show zero? | `docs/pid-filtering.md` |
 | Why is the app not in Android Auto? | `docs/aa-install-gate.md` |
+| How do the gauges sit beside Maps? | `docs/aa-media-card.md` |
 | How does a release happen? | `docs/releasing.md` |
 | Something else is broken | `docs/troubleshooting.md` |
 | Themes and graphics | `CONTRIBUTING.md` |
