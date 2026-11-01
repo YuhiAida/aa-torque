@@ -1,8 +1,7 @@
 # Architecture
 
 How data gets from the car to the head unit. Keep this file short and path-based: name the
-files, do not copy the code. The machine-written file list is
-[generated/inventory.md](generated/inventory.md).
+files, do not copy the code.
 
 ## Where the app lives
 

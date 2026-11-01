@@ -9,7 +9,7 @@ Everything is CI. Nobody builds a release by hand, and nobody publishes one from
 | Job | Runs on | Purpose |
 |---|---|---|
 | `changes` | every run | Diffs the change and sets `code`, `themes` and `docs`, so each gate reports on every pull request (a path-filtered workflow that never runs cannot be a required check). |
-| `lint` | code changes | `ktlintCheck` and `lintRelease`, then regenerates `docs/generated/inventory.md` and commits it when it changed and the event is a **push to `master`**. |
+| `lint` | code changes | `ktlintCheck` and `lintRelease`. |
 | `render` | code changes | `verifyRoborazziDebug`: the JVM tests and the theme goldens. |
 | `themes` | theme changes | `tools/check_themes.py`, the theme contract. |
 | `docs` | markdown changes | `tools/check_docs.py`, links and paths. |
