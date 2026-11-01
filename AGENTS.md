@@ -86,11 +86,14 @@ push-only. The checks and the debug artifact still run.
 
 ## Branch and release rules
 
-- Never push to `master`. Use a branch and a draft pull request.
-- A push to `master` starts a release. CI bumps `version.properties`, force-pushes the tag
-  `latest`, and **publishes** a GitHub release that holds the APK. Publishing is automatic.
-  Never delete a release or a version tag, and never reuse a version number — fix forward.
-- Never edit `version.properties` by hand.
+- Never push to `master`. A repository ruleset requires a pull request and blocks direct
+  pushes — for humans and for CI, with no bypass.
+- **Bump `version.properties` on your branch.** CI no longer writes it: a commit pushed to
+  `master` by a job is a direct push and the ruleset rejects it.
+- A push to `master` starts a release. CI reads the version, force-pushes the tag `latest`,
+  and **publishes** a GitHub release that holds the APK. Publishing is automatic. If the
+  version was not bumped, the run reports "already released" and publishes nothing. Never
+  delete a release or a version tag, and never reuse a version number — fix forward.
 
 ## Track what you find
 
