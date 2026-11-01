@@ -48,7 +48,6 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
     lateinit var unitPref: EditTextPreference
     lateinit var runcustomScriptPref: CheckBoxPreference
     lateinit var jsPref: FormulaPreference
-    lateinit var wholeNumberPref: CheckBoxPreference
     lateinit var decimalPlacesPref: ListPreference
     lateinit var gaugeSettings: PreferenceCategory
     lateinit var ticksActivePref: CheckBoxPreference
@@ -103,7 +102,6 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
         unitPref = findPreference("unit")!!
         runcustomScriptPref = findPreference("runcustomScript")!!
         jsPref = findPreference("customScript")!!
-        wholeNumberPref = findPreference("wholeNumbers")!!
         decimalPlacesPref = findPreference("decimalPlaces")!!
         gaugeSettings = findPreference("gaugeSettings")!!
         ticksActivePref = findPreference("ticksActive")!!
@@ -188,7 +186,6 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
                 maxValuePref.text = display.maxValue.toString()
                 unitPref.text = display.unit
                 runcustomScriptPref.isChecked = display.enableScript
-                wholeNumberPref.isChecked = display.wholeNumbers
                 val dpValue = when (display.decimalPlaces) {
                     DecimalPlaces.ZERO -> "0"
                     DecimalPlaces.ONE -> "1"
@@ -225,6 +222,7 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
         unitPref.isEnabled = enabled
         runcustomScriptPref.isEnabled = enabled
         showLabelPref.isEnabled = enabled
+        decimalPlacesPref.isEnabled = enabled
         if (isClock) {
             gaugeSettings.isEnabled = enabled
             imagePref.isEnabled = enabled
@@ -271,7 +269,7 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
         ).setCustomScript(
             jsPref.getValue()
         ).setWholeNumbers(
-            wholeNumberPref.isChecked
+            decimalPlacesPref.value == "0"
         ).setDecimalPlaces(
             when (decimalPlacesPref.value) {
                 "0" -> DecimalPlaces.ZERO

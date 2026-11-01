@@ -67,12 +67,6 @@
         android:persistent="false"
         android:fragment="com.aatorque.prefs.AlarmFragment"
         />
-    <CheckBoxPreference
-        android:key="wholeNumbers"
-        android:title="@string/whole_numbers"
-        android:summary="@string/whole_numbers_desc"
-        android:persistent="false"
-    />
     <ListPreference
         android:key="decimalPlaces"
         android:title="@string/decimal_places"
