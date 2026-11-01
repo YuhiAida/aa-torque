@@ -215,6 +215,17 @@ jobs:
       - name: Prepare Gradle
         run: echo "" >> ./local.properties
 
+      - name: Restore keystore
+        run: |
+          # AGP's default debug signing config reads $HOME/.android/debug.keystore.
+          # Restoring the shared keystore keeps consecutive pr_artifact builds signed
+          # with the same key, so adb install -r can update one over the other.
+          mkdir -p "$HOME/.android"
+          echo ${{ secrets.DEBUG_KEYSTORE }} | base64 -d > "$HOME/.android/debug.keystore"
+          cp "$HOME/.android/debug.keystore" "$HOME/debug.keystore"
+          ls -l "$HOME/.android/debug.keystore"
+          od -An -tx1 -N4 "$HOME/.android/debug.keystore"
+
       - name: Build the debug APK
         run: ./gradlew assembleDebug
 
