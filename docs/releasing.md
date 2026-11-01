@@ -50,6 +50,47 @@ Because the `concurrency` group lets one run survive a burst, a burst of merges 
 release, not one per merge. Merges spaced more than a run apart (~4 minutes) each publish
 their own.
 
+## Dev builds (rolling pre-release)
+
+`.github/workflows/dev.yml` runs on every push to `master` that changes code (prose-only
+merges are skipped via `paths-ignore`). It publishes a rolling pre-release tagged `dev`:
+
+1. Compute the version as `<last stable tag>-dev.<commits since that tag>`, with the
+   version code set to the total commit count.
+2. Build the debug APK with `-PdevVersionName` and `-PdevVersionCode`.
+3. Publish it as a pre-release (`prerelease: true`) under the fixed tag `dev`, with the
+   commit list since the last stable tag as the notes.
+
+The debug build carries `applicationIdSuffix ".debug"` (`app/build.gradle`), so its
+package is `com.aatorque.stats.debug` and it installs beside the stable app instead of
+replacing it. Because the package differs, it has its own Android Auto install record:
+install it with KingInstaller and Shizuku as described in the README if you want it to
+appear in Android Auto.
+
+The APK is signed with the shared debug keystore, so consecutive dev builds update in
+place. The pre-release is marked `prerelease: true`, so `GET /releases/latest` ignores
+it and the stable update check never offers a dev build. The update check is also
+disabled entirely in debug builds (`BuildConfig.DEBUG`), so a dev install never prompts
+to install the stable release.
+
+## The release PR
+
+`.github/workflows/release-pr.yml` prepares the stable release. It runs on a weekly
+schedule (Monday 06:00 UTC), on `workflow_dispatch`, and on pushes to `master`:
+
+- On a push it only opens a PR once five merge commits have accumulated since the last
+  tag; the weekly run ignores that threshold. Either way, it counts merge commits since
+  the last tag.
+- It computes the next version from the conventional commits since the last tag using
+  `tools/next_release.py`, and bumps `version.properties` on a `release/*` branch.
+- It opens or updates a pull request labelled `release`, titled `release: v<version>`,
+  whose body lists the changes since the last tag.
+
+Merging that pull request is the gate: the merge lands the bump on `master`, and the
+next `build_deploy` run publishes the release. No other pull request may touch
+`version.properties`; CI fails such a change. See "Version numbers" below for the bump
+rules and the ownership rule.
+
 ## Version numbers
 
 `version.properties` holds `majorVersion`, `minorVersion`, `patchVersion` and an optional

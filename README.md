@@ -49,6 +49,10 @@ Upstream is unmaintained. The fork keeps the package name `com.aatorque.stats`, 
 4. Continue with the next section. A plain install does **not** make the app visible in
    Android Auto.
 
+A rolling `dev` pre-release is also published under the `dev` tag. It installs beside the
+stable app (package `com.aatorque.stats.debug`) and is not the stable channel; use it only
+if you want to test unreleased changes.
+
 Do not rely on the "Unknown sources" switch in the Android Auto developer options. It does
 not admit this app. The reason is in [docs/aa-install-gate.md](docs/aa-install-gate.md).
 
