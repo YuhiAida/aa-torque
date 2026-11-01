@@ -66,6 +66,23 @@ jobs:
           echo "themes=$themes" >> "$GITHUB_OUTPUT"
           echo "docs=$docs" >> "$GITHUB_OUTPUT"
 
+      - name: Guard against stray version bumps
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          if git diff --name-only "$BASE" "$HEAD" | grep -qx 'version.properties'; then
+            case "$BRANCH" in
+              release/*) ;;
+              *)
+                echo "::error title=stray version bump::version.properties may only change on a release/* branch."
+                exit 1
+                ;;
+            esac
+          fi
+
   lint:
     needs: changes
     runs-on: ubuntu-24.04
@@ -281,7 +298,7 @@ jobs:
       - name: Nothing to release
         if: steps.version.outputs.exists == 'true'
         run: |
-          echo "::notice title=already released::version ${{ steps.version.outputs.tag }} is already released. Bump version.properties on your branch to publish a new release."
+          echo "::notice title=already released::version ${{ steps.version.outputs.tag }} is already released. Open a release/* PR to bump version.properties and publish a new release."
 
       - uses: actions/setup-java@v5
         with:

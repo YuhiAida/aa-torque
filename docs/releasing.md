@@ -13,7 +13,7 @@ Everything is CI. Nobody builds a release by hand, and nobody publishes one from
 | `render` | code changes | `verifyRoborazziDebug`: the JVM tests and the theme goldens. |
 | `themes` | theme changes | `tools/check_themes.py`, the theme contract. |
 | `docs` | markdown changes | `tools/check_docs.py`, links and paths. |
-| `build_deploy` | `master` push with code changes | Reads the version bumped on the pull request, builds and publishes the APK, and refuses to publish a version that is already tagged. |
+| `build_deploy` | `master` push with code changes | Reads the version bumped by the release PR, builds and publishes the APK, and refuses to publish a version that is already tagged. |
 
 A pull request runs the four gates and `pr_artifact`; the release job is skipped. The release
 path cannot be exercised from a branch without relaxing that condition; see "Changing the
@@ -29,7 +29,7 @@ survives a burst, so a burst yields one version.
 
 1. Restore the debug keystore from the `DEBUG_KEYSTORE` secret (base64).
 2. Read the version from `version.properties` and check whether the tag `<version>` already
-   exists. The version is bumped on the pull request (see "Version numbers"), so a merge that
+   exists. The version is bumped by the release PR (see "Version numbers"), so a merge that
    did not bump it finds its own tag and publishes nothing: the run prints an "already
    released" notice instead of failing.
 3. Move the tag `latest` to the current commit (plain `git tag -f latest` + `git push -f`).
@@ -40,7 +40,7 @@ survives a burst, so a burst yields one version.
 6. Create a GitHub release with `softprops/action-gh-release@v3.0.3`: APK plus
    `app/build/outputs/mapping/release/mapping.txt`, `generate_release_notes: true`,
    **`draft: false`** — published immediately. The release tag is read from
-   `version.properties`, which the pull request already bumped.
+   `version.properties`, which the release PR already bumped.
 
 A push to `master` therefore publishes a release named after the new version, with the APK
 attached. Users can install it as soon as the run finishes, and the in-app update check sees
@@ -66,11 +66,16 @@ stay below 100 and major must stay below 214748 (Android's `versionCode` is a si
 
 ### Bumping in this fork
 
-The version is bumped **on the pull request**, by whoever opens it. CI does not write to
-`master`: the repository ruleset rejects direct pushes with no bypass, so a bump commit pushed
-by a workflow would fail the run.
+The version is bumped **only by the release PR** (branch `release/*`), which the
+`release-pr` workflow opens. CI does not write to `master`: the repository ruleset
+rejects direct pushes, so a bump commit pushed by a workflow would fail the run.
 
-Before merging a change that alters the APK, edit `version.properties` by hand:
+No other pull request may touch `version.properties`; CI fails such a change. Before
+merging a change that alters the APK, do not edit `version.properties` by hand —
+wait for the release PR.
+
+Before merging a change that alters the APK, the release PR computes the bump from
+the conventional commits since the last tag:
 
 | Commit | Bump |
 |---|---|

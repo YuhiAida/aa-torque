@@ -83,15 +83,16 @@ that compiles can still be visually wrong, and a merge to `master` publishes imm
 
 Pull requests run the same checks through the `pull_request` trigger, including PRs from
 forks. Nothing is committed by CI any more, so a fork PR behaves exactly like a branch PR:
-both are checked, and both must carry their own inventory and version bump. The debug artifact
-still runs.
+both are checked, and both must carry their own inventory. Only the release PR bumps
+`version.properties`. The debug artifact still runs.
 
 ## Branch and release rules
 
 - Never push to `master`. A repository ruleset requires a pull request and blocks direct
   pushes — for humans and for CI, with no bypass.
-- **Bump `version.properties` on your branch.** CI no longer writes it: a commit pushed to
-  `master` by a job is a direct push and the ruleset rejects it.
+- **Only the release PR bumps `version.properties`.** CI opens a `release/*` PR weekly or
+  after five merged PRs; every other PR that changes the file fails its checks. CI never
+  writes `master`: a commit pushed by a job is a direct push and the ruleset rejects it.
 - A push to `master` starts a release. CI reads the version, force-pushes the tag `latest`,
   and **publishes** a GitHub release that holds the APK. Publishing is automatic. If the
   version was not bumped, the run reports "already released" and publishes nothing. Never
