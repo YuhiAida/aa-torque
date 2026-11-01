@@ -33,6 +33,13 @@ Two rules that surprise people:
 - Do not add network, analytics or telemetry code. Crash reporting through `ch.acra` is the
   only component that sends data off the phone.
 
+## AI-assisted contributions
+
+AI-assisted changes are welcome under the same rules as any other: the change is small, the
+tests and lint pass, and a human reviews it. The bar does not move because a model helped write
+it. Say in the pull request that AI was involved when it helps the review; it is context, not a
+disqualifier.
+
 ## Themes
 
 Each app theme consists of:
