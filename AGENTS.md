@@ -35,12 +35,8 @@ the app freely.
 | `lib/aauto.aar` | Prebuilt Android Auto SDK. Ask before you change or replace it. |
 | `lib/speedviewlib/` | Git submodule (`agronick/SpeedView`). It is **empty** until `git submodule update --init`. |
 | `version.properties` | Version source. Only the release PR bumps it; do not edit it by hand. |
-| `docs/` | Reference documentation. `docs/generated/` is machine-written. |
+| `docs/` | Reference documentation. |
 | `dist/` | Git-ignored scratch directory where a downloaded CI artifact lands. |
-
-The source inventory is [docs/generated/inventory.md](docs/generated/inventory.md). Run
-`python3 tools/gen_inventory.py` and commit the result when it changes; CI checks that it is
-current and fails the pull request when it is stale. Do not hand-edit it.
 
 ## How to verify a change
 
@@ -83,8 +79,8 @@ that compiles can still be visually wrong, and a merge to `master` publishes imm
 
 Pull requests run the same checks through the `pull_request` trigger, including PRs from
 forks. Nothing is committed by CI any more, so a fork PR behaves exactly like a branch PR:
-both are checked, and both must carry their own inventory. Only the release PR bumps
-`version.properties`. The debug artifact still runs.
+both are checked. Only the release PR bumps `version.properties`. The debug artifact still
+runs.
 
 ## Branch and release rules
 

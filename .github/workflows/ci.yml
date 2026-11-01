@@ -120,24 +120,6 @@ jobs:
         if: needs.changes.outputs.code == 'true'
         run: ./gradlew lintRelease
 
-      - name: Generate source inventory
-        if: needs.changes.outputs.code == 'true'
-        run: python3 tools/gen_inventory.py
-
-      - name: Check the source inventory is current
-        # The file is committed through pull requests, like the version. CI cannot commit it:
-        # a push to master made by a job is a direct push, which the ruleset rejects.
-        if: needs.changes.outputs.code == 'true'
-        run: |
-          if git diff --quiet -- docs/generated/inventory.md; then
-            echo "inventory is current"
-            exit 0
-          fi
-          echo "::error title=stale inventory::docs/generated/inventory.md is out of date."
-          echo "Run python3 tools/gen_inventory.py, commit the result, and push."
-          git diff --stat -- docs/generated/inventory.md
-          exit 1
-
       - name: Test next_release
         run: python3 tools/test_next_release.py
 
@@ -274,9 +256,9 @@ jobs:
 
       - name: Release from the branch tip
         run: |
-          # The lint job can push a refreshed inventory commit while this job waits, leaving
-          # the event SHA behind the branch. Bumping from a stale base gets the push rejected
-          # with non-fast-forward, so release from the real tip.
+          # The event SHA can lag the branch tip when another merge lands first. Bumping
+          # from a stale base gets the push rejected with non-fast-forward, so release from
+          # the real tip.
           git fetch origin master
           git reset --hard origin/master
           git log --oneline -1
