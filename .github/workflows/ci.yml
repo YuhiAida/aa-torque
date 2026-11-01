@@ -107,23 +107,19 @@ jobs:
         if: needs.changes.outputs.code == 'true'
         run: python3 tools/gen_inventory.py
 
-      - name: Commit the inventory when it changed
-        # A pull request from a fork gets a read-only token, so it cannot push. The
-        # generation above still runs; only the commit is push-only.
-        if: github.event_name == 'push' && needs.changes.outputs.code == 'true'
+      - name: Check the source inventory is current
+        # The file is committed through pull requests, like the version. CI cannot commit it:
+        # a push to master made by a job is a direct push, which the ruleset rejects.
+        if: needs.changes.outputs.code == 'true'
         run: |
           if git diff --quiet -- docs/generated/inventory.md; then
             echo "inventory is current"
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/generated/inventory.md
-          git commit -m "chore: refresh source inventory [skip ci]"
-          # A push made with GITHUB_TOKEN does not start another workflow run,
-          # so this commit cannot loop. `git push origin HEAD` targets the branch
-          # of the same name and needs no ref_name interpolation.
-          git push origin HEAD
+          echo "::error title=stale inventory::docs/generated/inventory.md is out of date."
+          echo "Run python3 tools/gen_inventory.py, commit the result, and push."
+          git diff --stat -- docs/generated/inventory.md
+          exit 1
 
       - name: No code changes
         if: needs.changes.outputs.code != 'true'
@@ -253,6 +249,25 @@ jobs:
           git reset --hard origin/master
           git log --oneline -1
 
+      - name: Read the release version and refuse to release it twice
+        id: version
+        run: |
+          # The version is bumped on the pull request, not here: a commit pushed to master
+          # by this job would be a direct push, which the repository ruleset rejects.
+          tag=$(grep -E '^(majorVersion|minorVersion|patchVersion)=' version.properties | cut -d= -f2 | paste -sd. -)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "release version: $tag"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Nothing to release
+        if: steps.version.outputs.exists == 'true'
+        run: |
+          echo "::notice title=already released::version ${{ steps.version.outputs.tag }} is already released. Bump version.properties on your branch to publish a new release."
+
       - uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
@@ -281,25 +296,8 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
 
-      - name: Check whether this commit is already a version bump
-        id: bump_guard
-        run: |
-          # A run cancelled after it pushed its bump commit leaves a
-          # 'release: v...' commit on master. Do not bump a second time for it.
-          if git log -1 --pretty=%s | grep -qE '^release: v'; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Bump version
-        id: bump_version
-        if: github.repository == 'YuhiAida/aa-torque' && steps.bump_guard.outputs.skip == 'false'
-        uses: oflynned/android-version-bump@v2.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Move the latest tag to this commit
+        if: steps.version.outputs.exists == 'false'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -307,7 +305,7 @@ jobs:
           git push -f origin refs/tags/latest
 
       - name: Build Release apk
-        if: github.repository == 'agronick/aa-torque'
+        if: steps.version.outputs.exists == 'false' && github.repository == 'agronick/aa-torque'
         run: >
           echo "" >> ./local.properties &&
           ./gradlew assembleRelease 
@@ -318,7 +316,7 @@ jobs:
           -Pandroid.injected.signing.key.password=android
 
       - name: Build Release apk for forked repos
-        if: github.repository != 'agronick/aa-torque'
+        if: steps.version.outputs.exists == 'false' && github.repository != 'agronick/aa-torque'
         run: >
            echo "" >> ./local.properties && ./gradlew assembleRelease
            -Pandroid.injected.signing.store.file=$HOME/debug.keystore
@@ -328,19 +326,15 @@ jobs:
            -Pandroid.injected.signing.key.password=android
 
       - name: Rename release
+        if: steps.version.outputs.exists == 'false'
         run: mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/aa-torque.apk
 
       - name: Verify the release is signed with the project key
+        if: steps.version.outputs.exists == 'false'
         run: python3 tools/verify_signer.py app/build/outputs/apk/release/aa-torque.apk
 
-      - name: Read the release version
-        id: version
-        run: |
-          tag=$(grep -E '^(majorVersion|minorVersion|patchVersion)=' version.properties | cut -d= -f2 | paste -sd. -)
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "release version: $tag"
-
       - name: Create Github Release
+        if: steps.version.outputs.exists == 'false'
         uses: softprops/action-gh-release@v3.0.3
         with:
           tag_name: ${{ steps.version.outputs.tag }}

@@ -38,8 +38,9 @@ the app freely.
 | `docs/` | Reference documentation. `docs/generated/` is machine-written. |
 | `dist/` | Git-ignored scratch directory where a downloaded CI artifact lands. |
 
-The source inventory is [docs/generated/inventory.md](docs/generated/inventory.md). CI
-generates that file. Do not edit it.
+The source inventory is [docs/generated/inventory.md](docs/generated/inventory.md). Run
+`python3 tools/gen_inventory.py` and commit the result when it changes; CI checks that it is
+current and fails the pull request when it is stale. Do not hand-edit it.
 
 ## How to verify a change
 
@@ -81,16 +82,20 @@ install it if you need to look at the UI: CI compiles and checks, it does not re
 that compiles can still be visually wrong, and a merge to `master` publishes immediately.
 
 Pull requests run the same checks through the `pull_request` trigger, including PRs from
-forks. A fork PR gets a read-only token, so it cannot commit the inventory; that step is
-push-only. The checks and the debug artifact still run.
+forks. Nothing is committed by CI any more, so a fork PR behaves exactly like a branch PR:
+both are checked, and both must carry their own inventory and version bump. The debug artifact
+still runs.
 
 ## Branch and release rules
 
-- Never push to `master`. Use a branch and a draft pull request.
-- A push to `master` starts a release. CI bumps `version.properties`, force-pushes the tag
-  `latest`, and **publishes** a GitHub release that holds the APK. Publishing is automatic.
-  Never delete a release or a version tag, and never reuse a version number — fix forward.
-- Never edit `version.properties` by hand.
+- Never push to `master`. A repository ruleset requires a pull request and blocks direct
+  pushes — for humans and for CI, with no bypass.
+- **Bump `version.properties` on your branch.** CI no longer writes it: a commit pushed to
+  `master` by a job is a direct push and the ruleset rejects it.
+- A push to `master` starts a release. CI reads the version, force-pushes the tag `latest`,
+  and **publishes** a GitHub release that holds the APK. Publishing is automatic. If the
+  version was not bumped, the run reports "already released" and publishes nothing. Never
+  delete a release or a version tag, and never reuse a version number — fix forward.
 
 ## Track what you find
 

@@ -9,11 +9,11 @@ Everything is CI. Nobody builds a release by hand, and nobody publishes one from
 | Job | Runs on | Purpose |
 |---|---|---|
 | `changes` | every run | Diffs the change and sets `code`, `themes` and `docs`, so each gate reports on every pull request (a path-filtered workflow that never runs cannot be a required check). |
-| `lint` | code changes | `ktlintCheck` and `lintRelease`, then regenerates `docs/generated/inventory.md` and commits it when it changed and the event is a push. |
+| `lint` | code changes | `ktlintCheck` and `lintRelease`, then regenerates `docs/generated/inventory.md` and commits it when it changed and the event is a **push to `master`**. |
 | `render` | code changes | `verifyRoborazziDebug`: the JVM tests and the theme goldens. |
 | `themes` | theme changes | `tools/check_themes.py`, the theme contract. |
 | `docs` | markdown changes | `tools/check_docs.py`, links and paths. |
-| `build_deploy` | `master` push with code changes | Bumps the version, builds and publishes the APK. |
+| `build_deploy` | `master` push with code changes | Reads the version bumped on the pull request, builds and publishes the APK, and refuses to publish a version that is already tagged. |
 
 A pull request runs the four gates and `pr_artifact`; the release job is skipped. The release
 path cannot be exercised from a branch without relaxing that condition; see "Changing the
@@ -21,27 +21,26 @@ workflow" below.
 
 The workflow has a `concurrency` group per ref with `cancel-in-progress: true`. Merging several
 pull requests in a row triggers one push per merge, so without this a release job starts per
-push and they all bump and push `version.properties` at the same time. On 2026-10-31 that
-produced three failed runs — two `non-fast-forward`, one `tag '2.0.33' already exists` — and one
-winner. With the group in place only the newest run survives a burst, so a burst yields one
-version.
+merge. They no longer collide on `version.properties` — CI never writes it — but they would
+publish in parallel and race for the same tag. With the group in place only the newest run
+survives a burst, so a burst yields one version.
 
 ## The `build_deploy` steps
 
 1. Restore the debug keystore from the `DEBUG_KEYSTORE` secret (base64).
-2. Check whether HEAD is already a `release: v…` commit. If it is, skip the bump: a cancelled
-   run may have pushed its bump commit before it died, and bumping again would skip versions.
-3. Bump the version (`oflynned/android-version-bump@v2.0.0`). See "Version numbers" below.
-4. Move the tag `latest` to the current commit (plain `git tag -f latest` + `git push -f`), so it
-   points at the same commit as the version tag the bump produced.
-5. `./gradlew assembleRelease`. Forked repositories build unsigned by the runner and fall
+2. Read the version from `version.properties` and check whether the tag `<version>` already
+   exists. The version is bumped on the pull request (see "Version numbers"), so a merge that
+   did not bump it finds its own tag and publishes nothing: the run prints an "already
+   released" notice instead of failing.
+3. Move the tag `latest` to the current commit (plain `git tag -f latest` + `git push -f`).
+4. `./gradlew assembleRelease`. Forked repositories build unsigned by the runner and fall
    back to the `signingConfig signingConfigs.debug` in `app/build.gradle`, so the artifact is
    debug-signed and installs over earlier builds.
-6. Rename the artifact to `aa-torque.apk`.
-7. Create a GitHub release with `softprops/action-gh-release@v3.0.3`: APK plus
+5. Rename the artifact to `aa-torque.apk`.
+6. Create a GitHub release with `softprops/action-gh-release@v3.0.3`: APK plus
    `app/build/outputs/mapping/release/mapping.txt`, `generate_release_notes: true`,
    **`draft: false`** — published immediately. The release tag is read from
-   `version.properties`, so it is correct whether or not this run performed the bump.
+   `version.properties`, which the pull request already bumped.
 
 A push to `master` therefore publishes a release named after the new version, with the APK
 attached. Users can install it as soon as the run finishes, and the in-app update check sees
@@ -65,17 +64,13 @@ Consequences: each component is packed into its own field, so patch and minor mu
 stay below 100 and major must stay below 214748 (Android's `versionCode` is a signed
 32-bit integer, so `major * 10000` must fit). In practice major is single-digit.
 
-### The bump in this fork
+### Bumping in this fork
 
-The step runs when `github.repository == 'YuhiAida/aa-torque'`. It reads commit messages back
-to the previous tag, so `build_deploy` checks out with `fetch-depth: 0`; without that history
-the action cannot find the range.
+The version is bumped **on the pull request**, by whoever opens it. CI does not write to
+`master`: the repository ruleset rejects direct pushes with no bypass, so a bump commit pushed
+by a workflow would fail the run.
 
-The action writes `version.properties`, commits `release: v<version> [skip-ci]`, and pushes
-the tag `<version>`. `[skip-ci]` matters in two ways: GitHub skips the workflow for that
-push, and a push made with `GITHUB_TOKEN` does not start a workflow anyway.
-
-Commit prefixes drive the size of the bump, because the action reads conventional commits:
+Before merging a change that alters the APK, edit `version.properties` by hand:
 
 | Commit | Bump |
 |---|---|
@@ -83,9 +78,12 @@ Commit prefixes drive the size of the bump, because the action reads conventiona
 | `feat:` | minor |
 | `feat!:`, `refactor!:`, or a `BREAKING CHANGE` body | major |
 
-Proven by a dry run on 2026-10-31: a push produced `release: v2.0.32 [skip-ci]`, tag
-`2.0.32`, and `version.properties` at `2.0.32`; the build step then assembled the release
-in the same workspace, so the APK carries the bumped version.
+The tag is the plain version, `<major>.<minor>.<patch>` — no `v` prefix. `build_deploy` refuses
+to publish a version whose tag already exists, so a merge that forgot the bump publishes nothing
+and prints a notice instead of overwriting a release.
+
+Consequence: two open pull requests that both bump `version.properties` conflict in that file.
+Rebase the newer one and bump again.
 
 ## Docs-only pushes do not build
 
