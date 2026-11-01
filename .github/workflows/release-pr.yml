@@ -1,0 +1,116 @@
+name: release-pr
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+  push:
+    branches: [master]
+
+jobs:
+  release-pr:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Read the current version and count pending changes
+        id: meta
+        run: |
+          tag=$(grep -E '^(majorVersion|minorVersion|patchVersion)=' version.properties | cut -d= -f2 | paste -sd. -)
+          if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null 2>&1; then
+            count=$(git rev-list --count --merges "${tag}"..HEAD)
+          else
+            count=0
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          echo "current version: $tag, pending merges: $count"
+
+      - name: Threshold gate (push only)
+        id: gate
+        run: |
+          count="${{ steps.meta.outputs.count }}"
+          if [ "$count" -eq 0 ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "No pending merges; skipping release PR."
+          elif [ "${{ github.event_name }}" = "push" ] && [ "$count" -lt 5 ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Only $count changes (< 5); skipping release PR."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compute the next release
+        id: release
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          json=$(python3 tools/next_release.py --tag "${{ steps.meta.outputs.tag }}" --head HEAD --json)
+          version=$(printf '%s' "$json" | python3 -c "import sys, json; print(json.load(sys.stdin)['version'])")
+          echo "json=$json" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Find existing open release PR
+        id: existing
+        if: steps.gate.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          branch=$(gh pr list --label release --state open --json headRefName,title --jq '.[0].headRefName // empty')
+          if [ -n "$branch" ]; then
+            echo "branch=$branch" >> "$GITHUB_OUTPUT"
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "branch=release/v${{ steps.release.outputs.version }}" >> "$GITHUB_OUTPUT"
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create or update the release branch
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          set -e
+          version="${{ steps.release.outputs.version }}"
+          branch="${{ steps.existing.outputs.branch }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$branch"
+          python3 - "$version" <<'PY'
+          import sys
+          version = sys.argv[1].split(".")
+          path = "version.properties"
+          lines = open(path).read().splitlines()
+          out = []
+          for line in lines:
+              if line.startswith("majorVersion="):
+                  out.append("majorVersion=" + version[0])
+              elif line.startswith("minorVersion="):
+                  out.append("minorVersion=" + version[1])
+              elif line.startswith("patchVersion="):
+                  out.append("patchVersion=" + version[2])
+              else:
+                  out.append(line)
+          open(path, "w").write("\n".join(out) + "\n")
+          PY
+          git add version.properties
+          git commit -m "release: v${version}" --allow-empty
+          git push -f origin "$branch"
+
+      - name: Open or update the release PR
+        if: steps.gate.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          version="${{ steps.release.outputs.version }}"
+          branch="${{ steps.existing.outputs.branch }}"
+          oldtag="${{ steps.meta.outputs.tag }}"
+          body=$(python3 tools/next_release.py --tag "$oldtag" --head HEAD --json | python3 -c "import sys, json; d=json.load(sys.stdin); print('\n'.join('- ' + c for c in d['changes']))")
+          if [ "${{ steps.existing.outputs.found }}" = "true" ]; then
+            gh pr edit "$branch" --title "release: v${version}" --body "$body"
+          else
+            gh pr create --base master --head "$branch" --title "release: v${version}" --body "$body" --label release
+          fi

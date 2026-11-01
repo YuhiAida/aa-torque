@@ -34,7 +34,7 @@ the app freely.
 | `app/src/main/res/` | Resources, including 16 translation folders. |
 | `lib/aauto.aar` | Prebuilt Android Auto SDK. Ask before you change or replace it. |
 | `lib/speedviewlib/` | Git submodule (`agronick/SpeedView`). It is **empty** until `git submodule update --init`. |
-| `version.properties` | Version source. CI writes it on `master`. Do not edit it by hand. |
+| `version.properties` | Version source. Only the release PR bumps it; do not edit it by hand. |
 | `docs/` | Reference documentation. `docs/generated/` is machine-written. |
 | `dist/` | Git-ignored scratch directory where a downloaded CI artifact lands. |
 
@@ -83,19 +83,24 @@ that compiles can still be visually wrong, and a merge to `master` publishes imm
 
 Pull requests run the same checks through the `pull_request` trigger, including PRs from
 forks. Nothing is committed by CI any more, so a fork PR behaves exactly like a branch PR:
-both are checked, and both must carry their own inventory and version bump. The debug artifact
-still runs.
+both are checked, and both must carry their own inventory. Only the release PR bumps
+`version.properties`. The debug artifact still runs.
 
 ## Branch and release rules
 
 - Never push to `master`. A repository ruleset requires a pull request and blocks direct
   pushes — for humans and for CI, with no bypass.
-- **Bump `version.properties` on your branch.** CI no longer writes it: a commit pushed to
-  `master` by a job is a direct push and the ruleset rejects it.
+- **Only the release PR bumps `version.properties`.** CI opens a `release/*` PR weekly or
+  after five merged PRs; every other PR that changes the file fails its checks. CI never
+  writes `master`: a commit pushed by a job is a direct push and the ruleset rejects it.
 - A push to `master` starts a release. CI reads the version, force-pushes the tag `latest`,
   and **publishes** a GitHub release that holds the APK. Publishing is automatic. If the
   version was not bumped, the run reports "already released" and publishes nothing. Never
   delete a release or a version tag, and never reuse a version number — fix forward.
+- A separate `dev` workflow publishes a rolling pre-release on every code merge to `master`:
+  package `com.aatorque.stats.debug`, version `<last stable>-dev.<commits>` (the installed
+  APK's versionName ends with `.debug`), signed with the shared debug key. It installs beside
+  the stable app and is not the stable channel; the update check is disabled in that build.
 
 ## Track what you find
 

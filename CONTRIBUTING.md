@@ -32,6 +32,8 @@ Two rules that surprise people:
 - Ask before you add a dependency.
 - Do not add network, analytics or telemetry code. Crash reporting through `ch.acra` is the
   only component that sends data off the phone.
+- Only the release PR (branch `release/*`) bumps `version.properties`; a normal pull
+  request that changes it fails CI.
 
 ## AI-assisted contributions
 
