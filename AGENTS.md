@@ -34,7 +34,7 @@ the app freely.
 | `app/src/main/res/` | Resources, including 16 translation folders. |
 | `lib/aauto.aar` | Prebuilt Android Auto SDK. Ask before you change or replace it. |
 | `lib/speedviewlib/` | Git submodule (`agronick/SpeedView`). It is **empty** until `git submodule update --init`. |
-| `version.properties` | Version source. CI writes it on `master`. Do not edit it by hand. |
+| `version.properties` | Version source. Only the release PR bumps it; do not edit it by hand. |
 | `docs/` | Reference documentation. `docs/generated/` is machine-written. |
 | `dist/` | Git-ignored scratch directory where a downloaded CI artifact lands. |
 
