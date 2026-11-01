@@ -58,10 +58,11 @@ merges are skipped via `paths-ignore`). It publishes a rolling pre-release tagge
 1. Compute the version as `<last stable tag>-dev.<commits since that tag>`, with the
    version code set to the total commit count.
 2. Build the debug APK with `-PdevVersionName` and `-PdevVersionCode`.
-3. Publish it as a pre-release (`prerelease: true`) under the fixed tag `dev`. The release
-   title and the first body line carry the computed version and versionCode, so the page
-   names the build without downloading it; the rest of the body is the commit list since
-   the last stable tag.
+3. Publish it as a pre-release (`prerelease: true`) under the fixed tag `dev`. The APK asset
+   is `aa-torque-dev-<version>.apk` (for example `aa-torque-dev-2.3.7-dev.27.apk`), so the
+   file name names the build; `gh release download dev` fetches it without a run id. The
+   release title and the first body line repeat the version and versionCode, followed by
+   the commit list since the last stable tag.
 
 The debug build carries `applicationIdSuffix ".debug"` (`app/build.gradle`), so its
 package is `com.aatorque.stats.debug` and it installs beside the stable app instead of
