@@ -98,9 +98,9 @@ both are checked, and both must carry their own inventory. Only the release PR b
   version was not bumped, the run reports "already released" and publishes nothing. Never
   delete a release or a version tag, and never reuse a version number — fix forward.
 - A separate `dev` workflow publishes a rolling pre-release on every code merge to `master`:
-  package `com.aatorque.stats.debug`, version `<last stable>-dev.<commits>`, signed with the
-  shared debug key. It installs beside the stable app and is not the stable channel; the
-  update check is disabled in that build.
+  package `com.aatorque.stats.debug`, version `<last stable>-dev.<commits>` (the installed
+  APK's versionName ends with `.debug`), signed with the shared debug key. It installs beside
+  the stable app and is not the stable channel; the update check is disabled in that build.
 
 ## Track what you find
 

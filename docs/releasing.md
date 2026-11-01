@@ -65,7 +65,7 @@ The debug build carries `applicationIdSuffix ".debug"` (`app/build.gradle`), so 
 package is `com.aatorque.stats.debug` and it installs beside the stable app instead of
 replacing it. Because the package differs, it has its own Android Auto install record:
 install it with KingInstaller and Shizuku as described in the README if you want it to
-appear in Android Auto.
+appear in Android Auto. The debug build type also appends a `.debug` `versionNameSuffix` (`app/build.gradle`), so the installed APK's `versionName` is `<last stable tag>-dev.<commits>.debug` — the value the `dev.yml` aapt check asserts.
 
 The APK is signed with the shared debug keystore, so consecutive dev builds update in
 place. The pre-release is marked `prerelease: true`, so `GET /releases/latest` ignores
@@ -113,10 +113,8 @@ rejects direct pushes, so a bump commit pushed by a workflow would fail the run.
 
 No other pull request may touch `version.properties`; CI fails such a change. Before
 merging a change that alters the APK, do not edit `version.properties` by hand —
-wait for the release PR.
-
-Before merging a change that alters the APK, the release PR computes the bump from
-the conventional commits since the last tag:
+wait for the release PR, which computes the bump from the conventional commits
+since the last tag:
 
 | Commit | Bump |
 |---|---|
