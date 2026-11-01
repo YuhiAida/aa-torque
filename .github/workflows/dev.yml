@@ -3,6 +3,12 @@ name: dev
 on:
   push:
     branches: [master]
+    paths-ignore:
+      - 'LICENSE'
+      - '**/LICENSE'
+      - '*.md'
+      - '**/*.md'
+      - 'docs/**'
 
 concurrency:
   group: dev-${{ github.ref }}
