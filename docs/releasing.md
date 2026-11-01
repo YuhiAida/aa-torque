@@ -58,8 +58,10 @@ merges are skipped via `paths-ignore`). It publishes a rolling pre-release tagge
 1. Compute the version as `<last stable tag>-dev.<commits since that tag>`, with the
    version code set to the total commit count.
 2. Build the debug APK with `-PdevVersionName` and `-PdevVersionCode`.
-3. Publish it as a pre-release (`prerelease: true`) under the fixed tag `dev`, with the
-   commit list since the last stable tag as the notes.
+3. Publish it as a pre-release (`prerelease: true`) under the fixed tag `dev`. The release
+   title and the first body line carry the computed version and versionCode, so the page
+   names the build without downloading it; the rest of the body is the commit list since
+   the last stable tag.
 
 The debug build carries `applicationIdSuffix ".debug"` (`app/build.gradle`), so its
 package is `com.aatorque.stats.debug` and it installs beside the stable app instead of

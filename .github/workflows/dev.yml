@@ -85,6 +85,8 @@ jobs:
           tag=$(git describe --tags --abbrev=0 --match '[0-9]*')
           {
             echo "body<<EOF"
+            echo "**${{ steps.version.outputs.name }}** · versionCode ${{ steps.version.outputs.code }}"
+            echo
             git log --oneline "$tag"..HEAD
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
@@ -92,6 +94,7 @@ jobs:
       - name: Publish the dev pre-release
         uses: softprops/action-gh-release@v3.0.3
         with:
+          name: ${{ steps.version.outputs.name }}
           tag_name: dev
           prerelease: true
           draft: false
