@@ -77,7 +77,7 @@ jobs:
           echo "$badging" | grep -q "versionCode='${{ steps.version.outputs.code }}'"
 
       - name: Rename the debug APK
-        run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/aa-torque-dev.apk
+        run: mv app/build/outputs/apk/debug/app-debug.apk "app/build/outputs/apk/debug/aa-torque-dev-${{ steps.version.outputs.name }}.apk"
 
       - name: Compute release notes
         id: notes
@@ -85,6 +85,8 @@ jobs:
           tag=$(git describe --tags --abbrev=0 --match '[0-9]*')
           {
             echo "body<<EOF"
+            echo "**${{ steps.version.outputs.name }}** · versionCode ${{ steps.version.outputs.code }}"
+            echo
             git log --oneline "$tag"..HEAD
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
@@ -92,8 +94,9 @@ jobs:
       - name: Publish the dev pre-release
         uses: softprops/action-gh-release@v3.0.3
         with:
+          name: ${{ steps.version.outputs.name }}
           tag_name: dev
           prerelease: true
           draft: false
           body: ${{ steps.notes.outputs.body }}
-          files: app/build/outputs/apk/debug/aa-torque-dev.apk
+          files: app/build/outputs/apk/debug/aa-torque-dev-${{ steps.version.outputs.name }}.apk
