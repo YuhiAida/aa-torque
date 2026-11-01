@@ -72,7 +72,16 @@
         android:title="@string/whole_numbers"
         android:summary="@string/whole_numbers_desc"
         android:persistent="false"
-        />
+    />
+    <ListPreference
+        android:key="decimalPlaces"
+        android:title="@string/decimal_places"
+        android:summary="@string/decimal_places_desc"
+        android:entries="@array/minmax_enum_value"
+        android:entryValues="@array/minmax_enum_value"
+        android:defaultValue="2"
+        android:persistent="false"
+    />
     <PreferenceCategory
         android:title="@string/custom_script">
      <CheckBoxPreference
