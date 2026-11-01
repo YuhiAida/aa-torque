@@ -1,0 +1,90 @@
+name: dev
+
+on:
+  push:
+    branches: [master]
+
+concurrency:
+  group: dev-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  dev:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '19'
+
+      - name: Cache Gradle and wrapper
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+
+      - name: Prepare Gradle
+        run: echo "" >> ./local.properties
+
+      - name: Restore keystore
+        run: |
+          # AGP's default debug signing config reads $HOME/.android/debug.keystore.
+          # Restoring the shared keystore keeps consecutive dev builds signed with
+          # the same key, so adb install -r can update one over the other.
+          mkdir -p "$HOME/.android"
+          echo ${{ secrets.DEBUG_KEYSTORE }} | base64 -d > "$HOME/.android/debug.keystore"
+          cp "$HOME/.android/debug.keystore" "$HOME/debug.keystore"
+          ls -l "$HOME/.android/debug.keystore"
+          od -An -tx1 -N4 "$HOME/.android/debug.keystore"
+
+      - name: Compute the dev version
+        id: version
+        run: |
+          tag=$(git describe --tags --abbrev=0 --match '[0-9]*')
+          commits=$(git rev-list --count "$tag"..HEAD)
+          total=$(git rev-list --count HEAD)
+          echo "name=${tag}-dev.${commits}" >> "$GITHUB_OUTPUT"
+          echo "code=${total}" >> "$GITHUB_OUTPUT"
+
+      - name: Build the debug APK
+        run: ./gradlew assembleDebug -PdevVersionName="${{ steps.version.outputs.name }}" -PdevVersionCode="${{ steps.version.outputs.code }}"
+
+      - name: Verify the debug APK
+        run: |
+          badging=$("$ANDROID_HOME/build-tools/"*/aapt dump badging app/build/outputs/apk/debug/app-debug.apk)
+          echo "$badging"
+          echo "$badging" | grep -q "package: name='com.aatorque.stats.debug'"
+          echo "$badging" | grep -q "versionName='${{ steps.version.outputs.name }}.debug'"
+          echo "$badging" | grep -q "versionCode='${{ steps.version.outputs.code }}'"
+
+      - name: Rename the debug APK
+        run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/aa-torque-dev.apk
+
+      - name: Compute release notes
+        id: notes
+        run: |
+          tag=$(git describe --tags --abbrev=0 --match '[0-9]*')
+          {
+            echo "body<<EOF"
+            git log --oneline "$tag"..HEAD
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Publish the dev pre-release
+        uses: softprops/action-gh-release@v3.0.3
+        with:
+          tag_name: dev
+          prerelease: true
+          draft: false
+          body: ${{ steps.notes.outputs.body }}
+          files: app/build/outputs/apk/debug/aa-torque-dev.apk
