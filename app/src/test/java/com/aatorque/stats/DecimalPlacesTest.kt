@@ -9,13 +9,13 @@ class DecimalPlacesTest {
     @Test
     fun unsetWholeNumbersTrueResolvesToZero() {
         val display = Display.newBuilder().setWholeNumbers(true).build()
-        assertEquals(0, TorqueData.resolvedDecimalPlaces(display))
+        assertEquals(0, resolvedDecimalPlaces(display))
     }
 
     @Test
     fun unsetWholeNumbersFalseResolvesToNull() {
         val display = Display.newBuilder().setWholeNumbers(false).build()
-        assertEquals(null, TorqueData.resolvedDecimalPlaces(display))
+        assertEquals(null, resolvedDecimalPlaces(display))
     }
 
     @Test
@@ -24,7 +24,7 @@ class DecimalPlacesTest {
             .setWholeNumbers(false)
             .setDecimalPlaces(DecimalPlaces.ZERO)
             .build()
-        assertEquals(0, TorqueData.resolvedDecimalPlaces(display))
+        assertEquals(0, resolvedDecimalPlaces(display))
     }
 
     @Test
@@ -33,7 +33,7 @@ class DecimalPlacesTest {
             .setWholeNumbers(true)
             .setDecimalPlaces(DecimalPlaces.ONE)
             .build()
-        assertEquals(1, TorqueData.resolvedDecimalPlaces(display))
+        assertEquals(1, resolvedDecimalPlaces(display))
     }
 
     @Test
@@ -42,6 +42,6 @@ class DecimalPlacesTest {
             .setWholeNumbers(false)
             .setDecimalPlaces(DecimalPlaces.TWO)
             .build()
-        assertEquals(2, TorqueData.resolvedDecimalPlaces(display))
+        assertEquals(2, resolvedDecimalPlaces(display))
     }
 }

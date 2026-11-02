@@ -4,7 +4,6 @@ import android.icu.math.BigDecimal
 import android.icu.text.NumberFormat
 import androidx.lifecycle.MutableLiveData
 import com.aatorque.datastore.Coloring
-import com.aatorque.datastore.DecimalPlaces
 import com.aatorque.datastore.Display
 import com.aatorque.datastore.Operation
 import com.ezylang.evalex.BaseException
@@ -21,15 +20,6 @@ class TorqueData(var display: Display) {
         val intPlaces: NumberFormat = NumberFormat.getIntegerInstance()
         val onePlace: NumberFormat = NumberFormat.getNumberInstance()
         val twoPlace: NumberFormat = NumberFormat.getNumberInstance()
-
-        // Resolves how many fraction digits should be rendered for a display.
-        // null means legacy variable behaviour (0..2 digits).
-        fun resolvedDecimalPlaces(display: Display): Int? = when (display.decimalPlaces) {
-            DecimalPlaces.ZERO -> 0
-            DecimalPlaces.ONE -> 1
-            DecimalPlaces.TWO -> 2
-            else -> if (display.wholeNumbers) 0 else null
-        }
     }
 
     init {
@@ -107,7 +97,7 @@ class TorqueData(var display: Display) {
     }
 
     private fun convertValue(value: Double): Pair<Double, String> {
-        val digits = TorqueData.resolvedDecimalPlaces(display)
+        val digits = resolvedDecimalPlaces(display)
         val numberFormatter = when (digits) {
             null -> twoPlaces
             0 -> intPlaces
