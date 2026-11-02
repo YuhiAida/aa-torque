@@ -62,11 +62,13 @@ merges are skipped via `paths-ignore`). It publishes a rolling pre-release tagge
    that tag to the commit it built, so the release page names the same build. The body lists
    one first-parent line per merged change, so a merge is not repeated as its own commit. The APK asset
    is `aa-torque-dev-<version>.apk` (for example `aa-torque-dev-2.3.7-dev.27.apk`), so the
-   file name names the build. Every build stays on the release, so an older one can be
-   installed for testing. CI restores the shared keystore where AGP reads it and checks the
-   built APK against the key pinned in `tools/verify_signer.py`, so any build installs over
-   any other. The release title and the first body line carry the version and versionCode,
-   followed by the commit list since the last stable tag.
+   file name names the build. The release keeps only the five newest APK assets and drops
+   the stale unversioned `aa-torque-dev.apk` if it is still attached, so an older build can
+   be installed for testing without an unbounded asset list. CI restores the shared keystore
+   where AGP reads it and checks the built APK against the key pinned in
+   `tools/verify_signer.py`, so any build installs over any other. The release is titled
+   `dev builds`; the first body line carries the version and versionCode, followed by the
+   commit list since the last stable tag.
 
 The debug build carries `applicationIdSuffix ".debug"` (`app/build.gradle`), so its
 package is `com.aatorque.stats.debug` and it installs beside the stable app instead of
