@@ -14,6 +14,7 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreferenceCompat
+import com.aatorque.datastore.DecimalPlaces
 import com.aatorque.datastore.Display
 import com.aatorque.datastore.MaxControl
 import com.aatorque.datastore.Screen
@@ -48,7 +49,7 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
     lateinit var unitPref: EditTextPreference
     lateinit var runcustomScriptPref: CheckBoxPreference
     lateinit var jsPref: FormulaPreference
-    lateinit var wholeNumberPref: CheckBoxPreference
+    lateinit var decimalPlacesPref: ListPreference
     lateinit var gaugeSettings: PreferenceCategory
     lateinit var ticksActivePref: CheckBoxPreference
     lateinit var maxValuesActivePref: ListPreference
@@ -102,7 +103,7 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
         unitPref = findPreference("unit")!!
         runcustomScriptPref = findPreference("runcustomScript")!!
         jsPref = findPreference("customScript")!!
-        wholeNumberPref = findPreference("wholeNumbers")!!
+        decimalPlacesPref = findPreference("decimalPlaces")!!
         gaugeSettings = findPreference("gaugeSettings")!!
         ticksActivePref = findPreference("ticksActive")!!
         maxValuesActivePref = findPreference("maxValuesActive")!!
@@ -136,6 +137,7 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
         maxValuePref.setOnBindEditTextListener(editListen)
         maxValuesActivePref.summaryProvider = ListPreference.SimpleSummaryProvider.getInstance()
         maxMarksActivePref.summaryProvider = ListPreference.SimpleSummaryProvider.getInstance()
+        decimalPlacesPref.summaryProvider = ListPreference.SimpleSummaryProvider.getInstance()
 
         pidPref.setOnPreferenceChangeListener { _, newValue ->
             if (newValue == "") {
@@ -185,7 +187,13 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
                 maxValuePref.text = display.maxValue.toString()
                 unitPref.text = display.unit
                 runcustomScriptPref.isChecked = display.enableScript
-                wholeNumberPref.isChecked = display.wholeNumbers
+                val dpValue = when (display.decimalPlaces) {
+                    DecimalPlaces.ZERO -> "0"
+                    DecimalPlaces.ONE -> "1"
+                    DecimalPlaces.TWO -> "2"
+                    else -> if (display.wholeNumbers) "0" else "2"
+                }
+                decimalPlacesPref.value = dpValue
                 ticksActivePref.isChecked = display.ticksActive
                 maxValuesActivePref.value = display.maxValuesActive.number.toString()
                 maxMarksActivePref.value = display.maxMarksActive.number.toString()
@@ -215,6 +223,7 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
         unitPref.isEnabled = enabled
         runcustomScriptPref.isEnabled = enabled
         showLabelPref.isEnabled = enabled
+        decimalPlacesPref.isEnabled = enabled
         if (isClock) {
             gaugeSettings.isEnabled = enabled
             imagePref.isEnabled = enabled
@@ -261,7 +270,14 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
         ).setCustomScript(
             jsPref.getValue()
         ).setWholeNumbers(
-            wholeNumberPref.isChecked
+            decimalPlacesPref.value == "0"
+        ).setDecimalPlaces(
+            when (decimalPlacesPref.value) {
+                "0" -> DecimalPlaces.ZERO
+                "1" -> DecimalPlaces.ONE
+                "2" -> DecimalPlaces.TWO
+                else -> DecimalPlaces.LEGACY
+            }
         ).setTicksActive(
             ticksActivePref.isChecked
         ).setMaxMarksActive(

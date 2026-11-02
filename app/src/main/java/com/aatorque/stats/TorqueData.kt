@@ -18,6 +18,8 @@ class TorqueData(var display: Display) {
         val drawableRegex = Regex("res/drawable/(?<name>.+)\\.[a-z]+")
         val twoPlaces: NumberFormat = NumberFormat.getNumberInstance()
         val intPlaces: NumberFormat = NumberFormat.getIntegerInstance()
+        val onePlace: NumberFormat = NumberFormat.getNumberInstance()
+        val twoPlace: NumberFormat = NumberFormat.getNumberInstance()
     }
 
     init {
@@ -26,6 +28,14 @@ class TorqueData(var display: Display) {
         twoPlaces.isGroupingUsed = true
         intPlaces.isGroupingUsed = true
         twoPlaces.roundingMode = BigDecimal.ROUND_HALF_UP
+        onePlace.minimumFractionDigits = 1
+        onePlace.maximumFractionDigits = 1
+        onePlace.isGroupingUsed = true
+        onePlace.roundingMode = BigDecimal.ROUND_HALF_UP
+        twoPlace.minimumFractionDigits = 2
+        twoPlace.maximumFractionDigits = 2
+        twoPlace.isGroupingUsed = true
+        twoPlace.roundingMode = BigDecimal.ROUND_HALF_UP
     }
 
     var pid: String? = null
@@ -87,7 +97,14 @@ class TorqueData(var display: Display) {
     }
 
     private fun convertValue(value: Double): Pair<Double, String> {
-        val numberFormatter = if (display.wholeNumbers) intPlaces else twoPlaces
+        val digits = resolvedDecimalPlaces(display)
+        val numberFormatter = when (digits) {
+            null -> twoPlaces
+            0 -> intPlaces
+            1 -> onePlace
+            2 -> twoPlace
+            else -> twoPlaces
+        }
         if (!display.enableScript || display.customScript == "") {
             return Pair(
                 value,
