@@ -11,3 +11,6 @@ google-services.json
 
 # locally built apk
 dist/
+
+# agent worktrees, one per branch, removed after the pull request merges
+.worktrees/

@@ -38,6 +38,22 @@ the app freely.
 | `docs/` | Reference documentation. |
 | `dist/` | Git-ignored scratch directory where a downloaded CI artifact lands. |
 
+## Worktrees
+
+Create a worktree in the `.worktrees` directory inside the repo, never beside it:
+
+    git worktree add .worktrees/<slug> -b <branch>
+
+That directory is git-ignored. Do not create `<repo>-wt-<slug>` in a parent
+directory. Keep one worktree per branch. Remove it after its pull request merges:
+
+    git worktree remove .worktrees/<slug>
+    git branch -d <branch>
+
+`git worktree remove` refuses a tree with an initialized `lib/speedviewlib`. Add `--force`
+only after `git status` in that tree is empty and `git rev-list --count origin/master..<branch>`
+returns 0.
+
 ## How to verify a change
 
 CI is the required gate. It runs on every pull request and on pushes to `master`.
