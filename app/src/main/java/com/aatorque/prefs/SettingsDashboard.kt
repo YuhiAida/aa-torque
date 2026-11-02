@@ -11,6 +11,7 @@ import androidx.preference.EditTextPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
+import com.aatorque.stats.PidInfo
 import com.aatorque.stats.R
 import com.aatorque.stats.TorqueServiceWrapper
 import kotlinx.coroutines.launch
@@ -39,64 +40,14 @@ class SettingsDashboard : PreferenceFragmentCompat() {
         R.drawable.ic_settings_view4
     )
     var mBound = false
+    var torqueService: TorqueServiceWrapper? = null
 
     var torqueConnection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
             mBound = true
-            val torqueService = (service as TorqueServiceWrapper.LocalBinder).getService()
-            torqueService.loadPidInformation(false) { pids ->
-                activity?.let {
-                    it.runOnUiThread {
-                        mainCat.title = null
-                        val dbIndex = dashboardIndex()
-                        lifecycleScope.launch {
-                            requireContext().dataStore.data.collect { userPreference ->
-                                val screen = userPreference.getScreens(dbIndex)
-                                performanceTitle.text = screen.title
-                                performanceTitle.title =
-                                    resources.getString(
-                                        R.string.pref_title_performance,
-                                        dbIndex + 1
-                                    )
-                                optionsCat.removeAll()
-                                val sources = arrayOf(screen.gaugesList, screen.displaysList)
-                                val texts = arrayOf(
-                                    clockText.map(requireContext()::getString),
-                                    (1..4).map {
-                                        resources.getString(R.string.pref_view, it)
-                                    }
-                                )
-                                val icons = arrayOf(clockIcon, displayIcon)
-                                arrayOf("clock", "display").forEachIndexed { i, type ->
-                                    sources[i].forEachIndexed { j, screen ->
-                                        optionsCat.addPreference(
-                                            Preference(requireContext()).also {
-                                                it.key = "${type}_${dbIndex}_$j"
-                                                it.summary = pids.firstOrNull { pid ->
-                                                    "torque_${pid.first}" == screen.pid
-                                                }?.second?.get(0) ?: ""
-                                                it.title = texts[i][j]
-                                                it.icon = AppCompatResources.getDrawable(
-                                                    requireContext(),
-                                                    icons[i][j]
-                                                )
-                                                DrawableCompat.setTint(
-                                                    it.icon!!,
-                                                    resources.getColor(
-                                                        R.color.tintColor,
-                                                        requireContext().theme
-                                                    )
-                                                )
-                                                it.fragment =
-                                                    SettingsPIDFragment::class.java.canonicalName
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            torqueService = (service as TorqueServiceWrapper.LocalBinder).getService()
+            torqueService?.loadPidInformation(false) { pids ->
+                buildOptions(pids)
             }
         }
 
@@ -111,6 +62,9 @@ class SettingsDashboard : PreferenceFragmentCompat() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mBound = TorqueServiceWrapper.runStartIntent(requireContext(), torqueConnection)
+        if (mBound) {
+            buildOptions(torqueService?.pids ?: emptyList())
+        }
     }
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
@@ -128,6 +82,61 @@ class SettingsDashboard : PreferenceFragmentCompat() {
                 }
             }
             return@setOnPreferenceChangeListener true
+        }
+    }
+
+    private fun buildOptions(pids: PidInfo) {
+        activity?.let { act ->
+            act.runOnUiThread {
+                mainCat.title = null
+                val dbIndex = dashboardIndex()
+                lifecycleScope.launch {
+                    requireContext().dataStore.data.collect { userPreference ->
+                        val screen = userPreference.getScreens(dbIndex)
+                        performanceTitle.text = screen.title
+                        performanceTitle.title =
+                            resources.getString(
+                                R.string.pref_title_performance,
+                                dbIndex + 1
+                            )
+                        optionsCat.removeAll()
+                        val sources = arrayOf(screen.gaugesList, screen.displaysList)
+                        val texts = arrayOf(
+                            clockText.map(requireContext()::getString),
+                            (1..4).map {
+                                resources.getString(R.string.pref_view, it)
+                            }
+                        )
+                        val icons = arrayOf(clockIcon, displayIcon)
+                        arrayOf("clock", "display").forEachIndexed { i, type ->
+                            sources[i].forEachIndexed { j, screen ->
+                                optionsCat.addPreference(
+                                    Preference(requireContext()).also {
+                                        it.key = "${type}_${dbIndex}_$j"
+                                        it.summary = pids.firstOrNull { pid ->
+                                            "torque_${pid.first}" == screen.pid
+                                        }?.second?.get(0) ?: ""
+                                        it.title = texts[i][j]
+                                        it.icon = AppCompatResources.getDrawable(
+                                            requireContext(),
+                                            icons[i][j]
+                                        )
+                                        DrawableCompat.setTint(
+                                            it.icon!!,
+                                            resources.getColor(
+                                                R.color.tintColor,
+                                                requireContext().theme
+                                            )
+                                        )
+                                        it.fragment =
+                                            SettingsPIDFragment::class.java.canonicalName
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
