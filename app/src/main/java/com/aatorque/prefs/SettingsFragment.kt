@@ -56,28 +56,26 @@ class SettingsFragment : PreferenceFragmentCompat() {
         backgroundPref.summaryProvider = ListPreference.SimpleSummaryProvider.getInstance()
         numScreensPref.summaryProvider = EditTextPreference.SimpleSummaryProvider.getInstance()
         numScreensPref.setOnPreferenceChangeListener { _, newValue ->
-            val intVal = (newValue as String).toInt()
-            if (intVal in 1..10) {
-                lifecycleScope.launch {
-                    requireContext().dataStore.updateData { currentSettings ->
-                        var bldr = currentSettings.toBuilder()
-                        if (bldr.screensCount > intVal) {
-                            val keeping = bldr.screensList.subList(0, intVal)
-                            bldr = bldr.clearScreens().addAllScreens(keeping)
-                        } else if (currentSettings.screensCount < intVal) {
-                            val newItms = Collections.nCopies(
-                                intVal - currentSettings.screensCount,
-                                UserPreferenceSerializer.defaultScreen.build()
-                            )
-                            bldr = bldr.addAllScreens(newItms.toMutableList())
-                            Timber.i("${newItms.size} added, $intVal specified")
-                        }
-                        return@updateData bldr.build()
+            val intVal = screensCountOrNull(newValue as? String)
+                ?: return@setOnPreferenceChangeListener false
+            lifecycleScope.launch {
+                requireContext().dataStore.updateData { currentSettings ->
+                    var bldr = currentSettings.toBuilder()
+                    if (bldr.screensCount > intVal) {
+                        val keeping = bldr.screensList.subList(0, intVal)
+                        bldr = bldr.clearScreens().addAllScreens(keeping)
+                    } else if (currentSettings.screensCount < intVal) {
+                        val newItms = Collections.nCopies(
+                            intVal - currentSettings.screensCount,
+                            UserPreferenceSerializer.defaultScreen.build()
+                        )
+                        bldr = bldr.addAllScreens(newItms.toMutableList())
+                        Timber.i("${newItms.size} added, $intVal specified")
                     }
+                    return@updateData bldr.build()
                 }
-                return@setOnPreferenceChangeListener true
             }
-            return@setOnPreferenceChangeListener false
+            return@setOnPreferenceChangeListener true
         }
 
         themePref.setOnPreferenceChangeListener { _, newValue ->
