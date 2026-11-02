@@ -60,7 +60,10 @@ Read it in this order:
    7 threads ticks every 300 ms, asks Torque for the values of the subscribed gauges, and
    publishes `ConnectStatus` (`CONNECTING_TORQUE`, `CONNECTING_ECU`, `CONNECTED`,
    `SETUP_GAUGE`) as a flow. It keeps a cache per dashboard so a switch does not blank the
-   screen.
+   screen. When the developer option simulates metrics, the same tick reads
+   `stats/SimulatedValue.kt` instead of Torque: every gauge sweeps between its configured
+   minimum and maximum, and the values still pass through `TorqueData`, so formatting,
+   expressions and alarms behave as they do with live data.
 5. `stats/TorqueData.kt` — one instance per gauge. It formats the value against the unit,
    precision and min/max from the preferences, evaluates custom EvalEx expressions, and
    exposes the result as `MutableLiveData`.
