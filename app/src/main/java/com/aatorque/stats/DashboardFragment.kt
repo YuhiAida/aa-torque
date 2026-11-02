@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
@@ -30,6 +31,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.aatorque.datastore.UserPreference
+import com.aatorque.prefs.DevOptions
 import com.aatorque.prefs.SettingsViewModel
 import com.aatorque.prefs.dataStore
 import com.aatorque.stats.databinding.FragmentDashboardBinding
@@ -47,6 +49,12 @@ open class DashboardFragment : AlbumArt() {
     lateinit var mLayoutDashboard: ConstraintLayout
 
     val torqueRefresher = TorqueRefresher()
+    private val devPrefListener =
+        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == DevOptions.SIMULATE_VALUES) {
+                context?.let { torqueRefresher.simulate = DevOptions.simulateValues(it) }
+            }
+        }
     private val torqueService = TorqueService()
 
     private lateinit var mBtnNext: ImageButton
@@ -98,6 +106,8 @@ open class DashboardFragment : AlbumArt() {
         super.onCreate(savedInstanceState)
         settingsViewModel = ViewModelProvider(this)[SettingsViewModel::class.java]
         val context = requireContext()
+        torqueRefresher.simulate = DevOptions.simulateValues(context)
+        DevOptions.prefs(context).registerOnSharedPreferenceChangeListener(devPrefListener)
         torqueService.startTorque(context)
         val registerWithView = { call: suspend (Flow<UserPreference>) -> Unit ->
             lifecycleScope.launch {
@@ -403,6 +413,9 @@ open class DashboardFragment : AlbumArt() {
 
     override fun onDestroy() {
         super.onDestroy()
+        context?.let {
+            DevOptions.prefs(it).unregisterOnSharedPreferenceChangeListener(devPrefListener)
+        }
         torqueService.onDestroy(requireContext())
         torqueService.requestQuit(requireContext())
     }

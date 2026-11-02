@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/developer_simulation">
+
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="simulateValues"
+            android:persistent="false"
+            android:summary="@string/developer_simulation_summary"
+            android:title="@string/developer_simulation_title" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

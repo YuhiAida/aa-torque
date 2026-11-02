@@ -199,4 +199,9 @@
     <string name="value">Value</string>
     <string name="color">Color</string>
     <string name="invalid_settings">Attempted to import invalid settings file.</string>
+    <string name="developer_options">Developer options</string>
+    <string name="developer_options_summary">Simulation and diagnostics</string>
+    <string name="developer_simulation">Simulation</string>
+    <string name="developer_simulation_title">Simulate metrics</string>
+    <string name="developer_simulation_summary">Sweep every gauge from its minimum to its maximum. Off reads Torque data.</string>
 </resources>

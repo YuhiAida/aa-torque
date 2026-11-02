@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.DeadObjectException
 import android.os.IBinder
+import android.os.RemoteException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import org.prowl.torque.remote.ITorqueService
@@ -47,8 +48,13 @@ class TorqueService {
         override fun onServiceConnected(arg0: ComponentName, service: IBinder) {
             try {
                 val svc = ITorqueService.Stub.asInterface(service)
-                if (BuildConfig.SIMULATE_METRICS) {
-                    svc.setDebugTestMode(!svc.isConnectedToECU)
+                // Torque's test mode outlives our process. An earlier build enabled it when no
+                // ECU was connected, and Torque then feeds random values that look like live
+                // data. Simulation belongs to the app now, so always turn Torque's off.
+                try {
+                    svc.setDebugTestMode(false)
+                } catch (e: RemoteException) {
+                    Timber.w(e, "Could not disable Torque test mode")
                 }
                 torqueService = svc
                 conLock.withLock {
