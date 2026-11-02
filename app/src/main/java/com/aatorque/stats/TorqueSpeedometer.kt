@@ -12,6 +12,7 @@ import androidx.core.graphics.toRect
 import com.aatorque.datastore.Coloring
 import com.aatorque.utils.OpenCloseAnimator
 import com.github.anastr.speedviewlib.ImageSpeedometer
+import java.util.Locale
 
 class TorqueSpeedometer @JvmOverloads constructor(
     context: Context,
@@ -103,3 +104,5 @@ class TorqueSpeedometer @JvmOverloads constructor(
         }
     }
 }
+
+fun formatTwoDecimalPlaces(speed: Float): String = String.format(Locale.ROOT, "%.2f", speed)
