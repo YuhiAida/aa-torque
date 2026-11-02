@@ -23,9 +23,7 @@ import com.aatorque.stats.TorqueServiceWrapper
 import com.aatorque.stats.iconEntryValue
 import kotlin.math.ceil
 import kotlin.math.floor
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -238,7 +236,6 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
         }
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
     fun saveState() {
         fun coerce(value: String?, default: Int): Int = try {
             value?.toInt() ?: default
@@ -290,7 +287,7 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
             display = display.setIcon(imagePref.value)
         }
         val context = requireContext()
-        GlobalScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.IO) {
             context.dataStore.updateData { currentSettings ->
                 return@updateData currentSettings.toBuilder().let { set1 ->
                     var screenObj: Screen.Builder = try {

@@ -298,7 +298,7 @@ class SettingsActivity :
         val prefix = pref.extras.getString("prefix") ?: pref.key
         if (prefix.startsWith("clock_") || prefix.startsWith("display")) {
             val parts = prefix.split("_")
-            assert(parts.size == 3)
+            if (parts.size != 3) return false
             val isClock = parts[0] == "clock"
             val screen = parts[1].toInt()
             val index = parts[2].toInt()

@@ -17,9 +17,7 @@ import com.aatorque.datastore.UserPreference
 import com.aatorque.stats.NotiService
 import com.aatorque.stats.R
 import java.util.Collections
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -190,11 +188,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
     private fun updateDatastorePref(
         updateBuilder: (obj: UserPreference.Builder) -> UserPreference.Builder
     ) {
-        GlobalScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.IO) {
             requireContext().dataStore.updateData { currentSettings ->
                 updateBuilder(currentSettings.toBuilder()).build()
             }
