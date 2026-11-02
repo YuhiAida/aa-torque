@@ -69,12 +69,30 @@ jobs:
             echo "found=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Keep the branch name on the version
+        id: target
+        if: steps.gate.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          version="${{ steps.release.outputs.version }}"
+          branch="${{ steps.existing.outputs.branch }}"
+          desired="release/v${version}"
+          if [ -n "$branch" ] && [ "$branch" != "$desired" ]; then
+            encoded=$(python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=''))" "$branch")
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/branches/${encoded}/rename" -f new_name="$desired" >/dev/null
+            echo "Renamed $branch to $desired."
+            branch="$desired"
+          fi
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
       - name: Create or update the release branch
         if: steps.gate.outputs.run == 'true'
         run: |
           set -e
           version="${{ steps.release.outputs.version }}"
-          branch="${{ steps.existing.outputs.branch }}"
+          branch="${{ steps.target.outputs.branch }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -B "$branch"
@@ -106,7 +124,7 @@ jobs:
         run: |
           set -e
           version="${{ steps.release.outputs.version }}"
-          branch="${{ steps.existing.outputs.branch }}"
+          branch="${{ steps.target.outputs.branch }}"
           oldtag="${{ steps.meta.outputs.tag }}"
           body=$(python3 tools/next_release.py --tag "$oldtag" --head HEAD --json | python3 -c "import sys, json; d=json.load(sys.stdin); print('\n'.join('- ' + c for c in d['changes']))")
           if [ "${{ steps.existing.outputs.found }}" = "true" ]; then
