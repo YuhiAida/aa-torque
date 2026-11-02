@@ -134,6 +134,9 @@ def entries(tag, head, cwd=None, slug=None):
         match = MERGE.match(subject)
         if match:
             pr = match.group(1)
+            # The release PR only bumps the version; it is not a product change.
+            if "/release/" in subject[match.end():]:
+                continue
             try:
                 real = git("log", "-1", "--format=%s%x1f%b", f"{sha}^2", cwd=cwd)
                 real_parts = real.split("\x1f", 1)
