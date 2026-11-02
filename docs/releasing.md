@@ -37,10 +37,14 @@ survives a burst, so a burst yields one version.
    back to the `signingConfig signingConfigs.debug` in `app/build.gradle`, so the artifact is
    debug-signed and installs over earlier builds.
 5. Rename the artifact to `aa-torque-<version>.apk`.
-6. Create a GitHub release with `softprops/action-gh-release@v3.0.3`: APK plus
-   `app/build/outputs/mapping/release/mapping.txt`, `generate_release_notes: true`,
-   **`draft: false`** — published immediately. The release tag is read from
-   `version.properties`, which the release PR already bumped.
+6. Build the release body with `tools/release_notes.py`: title, release date, a one-line
+   summary, measured stats, one section per commit type, an updating note and the full
+   changelog link. The script reads the commits since the previous tag and asks the API for
+   each pull request title.
+7. Create a GitHub release with `softprops/action-gh-release@v3.0.3`: APK plus
+   `app/build/outputs/mapping/release/mapping.txt`, `body_path: notes.md`, named
+   `AA Torque v<version>`, **`draft: false`** — published immediately. The release tag is
+   read from `version.properties`, which the release PR already bumped.
 
 A push to `master` therefore publishes a release named after the new version, with the APK
 attached. Users can install it as soon as the run finishes, and the in-app update check sees
@@ -59,8 +63,9 @@ merges are skipped via `paths-ignore`). It publishes one pre-release per stable 
    version code set to the total commit count. The cycle tag is `dev-<last stable tag>`.
 2. Build the debug APK with `-PdevVersionName` and `-PdevVersionCode`.
 3. Publish it as a pre-release (`prerelease: true`) under the cycle tag. The run moves that
-   tag to the commit it built, so the release page names the same build. The body lists one
-   first-parent line per merged change, so a merge is not repeated as its own commit. The APK
+   tag to the commit it built, so the release page names the same build. The body comes from
+   `tools/release_notes.py --dev`: one section per commit type, the versionCode next to the
+   date, and the debug-package note. The APK
    asset is `aa-torque-dev-<version>.apk` (for example `aa-torque-dev-2.4.0-dev.7.apk`), so
    the file name names the build. Every build of the cycle stays on that release, so an
    older one can be installed for testing; the next stable release starts a new cycle

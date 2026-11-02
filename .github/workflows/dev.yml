@@ -90,14 +90,22 @@ jobs:
 
       - name: Compute release notes
         id: notes
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          tag=$(git describe --tags --abbrev=0 --match '[0-9]*')
+          python3 tools/release_notes.py \
+            --tag "${{ steps.version.outputs.stable }}" \
+            --head HEAD \
+            --version "${{ steps.version.outputs.name }}" \
+            --version-code "${{ steps.version.outputs.code }}" \
+            --date "$(date -u +%Y-%m-%d)" \
+            --repo-slug "${{ github.repository }}" \
+            --dev \
+            --out notes.md
           {
-            echo "body<<EOF"
-            echo "**${{ steps.version.outputs.name }}** · versionCode ${{ steps.version.outputs.code }}"
-            echo
-            git log --oneline --first-parent "$tag"..HEAD
-            echo "EOF"
+            echo "body<<NOTES_EOF"
+            cat notes.md
+            echo "NOTES_EOF"
           } >> "$GITHUB_OUTPUT"
 
       - name: Move the cycle tag to this commit

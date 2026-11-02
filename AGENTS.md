@@ -141,6 +141,21 @@ Do not leave it in a chat message or a pull request comment.
 - When your change moves a data path, adds a module or renames a subsystem, update
   [docs/architecture.md](docs/architecture.md) in the same pull request.
 
+## Commit and pull request text
+
+`tools/release_notes.py` builds every release body from the commit subjects and pull request
+titles, so both are user-facing text.
+
+- Start every commit subject and every pull request title with one of `feat`, `fix`,
+  `perf`, `refactor`, `docs`, `test`, `ci`, `build`, `chore`. The prefix picks the section
+  in the release notes; an unrecognised prefix lands in Other Changes.
+- Say what changes for the user: `fix: keep dashboard settings usable without Torque`, not
+  `refactor: extract buildOptions`.
+- Keep the subject under 72 characters, with no trailing period and no internal detail
+  (run ids, tool names, chat references).
+- One pull request, one change. A merged pull request appears in the notes under its title,
+  so the title must stand alone without the branch name.
+
 ## Two behaviours you must not "fix"
 
 Both look like bugs. Both are correct. Details are in `docs/`.
