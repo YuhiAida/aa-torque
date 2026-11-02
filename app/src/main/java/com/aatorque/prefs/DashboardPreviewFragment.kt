@@ -13,10 +13,12 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.aatorque.stats.R
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
-
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 class DashboardPreviewFragment : Fragment() {
     val handler = Handler(Looper.getMainLooper())
     companion object {
@@ -30,11 +32,13 @@ class DashboardPreviewFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_dashboard_preview, container, false)
-        val data = runBlocking {
-            requireContext().dataStore.data.first()
+        lifecycleScope.launch {
+            val data = withContext(Dispatchers.IO) {
+                requireContext().dataStore.data.first()
+            }
+            inflater.context.setTheme(mapTheme(requireContext(), data.selectedTheme))
+            forceRotate(true)
         }
-        inflater.context.setTheme(mapTheme(requireContext(), data.selectedTheme))
-        forceRotate(true)
         return view
     }
 

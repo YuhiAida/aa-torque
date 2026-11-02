@@ -15,7 +15,7 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         Timber.plant(logTree)
-        fixAndroid14Perms()
+        Thread { fixAndroid14Perms() }.start()
     }
 
     fun fixAndroid14Perms() {
