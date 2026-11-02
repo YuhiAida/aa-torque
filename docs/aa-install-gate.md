@@ -76,12 +76,43 @@ KingInstaller.
 | Install path | `installerPackageName` | `initiatingPackageName` |
 |---|---|---|
 | `adb install -i com.android.vending` | `com.android.vending` | `com.android.shell` |
+| tap install through the system installer | `com.google.android.packageinstaller` | `com.google.android.packageinstaller` |
+| tap install, `EXTRA_INSTALLER_PACKAGE_NAME=com.android.vending` | `com.google.android.packageinstaller` | `com.google.android.packageinstaller` |
 | update **without** `-i` | `null` | `com.android.shell` |
 | update **with** `-i com.android.vending` | `com.android.vending` | `com.android.shell` |
+
+The system installer drops `EXTRA_INSTALLER_PACKAGE_NAME` unless the calling app is the
+installer itself or holds `INSTALL_PACKAGES` (InstallStart, `Invalid
+EXTRA_INSTALLER_PACKAGE_NAME`). An ordinary app cannot ask for `com.android.vending`.
 
 The installer field is not sticky: an update rewritten by another path clears it. That is why an
 update always has to go through KingInstaller, even when the version only moves by a patch, and
 why the prompt above only links to the release page instead of installing it.
+
+## Why the Play Store cannot ship this UI
+
+Play would fix the record by itself: it installs with `installerPackageName=com.android.vending`
+and the system installer as the initiator. It is not available to this app.
+
+The Play Console review guidelines are explicit under "Category not permitted": the app
+"must use the modern Jetpack `androidx.car.app` library", must "strictly implement features
+within permitted car app categories", and the manifest must declare a supported car
+category. AA Torque does none of that: its car UI comes from the legacy `lib/aauto.aar` SDK
+and it declares no Car App category.
+
+The supported categories are media, communication, navigation, POI, IoT, weather, and parked
+video, games and browsers. A free-form gauge dashboard is none of them.
+
+The supported way to draw in the car is the Android for Cars App Library
+(`androidx.car.app`), whose templates lay out the screen and the app fills them. There is no
+gauge template; the closest is `PaneTemplate` with text rows, which cannot draw a dial. AA
+Torque draws its own surface with the legacy projection SDK (`lib/aauto.aar`), which the
+templates do not cover.
+
+A Play listing would therefore likely fail review, and a later policy change could remove
+it. The sideload path with KingInstaller and Shizuku stays the supported one for this UI. An
+app that shows the values as an Android Auto media card falls in the supported media
+category, which is the only Play-compatible direction.
 
 ## When it still does not appear
 
