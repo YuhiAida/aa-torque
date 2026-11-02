@@ -63,7 +63,8 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
             torqueService = (service as TorqueServiceWrapper.LocalBinder).getService()
             torqueService!!.loadPidInformation(false) { pids ->
-                requireActivity().runOnUiThread {
+                activity?.runOnUiThread {
+                    if (!isAdded || view == null) return@runOnUiThread
                     val valuesQuery = pids.map { "torque_${it.first}" }.toTypedArray()
                     val names = pids.map { it.second[0] }.toTypedArray()
                     pidPref.entryValues = arrayOf("") + valuesQuery
@@ -177,6 +178,7 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
                 val screen = it.getScreens(screen)
                 return@map if (isClock) screen.getGauges(index) else screen.getDisplays(index)
             }.collect {
+                if (!isAdded || view == null) return@collect
                 display = it
                 enabledPref.isChecked = !display.disabled
                 pidPref.value = display.pid
