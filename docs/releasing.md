@@ -36,7 +36,7 @@ survives a burst, so a burst yields one version.
 4. `./gradlew assembleRelease`. Forked repositories build unsigned by the runner and fall
    back to the `signingConfig signingConfigs.debug` in `app/build.gradle`, so the artifact is
    debug-signed and installs over earlier builds.
-5. Rename the artifact to `aa-torque.apk`.
+5. Rename the artifact to `aa-torque-<version>.apk`.
 6. Create a GitHub release with `softprops/action-gh-release@v3.0.3`: APK plus
    `app/build/outputs/mapping/release/mapping.txt`, `generate_release_notes: true`,
    **`draft: false`** — published immediately. The release tag is read from

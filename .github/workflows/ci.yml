@@ -349,11 +349,11 @@ jobs:
 
       - name: Rename release
         if: steps.version.outputs.exists == 'false'
-        run: mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/aa-torque.apk
+        run: mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/aa-torque-${{ steps.version.outputs.tag }}.apk
 
       - name: Verify the release is signed with the project key
         if: steps.version.outputs.exists == 'false'
-        run: python3 tools/verify_signer.py app/build/outputs/apk/release/aa-torque.apk
+        run: python3 tools/verify_signer.py app/build/outputs/apk/release/aa-torque-${{ steps.version.outputs.tag }}.apk
 
       - name: Create Github Release
         if: steps.version.outputs.exists == 'false'
@@ -367,5 +367,5 @@ jobs:
           # collapse into one surviving run, so this publishes one version per burst.
           draft: false
           files: |
-            app/build/outputs/apk/release/aa-torque.apk
+            app/build/outputs/apk/release/aa-torque-${{ steps.version.outputs.tag }}.apk
             app/build/outputs/mapping/release/mapping.txt
