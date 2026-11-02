@@ -73,7 +73,7 @@
         android:summary="@string/decimal_places_desc"
         android:entries="@array/minmax_enum_value"
         android:entryValues="@array/minmax_enum_value"
-        android:defaultValue="2"
+        android:defaultValue="1"
         android:persistent="false"
     />
     <PreferenceCategory

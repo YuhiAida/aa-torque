@@ -189,12 +189,7 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
                 maxValuePref.text = display.maxValue.toString()
                 unitPref.text = display.unit
                 runcustomScriptPref.isChecked = display.enableScript
-                val dpValue = when (display.decimalPlaces) {
-                    DecimalPlaces.ZERO -> "0"
-                    DecimalPlaces.ONE -> "1"
-                    DecimalPlaces.TWO -> "2"
-                    else -> if (display.wholeNumbers) "0" else "2"
-                }
+                val dpValue = decimalPlacesPickerValue(display)
                 decimalPlacesPref.value = dpValue
                 ticksActivePref.isChecked = display.ticksActive
                 maxValuesActivePref.value = display.maxValuesActive.number.toString()
@@ -327,4 +322,16 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
             mBound = false
         }
     }
+}
+
+/**
+ * The decimal list in the settings must show the value the gauge renders. An unset
+ * [DecimalPlaces.LEGACY] renders as one decimal, or as none when [Display.wholeNumbers]
+ * is set, so the picker has to say the same.
+ */
+internal fun decimalPlacesPickerValue(display: Display): String = when (display.decimalPlaces) {
+    DecimalPlaces.ZERO -> "0"
+    DecimalPlaces.ONE -> "1"
+    DecimalPlaces.TWO -> "2"
+    else -> if (display.wholeNumbers) "0" else "1"
 }
