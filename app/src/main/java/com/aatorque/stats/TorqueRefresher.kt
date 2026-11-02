@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.runInterruptible
 import timber.log.Timber
 
@@ -71,9 +70,7 @@ class TorqueRefresher {
         conWatcher.emit(if (foundValid) conWatcher.value else ConnectStatus.SETUP_GAUGE)
         service.addConnectCallback {
             if (conWatcher.value == ConnectStatus.CONNECTING_TORQUE) {
-                runBlocking {
-                    conWatcher.emit(ConnectStatus.CONNECTING_ECU)
-                }
+                conWatcher.tryEmit(ConnectStatus.CONNECTING_ECU)
             }
         }
     }
@@ -93,9 +90,7 @@ class TorqueRefresher {
                 handler.post {
                     torqueData.sendNotifyUpdate()
                 }
-                runBlocking {
-                    conWatcher.emit(ConnectStatus.CONNECTED)
-                }
+                conWatcher.tryEmit(ConnectStatus.CONNECTED)
             }
         }
     }
