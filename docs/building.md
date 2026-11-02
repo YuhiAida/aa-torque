@@ -18,11 +18,11 @@ The wrapper pins Gradle 8.2, so you do not install Gradle yourself.
 `settings.gradle` includes `:speedviewlib` at `lib/speedviewlib/speedviewlib`. The directory
 is empty in a fresh clone, so the build fails with a project-path error until you fetch it.
 
-`.gitmodules` declares an SSH URL (`git@github.com:agronick/SpeedView.git`). Without a
+`.gitmodules` declares an SSH URL (`git@github.com:YuhiAida/SpeedView.git`). Without a
 GitHub SSH key the fetch fails. Use HTTPS for this submodule:
 
 ```
-git config submodule.lib/speedviewlib.url https://github.com/agronick/SpeedView.git
+git config submodule.lib/speedviewlib.url https://github.com/YuhiAida/SpeedView.git
 git submodule update --init --recursive
 ```
 
@@ -155,7 +155,7 @@ file names — needs a manual change.
 Two warnings come from outside this repository and are expected:
 
 - `The specified Android SDK Build Tools version (31.0.0) is ignored` — `buildToolsVersion` is
-  not set anywhere here. It comes from the `lib/speedviewlib` submodule (`agronick/SpeedView`).
+  not set anywhere here. It comes from the `lib/speedviewlib` submodule (`YuhiAida/SpeedView`).
   Fixing it means patching the submodule or forking it.
 - `SDK processing. This version only understands SDK XML versions up to 3` — a mismatch between
   runner tooling and the SDK, not repository configuration.
