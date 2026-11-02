@@ -37,7 +37,7 @@ survives a burst, so a burst yields one version.
    back to the `signingConfig signingConfigs.debug` in `app/build.gradle`, so the artifact is
    debug-signed and installs over earlier builds.
 5. Rename the artifact to `aa-torque-<version>.apk`.
-6. Build the release body with `tools/release_notes.py`: title, release date, a one-line
+6. Build the release body with `tools/release_notes.py`: release date, a one-line
    summary, measured stats, one section per commit type, an updating note and the full
    changelog link. The script reads the commits since the previous tag and asks the API for
    each pull request title.

@@ -58,7 +58,7 @@ class ReleaseNotesTest(unittest.TestCase):
         repo = make_repo(["feat: add a thing", "fix: solve it"])
         body = run(repo, "--tag", "1.0.0", "--version", "1.1.0",
                    "--date", "November 2, 2026")
-        self.assertIn("# AA Torque v1.1.0", body)
+        self.assertNotIn("# AA Torque", body)
         self.assertIn("**Release Date:** November 2, 2026", body)
         self.assertIn("**Full Changelog**: [1.0.0...1.1.0]", body)
 
@@ -95,7 +95,7 @@ class ReleaseNotesTest(unittest.TestCase):
         out = os.path.join(repo, "notes.md")
         run(repo, "--tag", "1.0.0", "--version", "1.0.1", "--out", out)
         with open(out) as handle:
-            self.assertIn("# AA Torque v1.0.1", handle.read())
+            self.assertIn("**Release Date:**", handle.read())
 
 
 if __name__ == "__main__":
