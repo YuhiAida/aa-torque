@@ -19,6 +19,7 @@ import com.aatorque.datastore.MaxControl
 import com.aatorque.datastore.Screen
 import com.aatorque.stats.R
 import com.aatorque.stats.TorqueServiceWrapper
+import com.aatorque.stats.iconEntryValue
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -179,7 +180,7 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
                 pidPref.value = display.pid
                 showLabelPref.isChecked = display.showLabel
                 labelPref.text = display.label
-                imagePref.value = display.icon
+                imagePref.value = iconEntryValue(display.icon)
                 minValuePref.text = display.minValue.toString()
                 maxValuePref.text = display.maxValue.toString()
                 unitPref.text = display.unit
