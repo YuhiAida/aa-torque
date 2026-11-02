@@ -65,6 +65,8 @@ jobs:
           total=$(git rev-list --count HEAD)
           echo "name=${tag}-dev.${commits}" >> "$GITHUB_OUTPUT"
           echo "code=${total}" >> "$GITHUB_OUTPUT"
+          echo "stable=${tag}" >> "$GITHUB_OUTPUT"
+          echo "cycle=dev-${tag}" >> "$GITHUB_OUTPUT"
 
       - name: Build the debug APK
         run: ./gradlew assembleDebug -PdevVersionName="${{ steps.version.outputs.name }}" -PdevVersionCode="${{ steps.version.outputs.code }}"
@@ -98,23 +100,24 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Move the dev tag to this commit
+      - name: Move the cycle tag to this commit
         run: |
-          # The release keeps one fixed tag. Without this, the tag stays where the first
-          # dev release created it and every release page names that old commit.
-          git tag -f dev HEAD
-          git push -f origin refs/tags/dev
+          # One pre-release per stable cycle. The tag follows the newest build of the cycle,
+          # so the release page names the commit it actually shows.
+          tag="${{ steps.version.outputs.cycle }}"
+          git tag -f "$tag" HEAD
+          git push -f origin "refs/tags/$tag"
 
       - name: Publish the dev pre-release
         uses: softprops/action-gh-release@v3.0.3
         with:
-          name: ${{ steps.version.outputs.name }}
-          tag_name: dev
+          name: dev builds after ${{ steps.version.outputs.stable }}
+          tag_name: ${{ steps.version.outputs.cycle }}
           prerelease: true
           draft: false
           body: ${{ steps.notes.outputs.body }}
           files: app/build/outputs/apk/debug/aa-torque-dev-${{ steps.version.outputs.name }}.apk
-          # The file name carries the version, and every build stays on the release so an
-          # older one can be installed for testing. They share one key (pinned below), so
-          # any build installs over any other.
+          # The file name carries the version, and every build of the cycle stays on its
+          # release so an older one can be installed for testing. They share one key
+          # (pinned above), so any build installs over any other.
           overwrite_files: true

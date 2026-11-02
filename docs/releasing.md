@@ -50,23 +50,28 @@ Because the `concurrency` group lets one run survive a burst, a burst of merges 
 release, not one per merge. Merges spaced more than a run apart (~4 minutes) each publish
 their own.
 
-## Dev builds (rolling pre-release)
+## Dev builds (one pre-release per stable cycle)
 
 `.github/workflows/dev.yml` runs on every push to `master` that changes code (prose-only
-merges are skipped via `paths-ignore`). It publishes a rolling pre-release tagged `dev`:
+merges are skipped via `paths-ignore`). It publishes one pre-release per stable cycle:
 
 1. Compute the version as `<last stable tag>-dev.<commits since that tag>`, with the
-   version code set to the total commit count.
+   version code set to the total commit count. The cycle tag is `dev-<last stable tag>`.
 2. Build the debug APK with `-PdevVersionName` and `-PdevVersionCode`.
-3. Publish it as a pre-release (`prerelease: true`) under the fixed tag `dev`. The run moves
-   that tag to the commit it built, so the release page names the same build. The body lists
-   one first-parent line per merged change, so a merge is not repeated as its own commit. The APK asset
-   is `aa-torque-dev-<version>.apk` (for example `aa-torque-dev-2.3.7-dev.27.apk`), so the
-   file name names the build. Every build stays on the release, so an older one can be
-   installed for testing. CI restores the shared keystore where AGP reads it and checks the
-   built APK against the key pinned in `tools/verify_signer.py`, so any build installs over
-   any other. The release title and the first body line carry the version and versionCode,
-   followed by the commit list since the last stable tag.
+3. Publish it as a pre-release (`prerelease: true`) under the cycle tag. The run moves that
+   tag to the commit it built, so the release page names the same build. The body lists one
+   first-parent line per merged change, so a merge is not repeated as its own commit. The APK
+   asset is `aa-torque-dev-<version>.apk` (for example `aa-torque-dev-2.4.0-dev.7.apk`), so
+   the file name names the build. Every build of the cycle stays on that release, so an
+   older one can be installed for testing; the next stable release starts a new cycle
+   release. CI restores the shared keystore where AGP reads it and checks the built APK
+   against the key pinned in `tools/verify_signer.py`, so any build installs over any other.
+   The release is titled `dev builds after <last stable tag>`; the first body line carries
+   the version and versionCode, followed by the commit list since the last stable tag.
+
+For example, while `2.4.0` is the newest stable, every merge adds an APK to the `dev-2.4.0`
+release. When the release PR publishes `2.5.0`, the next build creates `dev-2.5.0`. The old
+`dev` release, which mixed every build before this scheme, stays as an archive.
 
 The debug build carries `applicationIdSuffix ".debug"` (`app/build.gradle`), so its
 package is `com.aatorque.stats.debug` and it installs beside the stable app instead of
