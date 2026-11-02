@@ -34,17 +34,18 @@ def make_repo(commits):
     return d
 
 
-def add_pull_request(repo, number, message):
+def add_pull_request(repo, number, message, branch=None):
     """Commit on a branch, then merge it the way GitHub does."""
-    git(repo, "checkout", "-q", "-b", f"pr-{number}")
+    branch = branch or f"pr-{number}"
+    git(repo, "checkout", "-q", "-b", branch)
     path = os.path.join(repo, "f.txt")
     with open(path, "a") as f:
         f.write(message + "\n")
     git(repo, "add", "f.txt")
     git(repo, "commit", "-q", "-m", message)
     git(repo, "checkout", "-q", "master")
-    git(repo, "merge", "-q", "--no-ff", f"pr-{number}",
-        "-m", f"Merge pull request #{number} from t/pr-{number}")
+    git(repo, "merge", "-q", "--no-ff", branch,
+        "-m", f"Merge pull request #{number} from t/{branch}")
 
 
 def run(repo, *args):
@@ -89,6 +90,13 @@ class ReleaseNotesTest(unittest.TestCase):
         self.assertIn("aa-torque-dev-1.0.0-dev.3.apk", body)
         self.assertIn("com.aatorque.stats.debug", body)
         self.assertNotIn("aa-torque-1.0.0-dev.3.apk` over", body)
+
+    def test_release_pull_request_is_skipped(self):
+        repo = make_repo(["feat: add a thing"])
+        add_pull_request(repo, 20, "release: v1.1.0", branch="release/v1.1.0")
+        body = run(repo, "--tag", "1.0.0", "--version", "1.1.0")
+        self.assertNotIn("pull/20", body)
+        self.assertNotIn("Other Changes", body)
 
     def test_out_writes_the_file(self):
         repo = make_repo(["fix: solve it"])
