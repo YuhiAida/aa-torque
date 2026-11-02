@@ -17,6 +17,7 @@ typealias PidInfo = List<Pair<String, List<String>>>
 class TorqueServiceWrapper : Service() {
     private val binder = LocalBinder()
     var wasStartAttempted = false
+    var torqueBindSucceeded = false
     var torqueService: ITorqueService? = null
     val onConnect = ArrayList<(ITorqueService) -> Unit>()
     var pids: PidInfo? = null
@@ -26,7 +27,8 @@ class TorqueServiceWrapper : Service() {
     override fun onCreate() {
         super.onCreate()
         if (!wasStartAttempted) {
-            wasStartAttempted = startTorque()
+            wasStartAttempted = true
+            torqueBindSucceeded = startTorque()
         }
         connectCount++
     }
@@ -65,6 +67,19 @@ class TorqueServiceWrapper : Service() {
         if (pids != null && !force) {
             onComplete?.invoke(pids!!)
             return
+        }
+        // When Torque is not available, do not leave callers waiting forever: hand back
+        // whatever was cached (or an empty list) so settings can be configured off-car.
+        // Fresh data from a live Torque connection still wins when it arrives later.
+        if (torqueService == null) {
+            val fallback = pids ?: emptyList()
+            if (!torqueBindSucceeded) {
+                onComplete?.invoke(fallback)
+                return
+            }
+            // Torque was reachable at bind time but is not connected yet: give callers an
+            // immediate (cached/empty) result and also queue the fresh load below.
+            onComplete?.invoke(fallback)
         }
         addConnectCallback {
             val bg = ListPids(it) { newPids ->
