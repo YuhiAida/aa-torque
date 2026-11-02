@@ -1,4 +1,4 @@
-[![CI Status](https://github.com/YuhiAida/aa-torque/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/YuhiAida/aa-torque/actions/workflows/ci.yml)
+[![Pipeline Status](https://github.com/YuhiAida/aa-torque/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/YuhiAida/aa-torque/actions/workflows/ci.yml)
 [![downloads](https://img.shields.io/github/downloads/YuhiAida/aa-torque/total.svg)](https://github.com/YuhiAida/aa-torque/releases)
 [![license](https://img.shields.io/github/license/YuhiAida/aa-torque)](LICENSE.md)
 [![support](https://img.shields.io/badge/support-tip-yellow?logo=revolut)](https://revolut.me/bernarfhfo)
@@ -17,7 +17,7 @@ Upstream is unmaintained. The fork keeps the package name `com.aatorque.stats`, 
 > [agronick/aa-torque](https://github.com/agronick/aa-torque) described above, which itself
 > derives from Chillout's Performance Monitor and Martoreto's aa-stats. The AI assistance is in
 > the changes I make to the fork, and that is not changing. AI-assisted contributions are
-> welcome on the same bar as everything else: correct, reviewed, and green in CI — not better
+> welcome on the same bar as everything else: correct, reviewed, and green in the pipeline — not better
 > or worse because of who or what wrote it. If AI in the tooling is a deal-breaker for you, you
 > are free not to use the app; the source is GPL-3.0, so forking it is also an option. No hard
 > feelings either way.
@@ -135,7 +135,7 @@ git submodule update --init --recursive
 ./gradlew assembleDebug
 ```
 
-Every APK in Releases is built and signed by CI with the same debug key, restored from the
+Every APK in Releases is built and signed by the pipeline with the same debug key, restored from the
 `DEBUG_KEYSTORE` secret, so releases install over each other. Releases up to 2.0.33 were signed
 with a per-run generated key and cannot update in place — uninstall once, then install 2.0.34 or
 later normally.
