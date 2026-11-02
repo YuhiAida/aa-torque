@@ -14,6 +14,7 @@ import androidx.core.graphics.BlendModeCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.aatorque.datastore.Coloring
+import com.aatorque.datastore.Display
 import com.aatorque.datastore.MaxControl
 import com.aatorque.prefs.SettingsViewModel
 import com.aatorque.stats.databinding.FragmentGaugeBinding
@@ -24,6 +25,7 @@ import com.github.anastr.speedviewlib.components.Section
 import com.github.anastr.speedviewlib.components.indicators.Indicator
 import com.github.anastr.speedviewlib.components.indicators.TriangleIndicator
 import java.util.Locale
+import kotlin.math.roundToInt
 import timber.log.Timber
 
 const val NUM_TICKS = 9
@@ -161,6 +163,14 @@ class TorqueGauge : Fragment() {
         binding.wholeNumbers = enabled
     }
 
+    private fun applySpeedTextFormat(display: Display) {
+        mClock.speedTextListener = when (resolvedDecimalPlaces(display)) {
+            0 -> { speed -> speed.roundToInt().toString() }
+            2 -> { speed -> formatTwoDecimalPlaces(speed) }
+            else -> { speed -> "%.1f".format(Locale.getDefault(), speed) }
+        }
+    }
+
     fun turnRaysEnabled(enabled: Boolean) {
         rayOn = enabled
         mRayClock.visibility = if (enabled) View.VISIBLE else View.INVISIBLE
@@ -252,6 +262,7 @@ class TorqueGauge : Fragment() {
         turnMinMaxTextViewsEnabled(data.display.maxValuesActive)
         turnRaysEnabled(data.display.highVisActive)
         turnWholeNumbers(data.display.wholeNumbers)
+        applySpeedTextFormat(data.display)
 
         alarmObserver.bind(viewLifecycleOwner, data.currentAlarm)
     }

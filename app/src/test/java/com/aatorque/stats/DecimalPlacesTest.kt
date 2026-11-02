@@ -13,9 +13,9 @@ class DecimalPlacesTest {
     }
 
     @Test
-    fun unsetWholeNumbersFalseResolvesToNull() {
+    fun unsetWholeNumbersFalseResolvesToOne() {
         val display = Display.newBuilder().setWholeNumbers(false).build()
-        assertEquals(null, resolvedDecimalPlaces(display))
+        assertEquals(1, resolvedDecimalPlaces(display))
     }
 
     @Test
