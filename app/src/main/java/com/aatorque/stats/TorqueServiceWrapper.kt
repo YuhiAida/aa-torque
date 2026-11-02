@@ -36,8 +36,12 @@ class TorqueServiceWrapper : Service() {
     override fun onDestroy() {
         super.onDestroy()
         connectCount--
-        if (connectCount == 0) {
-            unbindService(torqueConnection)
+        if (connectCount == 0 && torqueBindSucceeded) {
+            try {
+                unbindService(torqueConnection)
+            } catch (e: IllegalArgumentException) {
+                Timber.w(e, "Torque service was not bound; skipping unbind")
+            }
         }
     }
 
