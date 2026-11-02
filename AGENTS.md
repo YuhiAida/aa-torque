@@ -109,8 +109,10 @@ runs.
   and **publishes** a GitHub release that holds the APK. Publishing is automatic. If the
   version was not bumped, the run reports "already released" and publishes nothing. Never
   delete a release or a version tag, and never reuse a version number — fix forward.
-- A separate `dev` workflow publishes a rolling pre-release on every code merge to `master`:
-  package `com.aatorque.stats.debug`, version `<last stable>-dev.<commits>` (the installed
+- A separate `dev` workflow publishes one pre-release per stable cycle on every code merge to
+  `master`: the release is tagged `dev-<last stable>`, every build of the cycle stays on it,
+  and the next stable release starts a new one. The package is `com.aatorque.stats.debug`,
+  version `<last stable>-dev.<commits>` (the installed
   APK's versionName ends with `.debug`), signed with the shared debug key. It installs beside
   the stable app and is not the stable channel; the update check is disabled in that build.
 
