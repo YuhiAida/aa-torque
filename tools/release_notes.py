@@ -212,7 +212,7 @@ def build(tag, head, version, release_tag=None, date=None, repo_url=REPO_URL,
     header = f"**Release Date:** {date}"
     if version_code:
         header += f" \u00b7 versionCode {version_code}"
-    lines = [f"# AA Torque v{version}", "", header, ""]
+    lines = [header, ""]
     lines += ["> " + summary(bump, counts, tag), ""]
 
     lines += ["## About this release", ""]
@@ -236,7 +236,7 @@ def build(tag, head, version, release_tag=None, date=None, repo_url=REPO_URL,
             lines.append(f"- {clean_subject(item['subject'])} {link}")
         lines.append("")
 
-    lines += ["## Updating", ""]
+    lines += ["## 📥 Updating", ""]
     if dev:
         lines += [
             f"- Install `aa-torque-dev-{version}.apk`. Its package is "

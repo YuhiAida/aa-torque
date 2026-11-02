@@ -97,6 +97,7 @@ jobs:
             --tag "${{ steps.version.outputs.stable }}" \
             --head HEAD \
             --version "${{ steps.version.outputs.name }}" \
+            --release-tag "${{ steps.version.outputs.cycle }}" \
             --version-code "${{ steps.version.outputs.code }}" \
             --date "$(date -u +%Y-%m-%d)" \
             --repo-slug "${{ github.repository }}" \
@@ -119,7 +120,7 @@ jobs:
       - name: Publish the dev pre-release
         uses: softprops/action-gh-release@v3.0.3
         with:
-          name: dev builds after ${{ steps.version.outputs.stable }}
+          name: AA Torque v${{ steps.version.outputs.name }}
           tag_name: ${{ steps.version.outputs.cycle }}
           prerelease: true
           draft: false
