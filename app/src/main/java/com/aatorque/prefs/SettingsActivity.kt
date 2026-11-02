@@ -178,13 +178,35 @@ class SettingsActivity :
 
     private val importFileLauncher = registerForActivityResult(ImportFileContract()) { uri: Uri? ->
         if (uri != null) {
-            val inStream = contentResolver.openInputStream(uri)
             this@SettingsActivity.lifecycleScope.launch {
+                val inStream = try {
+                    contentResolver.openInputStream(uri)
+                } catch (e: IOException) {
+                    Timber.w(e, "Could not open settings file for import")
+                    null
+                }
+                if (inStream == null) {
+                    Toast.makeText(
+                        baseContext,
+                        R.string.invalid_settings,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@launch
+                }
                 try {
-                    this@SettingsActivity.applicationContext.dataStore.updateData {
-                        return@updateData UserPreference.parseFrom(inStream)
+                    inStream.use { stream ->
+                        this@SettingsActivity.applicationContext.dataStore.updateData {
+                            return@updateData UserPreference.parseFrom(stream)
+                        }
                     }
                 } catch (e: InvalidProtocolBufferException) {
+                    Toast.makeText(
+                        baseContext,
+                        R.string.invalid_settings,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } catch (e: IOException) {
+                    Timber.w(e, "Could not read settings file for import")
                     Toast.makeText(
                         baseContext,
                         R.string.invalid_settings,
