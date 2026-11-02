@@ -123,6 +123,9 @@ jobs:
       - name: Test next_release
         run: python3 tools/test_next_release.py
 
+      - name: Test release notes
+        run: python3 tools/test_release_notes.py
+
       - name: No code changes
         if: needs.changes.outputs.code != 'true'
         run: echo "No code changes; skipping the Kotlin checks."
@@ -355,13 +358,29 @@ jobs:
         if: steps.version.outputs.exists == 'false'
         run: python3 tools/verify_signer.py app/build/outputs/apk/release/aa-torque-${{ steps.version.outputs.tag }}.apk
 
+      - name: Build the release notes
+        if: steps.version.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # HEAD is the version bump commit; the previous stable tag is its parent's tag.
+          previous=$(git describe --tags --abbrev=0 --match '[0-9]*' HEAD^)
+          python3 tools/release_notes.py \
+            --tag "$previous" \
+            --head HEAD \
+            --version "${{ steps.version.outputs.tag }}" \
+            --date "$(date -u +%Y-%m-%d)" \
+            --repo-slug "${{ github.repository }}" \
+            --out notes.md
+          head -6 notes.md
+
       - name: Create Github Release
         if: steps.version.outputs.exists == 'false'
         uses: softprops/action-gh-release@v3.0.3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
-          name: ${{ steps.version.outputs.tag }}
-          generate_release_notes: true
+          name: AA Torque v${{ steps.version.outputs.tag }}
+          body_path: notes.md
           # Published immediately: the in-app updater reads /releases/latest, which
           # excludes drafts. The concurrency group above makes a burst of merges
           # collapse into one surviving run, so this publishes one version per burst.
