@@ -82,6 +82,21 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 This installs the app, but it will **not** appear in Android Auto: the install record is
 wrong. Repair it as described in [aa-install-gate.md](aa-install-gate.md).
 
+A local `assembleDebug` signs with your own `~/.android/debug.keystore`, while the pipeline's
+dev APK (on the `dev` release) is signed with the shared `DEBUG_KEYSTORE` secret. Android
+refuses to update a package across keys, so switching between the two needs a fresh install:
+
+```
+adb uninstall com.aatorque.stats.debug
+```
+
+That clears the app's prefs. To make both update in place instead, restore the shared keystore
+into `~/.android/debug.keystore` once (ask a maintainer for the file).
+
+CI restores the project's keystore to both locations AGP may read, and checks the built APK
+against the fingerprint pinned in `tools/verify_signer.py`. A key that does not match fails
+the build instead of producing an APK that cannot install over the previous one.
+
 ## Run the Android Auto bench
 
 The local bench is an AVD phone running Android Auto plus the Desktop Head Unit (DHU) on
