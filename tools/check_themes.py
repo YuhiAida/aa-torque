@@ -10,7 +10,7 @@ A theme is four things that must agree by index:
   * a display name in the ``Themes`` array,
   * a thumbnail in ``ThemesThumbs``,
   * a style name in ``ThemeList``,
-  * the style itself in ``res/values/styles.xml``.
+  * the style itself in ``res/values/*.xml``.
 
 ``mapTheme()`` resolves a theme by looking up its name in ``Themes`` and reading
 ``ThemeList`` at the same index, so a single missing or misplaced entry silently
@@ -63,19 +63,21 @@ def read_array(array_name: str) -> list[str]:
 
 
 def read_styles() -> dict[str, dict[str, str]]:
-    root = ET.parse(STYLES_XML).getroot()
+    # Themes may live in their own file; tools/gen_themes.py writes values/themes_*.xml.
     styles: dict[str, dict[str, str]] = {}
-    for style in root.findall("style"):
-        name = style.get("name")
-        if name is None:
-            continue
-        entry = {"parent": style.get("parent") or ""}
-        for item in style.findall("item"):
-            attr = item.get("name")
-            if attr is None:
+    for path in sorted((RES / "values").glob("*.xml")):
+        root = ET.parse(path).getroot()
+        for style in root.findall("style"):
+            name = style.get("name")
+            if name is None:
                 continue
-            entry[attr] = (item.text or "").strip()
-        styles[name] = entry
+            entry = {"parent": style.get("parent") or ""}
+            for item in style.findall("item"):
+                attr = item.get("name")
+                if attr is None:
+                    continue
+                entry[attr] = (item.text or "").strip()
+            styles[name] = entry
     return styles
 
 

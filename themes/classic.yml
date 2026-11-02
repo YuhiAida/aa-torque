@@ -1,0 +1,21 @@
+name: Classic
+shape:
+  sweep: 240
+  major_ticks: 9
+  minor_per_major: 4
+  ring_width: 10
+  tick_length: 22
+day:
+  surface: "#FFFFFF"
+  face: "#F7F7F7"
+  ring: "#4A4A4A"
+  tick: "#2B2B2B"
+  accent: "#C8102E"
+  needle: "#C8102E"
+night:
+  surface: "#000000"
+  face: "#0A0A0A"
+  ring: "#B8B8B8"
+  tick: "#E8E8E8"
+  accent: "#FF2D55"
+  needle: "#FF2D55"

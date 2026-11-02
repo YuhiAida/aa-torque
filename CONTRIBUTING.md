@@ -55,6 +55,12 @@ Each app theme consists of:
 - a theme name
 - a mark-color
 
+A palette theme needs none of those image assets. It is one file, `themes/<name>.yml`, with
+the shape and a day and a night palette; `python3 tools/gen_themes.py` writes the drawables,
+the two styles and the thumbnail. Design the palette in `tools/theme-designer.html` (open it
+in a browser, no build needed), then copy the YAML it produces. `python3 tools/check_themes.py`
+validates the result.
+
 Google/Android Auto and VAG have strict guidelines for a screen that is visible while
 driving. **Not looking at the road when you should is dangerous!** The design principles
 are:
