@@ -7,7 +7,7 @@ an uninstall, which wipes the user's dashboards and settings. This script makes
 that failure visible in CI instead of on a user's phone.
 
 Usage:
-    python3 tools/verify_signer.py app/build/outputs/apk/release/aa-torque.apk
+    python3 tools/verify_signer.py app/build/outputs/apk/release/aa-torque-2.4.0.apk
 
 Exits 0 when the signer certificate matches EXPECTED_SHA256, 1 otherwise.
 """
