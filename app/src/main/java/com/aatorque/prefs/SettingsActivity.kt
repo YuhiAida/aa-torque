@@ -67,6 +67,10 @@ class SettingsActivity :
                             f.requireArguments().getCharSequence("title")
                         }
 
+                        is DeveloperFragment -> {
+                            resources.getString(R.string.developer_options)
+                        }
+
                         else -> {
                             null
                         }

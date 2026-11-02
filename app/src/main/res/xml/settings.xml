@@ -106,5 +106,11 @@
         android:key="dashboardsCat">
 
     </PreferenceCategory>
+    <Preference
+        android:fragment="com.aatorque.prefs.DeveloperFragment"
+        android:key="developerOptions"
+        android:persistent="false"
+        android:summary="@string/developer_options_summary"
+        android:title="@string/developer_options" />
 
 </PreferenceScreen>

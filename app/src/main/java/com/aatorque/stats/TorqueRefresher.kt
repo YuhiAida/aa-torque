@@ -1,6 +1,7 @@
 package com.aatorque.stats
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import com.aatorque.datastore.Display
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -20,6 +21,10 @@ enum class ConnectStatus {
 
 class TorqueRefresher {
     val data = HashMap<Int, TorqueData>()
+
+    /** True while the developer option simulates values instead of reading Torque. */
+    var simulate = false
+
     private val executor = ScheduledThreadPoolExecutor(7)
     val handler = Handler(Looper.getMainLooper())
     private var conWatcher = MutableStateFlow(ConnectStatus.CONNECTING_TORQUE)
@@ -76,6 +81,10 @@ class TorqueRefresher {
     }
 
     fun doRefresh(service: TorqueService, torqueData: TorqueData) {
+        if (simulate) {
+            doSimulatedRefresh(torqueData)
+            return
+        }
         service.runIfConnected { ts ->
             val value = try {
                 ts.getPIDValuesAsDouble(arrayOf(torqueData.pid!!))[0]
@@ -100,6 +109,16 @@ class TorqueRefresher {
         for (td in data.values) {
             td.stopRefreshing()
         }
+    }
+
+    private fun doSimulatedRefresh(torqueData: TorqueData) {
+        val value = SimulatedValue.at(torqueData.display, SystemClock.elapsedRealtime())
+        torqueData.hasReceivedNonZero = true
+        torqueData.lastData = value
+        handler.post {
+            torqueData.sendNotifyUpdate()
+        }
+        conWatcher.tryEmit(ConnectStatus.CONNECTED)
     }
 
     fun hasChanged(idx: Int, otherScreen: Display?): Boolean {
