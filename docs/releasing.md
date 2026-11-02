@@ -71,8 +71,9 @@ merges are skipped via `paths-ignore`). It publishes one pre-release per stable 
    older one can be installed for testing; the next stable release starts a new cycle
    release. CI restores the shared keystore where AGP reads it and checks the built APK
    against the key pinned in `tools/verify_signer.py`, so any build installs over any other.
-   The release is titled `dev builds after <last stable tag>`; the first body line carries
-   the version and versionCode, followed by the commit list since the last stable tag.
+   The release is titled `AA Torque v<version>`, the same shape as a stable release. The
+   title updates with every build of the cycle, so it always names the newest one; the tag
+   `dev-<last stable tag>` keeps the cycle together.
 
 For example, while `2.4.0` is the newest stable, every merge adds an APK to the `dev-2.4.0`
 release. When the release PR publishes `2.5.0`, the next build creates `dev-2.5.0`. The old
