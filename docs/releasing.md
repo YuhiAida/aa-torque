@@ -58,7 +58,9 @@ merges are skipped via `paths-ignore`). It publishes a rolling pre-release tagge
 1. Compute the version as `<last stable tag>-dev.<commits since that tag>`, with the
    version code set to the total commit count.
 2. Build the debug APK with `-PdevVersionName` and `-PdevVersionCode`.
-3. Publish it as a pre-release (`prerelease: true`) under the fixed tag `dev`. The APK asset
+3. Publish it as a pre-release (`prerelease: true`) under the fixed tag `dev`. The run moves
+   that tag to the commit it built, so the release page names the same build. The body lists
+   one first-parent line per merged change, so a merge is not repeated as its own commit. The APK asset
    is `aa-torque-dev-<version>.apk` (for example `aa-torque-dev-2.3.7-dev.27.apk`), so the
    file name names the build. Every build stays on the release, so an older one can be
    installed for testing. CI restores the shared keystore where AGP reads it and checks the

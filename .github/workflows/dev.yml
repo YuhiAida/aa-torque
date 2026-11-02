@@ -94,9 +94,16 @@ jobs:
             echo "body<<EOF"
             echo "**${{ steps.version.outputs.name }}** · versionCode ${{ steps.version.outputs.code }}"
             echo
-            git log --oneline "$tag"..HEAD
+            git log --oneline --first-parent "$tag"..HEAD
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Move the dev tag to this commit
+        run: |
+          # The release keeps one fixed tag. Without this, the tag stays where the first
+          # dev release created it and every release page names that old commit.
+          git tag -f dev HEAD
+          git push -f origin refs/tags/dev
 
       - name: Publish the dev pre-release
         uses: softprops/action-gh-release@v3.0.3
