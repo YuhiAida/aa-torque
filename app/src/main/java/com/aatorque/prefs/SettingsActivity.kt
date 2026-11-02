@@ -167,10 +167,23 @@ class SettingsActivity :
         lifecycleScope.launch(Dispatchers.IO) {
             val data = applicationContext.dataStore.data.first()
             val result = if (uri != null) {
-                contentResolver.openOutputStream(uri)?.use { outputStream ->
-                    UserPreferenceSerializer.writeTo(data, outputStream)
+                try {
+                    val outputStream = contentResolver.openOutputStream(uri)
+                    if (outputStream == null) {
+                        R.string.export_failed
+                    } else {
+                        outputStream.use { stream ->
+                            UserPreferenceSerializer.writeTo(data, stream)
+                        }
+                        R.string.file_exported_successfully
+                    }
+                } catch (e: IOException) {
+                    Timber.w(e, "Could not export settings file")
+                    R.string.export_failed
+                } catch (e: SecurityException) {
+                    Timber.w(e, "No permission to export settings file")
+                    R.string.export_failed
                 }
-                R.string.file_exported_successfully
             } else {
                 R.string.export_failed
             }
