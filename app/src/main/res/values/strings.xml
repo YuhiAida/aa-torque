@@ -209,4 +209,13 @@
     <string name="developer_simulation">Simulation</string>
     <string name="developer_simulation_title">Simulate metrics</string>
     <string name="developer_simulation_summary">Sweep every gauge from its minimum to its maximum. Off reads Torque data.</string>
+    <string name="pref_default_background">Default background</string>
+    <string name="pref_default_background_summary">Each dashboard can override this</string>
+    <string name="pref_card_category">Android Auto card</string>
+    <string name="pref_count_category">Dashboards shown</string>
+    <string name="pref_count_warning">Lowering the number deletes the last dashboard and its settings.</string>
+    <plurals name="dashboards_count">
+        <item quantity="one">%d dashboard</item>
+        <item quantity="other">%d dashboards</item>
+    </plurals>
 </resources>
