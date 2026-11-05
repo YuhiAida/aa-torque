@@ -70,6 +70,7 @@ object BackgroundStore {
                 buffer.toByteArray()
             } ?: return null
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             return null
         }
         if (bytes.isEmpty()) return null
@@ -89,6 +90,7 @@ object BackgroundStore {
                 BitmapFactory.Options().apply { inSampleSize = sampleSize }
             )
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             null
         } ?: return null
 
@@ -136,6 +138,7 @@ object BackgroundStore {
                 }
             }
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             ok = false
         }
         if (!ok) {
@@ -168,6 +171,7 @@ object BackgroundStore {
                 )
             }
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             null
         }
     }

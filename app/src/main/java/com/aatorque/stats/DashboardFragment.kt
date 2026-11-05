@@ -81,7 +81,6 @@ open class DashboardFragment : AlbumArt() {
     lateinit var settingsViewModel: SettingsViewModel
 
     val viewReady = CountDownLatch(1)
-    private var lastBackground: Int = 0
     private var currentScreenBackground: String = ""
     private var currentGlobalBackground: String = ""
     private var bgRequestToken: Int = 0
@@ -462,27 +461,10 @@ open class DashboardFragment : AlbumArt() {
         binding.largeCenter = largeCenter
     }
 
-    private fun setupBackground(newBackground: String?) {
-        lastBackground = context?.let {
-            resources.getIdentifier(
-                newBackground ?: "background_incar_black",
-                "drawable",
-                it.packageName
-            )
-        } ?: lastBackground
-        setupBackground(lastBackground)
-    }
-
-    private fun setupBackground(resource: Int) {
-        binding.blurEffect = null
-        binding.colorFilter = null
-        displayingArtwork = false
-        binding.backgroundResource = resource
-    }
-
     private suspend fun applyBackground(screen: String, global: String) {
         currentScreenBackground = screen
         currentGlobalBackground = global
+        if (displayingArtwork) return
         val token = ++bgRequestToken
 
         fun toSource(value: String): BackgroundSource = if (value.contains(":")) {
@@ -555,7 +537,9 @@ open class DashboardFragment : AlbumArt() {
                 if (bitmap == null) {
                     if (screenSource is BackgroundSource.Stored) {
                         // Fall back to the global background.
+                        val savedScreen = currentScreenBackground
                         applyBackground("", global)
+                        currentScreenBackground = savedScreen
                     } else {
                         val context = context ?: return
                         val resId = resources.getIdentifier(
@@ -578,7 +562,6 @@ open class DashboardFragment : AlbumArt() {
                     cachedBackgroundName = source.name
                     cachedBackgroundBitmap = bitmap
                 }
-                // Clear cache if a different file was used is handled above.
                 withContext(Dispatchers.Main) {
                     if (token != bgRequestToken) return@withContext
                     binding.blurEffect = null
