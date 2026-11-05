@@ -31,6 +31,13 @@ object BackgroundStore {
             .map { it.name }
     }
 
+    private val SAFE_NAME = Regex("^bg-[0-9a-f]{8}\\.jpg$")
+
+    private fun fileFor(context: Context, name: String): File? {
+        if (!name.matches(SAFE_NAME)) return null
+        return File(dir(context), name)
+    }
+
     fun sweep(context: Context, referenced: Set<String>): Int {
         val directory = dir(context)
         val files = directory.listFiles() ?: return 0
@@ -40,9 +47,10 @@ object BackgroundStore {
             val name = file.name
             if (name.endsWith(THUMB_SUFFIX)) {
                 val base = name.removeSuffix(THUMB_SUFFIX)
+                if (!base.matches(SAFE_NAME)) continue
                 if (base in referenced) continue
                 file.delete()
-            } else if (name.endsWith(".jpg")) {
+            } else if (name.matches(SAFE_NAME)) {
                 if (name in referenced) continue
                 if (file.delete()) deletedImages++
                 File(directory, "$name$THUMB_SUFFIX").delete()
@@ -150,7 +158,7 @@ object BackgroundStore {
     }
 
     fun resolve(context: Context, name: String, reqHeight: Int): Bitmap? {
-        val file = File(dir(context), name)
+        val file = fileFor(context, name) ?: return null
         if (!file.isFile) return null
         return try {
             if (reqHeight <= 0) {
@@ -177,11 +185,13 @@ object BackgroundStore {
     }
 
     fun thumbnail(context: Context, name: String): Bitmap? {
+        fileFor(context, name) ?: return null
         val file = File(dir(context), "$name$THUMB_SUFFIX")
         if (!file.isFile) return null
         return try {
             BitmapFactory.decodeFile(file.absolutePath)
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             null
         }
     }

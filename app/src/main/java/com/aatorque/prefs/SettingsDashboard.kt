@@ -83,7 +83,7 @@ class SettingsDashboard : PreferenceFragmentCompat() {
                 BackgroundStore.sweep(requireContext(), referenced)
                 val storedNames = BackgroundStore.list(requireContext())
                 withContext(Dispatchers.Main) {
-                    updateBackgroundSummary(value, storedNames)
+                    updateBackgroundSummary(value, "", storedNames)
                 }
             }
         }
@@ -156,7 +156,7 @@ class SettingsDashboard : PreferenceFragmentCompat() {
                 val storedNames = withContext(Dispatchers.IO) {
                     BackgroundStore.list(requireContext())
                 }
-                updateBackgroundSummary(screen.background, storedNames)
+                updateBackgroundSummary(screen.background, prefs.selectedBackground, storedNames)
             }
         }
         lifecycleScope.launch(Dispatchers.IO) {
@@ -224,24 +224,62 @@ class SettingsDashboard : PreferenceFragmentCompat() {
         }
     }
 
-    private fun updateBackgroundSummary(value: String, storedNames: List<String>) {
+    private fun updateBackgroundSummary(value: String, storedNames: List<String>) =
+        updateBackgroundSummary(value, "", storedNames)
+
+    private fun updateBackgroundSummary(
+        value: String,
+        appBackground: String,
+        storedNames: List<String>
+    ) {
         val bundledTitles = resources.getStringArray(R.array.backgroundstrings)
         val bundledDrawables = resources.getStringArray(R.array.backgrounds)
         val map = bundledDrawables.mapIndexed { i, name ->
             name to
                 bundledTitles.getOrElse(i) { name }
         }.toMap()
-        val summary = when (val src = parseBackground(value)) {
-            is BackgroundSource.Inherit -> getString(R.string.pref_background_summary_default)
 
-            is BackgroundSource.Drawable -> map[src.name] ?: src.name
+        fun bundledTitleFor(raw: String): String? {
+            val name = if (raw.contains(":")) {
+                val sep = raw.indexOf(":")
+                val prefix = raw.substring(0, sep)
+                val n = raw.substring(sep + 1)
+                if (prefix == "resource" && n.isNotBlank()) n else null
+            } else if (raw.isNotBlank()) {
+                raw
+            } else {
+                null
+            }
+            if (name == null) return null
+            val index = bundledDrawables.indexOf(name)
+            return if (index >= 0) bundledTitles.getOrElse(index) { name } else null
+        }
 
-            is BackgroundSource.Stored -> {
-                val index = storedNames.indexOf(src.name)
-                if (index >= 0) {
-                    getString(R.string.custom_image_title, index + 1)
-                } else {
-                    getString(R.string.pref_background_summary_default)
+        val summary = when {
+            // bare drawable or resource: resolves as bundled drawable
+            !value.contains(":") && value.isNotBlank() -> {
+                map[value] ?: value
+            }
+
+            else -> when (val src = parseBackground(value)) {
+                is BackgroundSource.Inherit -> {
+                    val inheritedTitle = bundledTitleFor(appBackground)
+                    if (inheritedTitle != null) {
+                        "${getString(R.string.pref_background_summary_default)} · $inheritedTitle"
+                    } else {
+                        getString(R.string.pref_background_summary_default)
+                    }
+                }
+
+                is BackgroundSource.Drawable -> map[src.name] ?: src.name
+
+                is BackgroundSource.Stored -> {
+                    val index = storedNames.indexOf(src.name)
+                    if (index >= 0) {
+                        getString(R.string.custom_image_title, index + 1)
+                    } else {
+                        getString(R.string.pref_background_summary_default)
+                    }
                 }
             }
         }

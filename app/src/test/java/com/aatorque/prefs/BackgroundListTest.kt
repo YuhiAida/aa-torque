@@ -35,4 +35,13 @@ class BackgroundListTest {
         assertEquals(BackgroundRow.Kind.CHOOSE, rows[6].kind)
         assertEquals("Choose image…", rows[6].title)
     }
+
+    @Test
+    fun buildRowsSelectsBareDrawableName() {
+        val bundled = listOf("Bundled A" to "drawable_a", "Bundled B" to "drawable_b")
+        val stored = emptyList<String>()
+        val labels = RowLabels("App default", "Choose image…", "Custom image %1\$d")
+        val rows = buildRows(bundled, stored, "drawable_b", labels)
+        assertEquals(true, rows[2].selected)
+    }
 }

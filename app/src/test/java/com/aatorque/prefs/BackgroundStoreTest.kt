@@ -30,19 +30,19 @@ class BackgroundStoreTest {
         // clean
         dir.listFiles()?.forEach { it.delete() }
 
-        val keep = "keep.jpg"
-        val orphan = "orphan.jpg"
+        val keep = "bg-11111111.jpg"
+        val orphan = "bg-22222222.jpg"
         File(dir, keep).writeBytes(byteArrayOf(1, 2, 3))
         File(dir, orphan).writeBytes(byteArrayOf(4, 5, 6))
         // thumbnail of orphan
-        File(dir, "orphan.jpg.thumb.jpg").writeBytes(byteArrayOf(7))
+        File(dir, "bg-22222222.jpg.thumb.jpg").writeBytes(byteArrayOf(7))
 
         val deleted = BackgroundStore.sweep(context, setOf(keep))
 
         assertEquals(1, deleted)
         assertTrue(File(dir, keep).exists())
-        assertFalse(File(dir, orphan).exists())
-        assertFalse(File(dir, "orphan.jpg.thumb.jpg").exists())
+        assertFalse(File(dir, "bg-22222222.jpg").exists())
+        assertFalse(File(dir, "bg-22222222.jpg.thumb.jpg").exists())
     }
 
     @Test
@@ -98,8 +98,35 @@ class BackgroundStoreTest {
     }
 
     @Test
+    fun resolveRejectsUnsafeNames() {
+        assertEquals(null, BackgroundStore.resolve(context, "../evil.jpg", 100))
+        assertEquals(null, BackgroundStore.resolve(context, "evil.jpg", 100))
+    }
+
+    @Test
+    fun thumbnailRejectsUnsafeNames() {
+        assertEquals(null, BackgroundStore.thumbnail(context, "../evil.jpg"))
+        assertEquals(null, BackgroundStore.thumbnail(context, "evil.jpg"))
+    }
+
+    @Test
     fun thumbnailMissingReturnsNull() {
         val result = BackgroundStore.thumbnail(context, "does-not-exist.jpg")
         assertEquals(null, result)
+    }
+
+    @Test
+    fun sweepLeavesOutsideFilesAlone() {
+        val dir = BackgroundStore.dir(context)
+        dir.mkdirs()
+        dir.listFiles()?.forEach { it.delete() }
+        val outside = File(dir.parentFile, "evil.jpg")
+        outside.writeBytes(byteArrayOf(9))
+        try {
+            BackgroundStore.sweep(context, emptySet())
+            assertTrue(outside.exists())
+        } finally {
+            outside.delete()
+        }
     }
 }

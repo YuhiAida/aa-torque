@@ -42,7 +42,7 @@ fun buildRows(
             BackgroundRow.Kind.DRAWABLE,
             title,
             encodeDrawable(drawableName),
-            encodeDrawable(drawableName) == current
+            encodeDrawable(drawableName) == current || drawableName == current
         )
     }
     rows += BackgroundRow(BackgroundRow.Kind.DIVIDER, "", "", false)
