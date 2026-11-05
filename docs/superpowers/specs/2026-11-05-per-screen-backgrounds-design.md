@@ -91,7 +91,7 @@ The value is a source, not a file name:
 | `file:<file name>` | A copy in the app's own storage, e.g. `file:bg-1a2b3c.jpg` |
 
 A small pure function parses the string into a sealed result: `Inherit`, `Drawable(name)`,
-`File(name)`, or `Invalid` (falls back to `Inherit`). Unknown prefixes are treated as
+`Stored(name)`, or `Invalid` (falls back to `Inherit`). Unknown prefixes are treated as
 invalid, not as a crash. This is the piece the JVM tests cover.
 
 ### The image on disk
@@ -123,7 +123,7 @@ a screen change and a background change:
 
 - Collect `currentScreen` and that screen's `background` as one derived flow.
 - `Drawable(name)` → the existing resource path.
-- `File(name)` → decode on the IO dispatcher into a bitmap, then set it on the binding. Cache
+- `Stored(name)` → decode on the IO dispatcher into a bitmap, then set it on the binding. Cache
   the last decoded bitmap by file name so a redraw does not decode again.
 - `Inherit` → the current path against `selectedBackground`.
 - A missing or unreadable file is logged and rendered as the app-wide background.
