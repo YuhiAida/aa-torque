@@ -56,12 +56,6 @@ class SettingsDashboard : PreferenceFragmentCompat() {
     private val imagePicker =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri == null) {
-                Toast.makeText(
-                    requireContext(),
-                    R.string.background_import_failed,
-                    Toast.LENGTH_SHORT
-                )
-                    .show()
                 return@registerForActivityResult
             }
             lifecycleScope.launch(Dispatchers.IO) {
@@ -78,18 +72,18 @@ class SettingsDashboard : PreferenceFragmentCompat() {
                 }
                 val value = encodeFile(name)
                 val dbIndex = dashboardIndex()
-                requireContext().dataStore.updateData { prefs ->
+                val prefs = requireContext().dataStore.updateData { prefs ->
                     val screen = prefs.getScreens(dbIndex).toBuilder().setBackground(value).build()
                     prefs.toBuilder().setScreens(dbIndex, screen).build()
                 }
-                val prefs = requireContext().dataStore.data.first()
                 val referenced = prefs.screensList.mapNotNull { screen ->
                     val src = parseBackground(screen.background)
                     if (src is BackgroundSource.Stored) src.name else null
                 }.toSet()
                 BackgroundStore.sweep(requireContext(), referenced)
+                val storedNames = BackgroundStore.list(requireContext())
                 withContext(Dispatchers.Main) {
-                    updateBackgroundSummary(value)
+                    updateBackgroundSummary(value, storedNames)
                 }
             }
         }
@@ -136,16 +130,22 @@ class SettingsDashboard : PreferenceFragmentCompat() {
             return@setOnPreferenceChangeListener true
         }
         backgroundPref = findPreference("background")!!
+        backgroundPref.scope = viewLifecycleOwner.lifecycleScope
         backgroundPref.onChooseImage = { imagePicker.launch(arrayOf("image/*")) }
         backgroundPref.setOnPreferenceChangeListener { _, newValue ->
             lifecycleScope.launch {
-                requireContext().dataStore.updateData { prefs ->
+                val prefs = requireContext().dataStore.updateData { prefs ->
                     val screen =
                         prefs.getScreens(
                             dashboardIndex()
                         ).toBuilder().setBackground(newValue as String)
                     return@updateData prefs.toBuilder().setScreens(dashboardIndex(), screen).build()
                 }
+                val referenced = prefs.screensList.mapNotNull { screen ->
+                    val src = parseBackground(screen.background)
+                    if (src is BackgroundSource.Stored) src.name else null
+                }.toSet()
+                BackgroundStore.sweep(requireContext(), referenced)
             }
             return@setOnPreferenceChangeListener true
         }
@@ -153,8 +153,19 @@ class SettingsDashboard : PreferenceFragmentCompat() {
             requireContext().dataStore.data.collect { prefs ->
                 val screen = prefs.getScreens(dashboardIndex())
                 backgroundPref.value = screen.background
-                updateBackgroundSummary(screen.background)
+                val storedNames = withContext(Dispatchers.IO) {
+                    BackgroundStore.list(requireContext())
+                }
+                updateBackgroundSummary(screen.background, storedNames)
             }
+        }
+        lifecycleScope.launch(Dispatchers.IO) {
+            val prefs = requireContext().dataStore.data.first()
+            val referenced = prefs.screensList.mapNotNull { screen ->
+                val src = parseBackground(screen.background)
+                if (src is BackgroundSource.Stored) src.name else null
+            }.toSet()
+            BackgroundStore.sweep(requireContext(), referenced)
         }
     }
 
@@ -213,7 +224,7 @@ class SettingsDashboard : PreferenceFragmentCompat() {
         }
     }
 
-    private fun updateBackgroundSummary(value: String) {
+    private fun updateBackgroundSummary(value: String, storedNames: List<String>) {
         val bundledTitles = resources.getStringArray(R.array.backgroundstrings)
         val bundledDrawables = resources.getStringArray(R.array.backgrounds)
         val map = bundledDrawables.mapIndexed { i, name ->
@@ -226,7 +237,7 @@ class SettingsDashboard : PreferenceFragmentCompat() {
             is BackgroundSource.Drawable -> map[src.name] ?: src.name
 
             is BackgroundSource.Stored -> {
-                val index = BackgroundStore.list(requireContext()).indexOf(src.name)
+                val index = storedNames.indexOf(src.name)
                 if (index >= 0) {
                     getString(R.string.custom_image_title, index + 1)
                 } else {
@@ -238,6 +249,7 @@ class SettingsDashboard : PreferenceFragmentCompat() {
     }
 
     override fun onDestroy() {
+        super.onDestroy()
         if (mBound) {
             try {
                 requireActivity().unbindService(torqueConnection)
