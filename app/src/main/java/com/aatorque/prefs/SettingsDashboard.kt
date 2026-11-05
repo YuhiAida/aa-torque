@@ -89,9 +89,12 @@ class SettingsDashboard : PreferenceFragmentCompat() {
         }
 
     var torqueConnection = object : ServiceConnection {
-        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+        // The framework can hand back a null binding when the service is not running, and a
+        // null component on some OEM builds. Both are survivable: the PID list stays empty.
+        override fun onServiceConnected(className: ComponentName?, service: IBinder?) {
             mBound = true
-            torqueService = (service as TorqueServiceWrapper.LocalBinder).getService()
+            val binder = service as? TorqueServiceWrapper.LocalBinder ?: return
+            torqueService = binder.getService()
             torqueService?.loadPidInformation(false) { pids ->
                 buildOptions(pids)
             }
@@ -130,7 +133,9 @@ class SettingsDashboard : PreferenceFragmentCompat() {
             return@setOnPreferenceChangeListener true
         }
         backgroundPref = findPreference("background")!!
-        backgroundPref.scope = viewLifecycleOwner.lifecycleScope
+        // onCreatePreferences runs before the fragment view exists, so viewLifecycleOwner
+        // throws here. The fragment lifecycle is the correct binding for the dialog work.
+        backgroundPref.scope = lifecycleScope
         backgroundPref.onChooseImage = { imagePicker.launch(arrayOf("image/*")) }
         backgroundPref.setOnPreferenceChangeListener { _, newValue ->
             lifecycleScope.launch {
