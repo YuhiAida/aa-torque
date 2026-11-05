@@ -31,7 +31,9 @@ class SettingsDashboard : PreferenceFragmentCompat() {
 
     lateinit var performanceTitle: EditTextPreference
     lateinit var mainCat: PreferenceCategory
-    lateinit var optionsCat: PreferenceCategory
+    lateinit var gaugesCat: PreferenceCategory
+    lateinit var displaysCat: PreferenceCategory
+    lateinit var torqueStatus: Preference
     lateinit var backgroundPref: BackgroundPreference
 
     val clockText = arrayOf(
@@ -97,11 +99,13 @@ class SettingsDashboard : PreferenceFragmentCompat() {
             torqueService = binder.getService()
             torqueService?.loadPidInformation(false) { pids ->
                 buildOptions(pids)
+                torqueStatus.summary = getString(R.string.status_torque_connected)
             }
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
             mBound = false
+            torqueStatus.summary = getString(R.string.status_torque_waiting)
         }
     }
 
@@ -111,15 +115,16 @@ class SettingsDashboard : PreferenceFragmentCompat() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mBound = TorqueServiceWrapper.runStartIntent(requireContext(), torqueConnection)
-        if (mBound) {
-            buildOptions(torqueService?.pids ?: emptyList())
-        }
+        buildOptions(null)
     }
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         addPreferencesFromResource(R.xml.display_setting)
-        mainCat = findPreference("displayCat")!!
-        optionsCat = findPreference("displayOptions")!!
+        mainCat = findPreference("thisDashboard")!!
+        gaugesCat = findPreference("gaugesCat")!!
+        displaysCat = findPreference("displaysCat")!!
+        torqueStatus = findPreference("torqueStatus")!!
+        torqueStatus.summary = getString(R.string.status_torque_waiting)
         performanceTitle = findPreference("performanceTitle")!!
         performanceTitle.summaryProvider = EditTextPreference.SimpleSummaryProvider.getInstance()
         performanceTitle.setOnPreferenceChangeListener { _, newValue ->
@@ -174,21 +179,16 @@ class SettingsDashboard : PreferenceFragmentCompat() {
         }
     }
 
-    private fun buildOptions(pids: PidInfo) {
+    private fun buildOptions(pids: PidInfo?) {
         activity?.let { act ->
             act.runOnUiThread {
-                mainCat.title = null
                 val dbIndex = dashboardIndex()
                 lifecycleScope.launch {
                     requireContext().dataStore.data.collect { userPreference ->
                         val screen = userPreference.getScreens(dbIndex)
                         performanceTitle.text = screen.title
-                        performanceTitle.title =
-                            resources.getString(
-                                R.string.pref_title_performance,
-                                dbIndex + 1
-                            )
-                        optionsCat.removeAll()
+                        gaugesCat.removeAll()
+                        displaysCat.removeAll()
                         val sources = arrayOf(screen.gaugesList, screen.displaysList)
                         val texts = arrayOf(
                             clockText.map(requireContext()::getString),
@@ -197,14 +197,23 @@ class SettingsDashboard : PreferenceFragmentCompat() {
                             }
                         )
                         val icons = arrayOf(clockIcon, displayIcon)
+                        val cats = arrayOf(gaugesCat, displaysCat)
                         arrayOf("clock", "display").forEachIndexed { i, type ->
-                            sources[i].forEachIndexed { j, screen ->
-                                optionsCat.addPreference(
+                            sources[i].forEachIndexed { j, disp ->
+                                cats[i].addPreference(
                                     Preference(requireContext()).also {
                                         it.key = "${type}_${dbIndex}_$j"
-                                        it.summary = pids.firstOrNull { pid ->
-                                            "torque_${pid.first}" == screen.pid
-                                        }?.second?.get(0) ?: ""
+                                        it.summary = if (pids == null) {
+                                            if (disp.label.isBlank()) {
+                                                getString(R.string.not_set)
+                                            } else {
+                                                disp.label
+                                            }
+                                        } else {
+                                            pids.firstOrNull { pid ->
+                                                "torque_${pid.first}" == disp.pid
+                                            }?.second?.get(0) ?: ""
+                                        }
                                         it.title = texts[i][j]
                                         it.icon = AppCompatResources.getDrawable(
                                             requireContext(),

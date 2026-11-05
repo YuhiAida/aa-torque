@@ -218,4 +218,12 @@
         <item quantity="one">%d dashboard</item>
         <item quantity="other">%d dashboards</item>
     </plurals>
+    <string name="pref_torque_status">Torque</string>
+    <string name="status_torque_waiting">Waiting for Torque</string>
+    <string name="status_torque_connected">Connected</string>
+    <string name="pref_this_dashboard">This dashboard</string>
+    <string name="pref_dashboard_name">Name</string>
+    <string name="pref_gauges">Gauges</string>
+    <string name="pref_displays">Displays</string>
+    <string name="not_set">Not set</string>
 </resources>
