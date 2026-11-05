@@ -135,8 +135,8 @@ Do not leave it in a chat message or a pull request comment.
   mechanical. The style comes from `.editorconfig` (`android_studio`), so the IDE and ktlint
   agree. `org/prowl/torque` and the `speedviewlib` submodule are excluded on purpose.
 - Ask before you add a dependency.
-- Do not add network, analytics or telemetry code. `ch.acra` (crash mail) is the only
-  component that sends data off the phone.
+- Do not add network, analytics or telemetry code. The app sends nothing off the phone; a
+  crash dump stays in the app's own storage.
 - Match the style of the surrounding file.
 - When your change moves a data path, adds a module or renames a subsystem, update
   [docs/architecture.md](docs/architecture.md) in the same pull request.

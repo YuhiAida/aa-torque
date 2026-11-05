@@ -79,9 +79,11 @@ Supporting pieces:
 - `stats/NotiService.kt` — a `NotificationListenerService`. It supplies media metadata for
   the album-art background.
 - `stats/AlbumArt.kt` — the background artwork.
-- `stats/App.kt` — `Application`. Installs Timber, ACRA crash reporting and the Android 14
-  permission fix.
+- `stats/App.kt` — `Application`. Installs Timber, the local crash dump writer and the
+  Android 14 permission fix.
 - `stats/CacheLogTree.kt` — Timber tree that keeps recent log lines.
+- `stats/CrashDump.kt` — writes a fatal exception to a file on the phone. Nothing leaves the
+  device. See [troubleshooting.md](troubleshooting.md).
 
 ## Preferences
 

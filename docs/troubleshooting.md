@@ -41,8 +41,17 @@ Useful signals:
 - `CAT line ... registry=NNN` — the PID catalogue arrived with `NNN` entries.
 - Exceptions around `bindService` — Torque is missing or was killed.
 
-Crash reports go through ACRA, which offers a mail or toast prompt depending on the build.
-ACRA is the only component that sends data off the phone.
+A crash writes a dump on the phone and sends it nowhere. The dump holds the stack trace, the
+app version, the Android version, the device model and the last 200 log lines. It lands in
+the app's external files directory, in a subdirectory named *crashes*, or in the private
+*files/crashes* directory when external storage is not mounted. The newest 10 dumps are kept.
+
+```
+adb pull /sdcard/Android/data/com.aatorque.stats/files/crashes
+```
+
+A file manager on the phone reads the same directory. *Settings* → *Copy logs to clipboard*
+still gives the live log tail for a crash that has no dump, such as a kill by the system.
 
 ## Install fails
 
