@@ -3,7 +3,8 @@ package com.aatorque.prefs
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.ImageDecoder
+import android.graphics.Matrix
+import android.media.ExifInterface
 import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
@@ -66,67 +67,164 @@ object BackgroundStore {
     fun newName(): String = "bg-${UUID.randomUUID().toString().replace("-", "").take(8)}.jpg"
 
     fun import(context: Context, uri: android.net.Uri, maxEdge: Int = 2048): String? {
-        val decoded = try {
-            val source = ImageDecoder.createSource(context.contentResolver, uri)
-            ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
-                decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-                val size = info.size
-                val longEdge = maxOf(size.width, size.height)
-                if (longEdge > maxEdge) {
-                    val ratio = maxEdge.toFloat() / longEdge
-                    decoder.setTargetSize(
-                        (size.width * ratio).toInt().coerceAtLeast(1),
-                        (size.height * ratio).toInt().coerceAtLeast(1)
-                    )
-                }
-            }
+        val tmpFile = try {
+            File.createTempFile("bg-import", ".jpg", context.cacheDir)
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
             return null
         }
 
-        val scaled = decoded
-
-        val thumbLong = 128
-        val thumbEdge = maxOf(scaled.width, scaled.height)
-        val thumb = if (thumbEdge > thumbLong) {
-            val ratio = thumbLong.toFloat() / thumbEdge
-            Bitmap.createScaledBitmap(
-                scaled,
-                (scaled.width * ratio).toInt().coerceAtLeast(1),
-                (scaled.height * ratio).toInt().coerceAtLeast(1),
-                true
-            )
-        } else {
-            scaled
-        }
-
-        val directory = dir(context)
-        directory.mkdirs()
-        val name = newName()
-        val imageFile = File(directory, name)
-        val thumbFile = File(directory, "$name$THUMB_SUFFIX")
-
-        var ok = true
-        try {
-            FileOutputStream(imageFile).use { out ->
-                if (!scaled.compress(Bitmap.CompressFormat.JPEG, 90, out)) ok = false
+        var imageFile: File? = null
+        var thumbFile: File? = null
+        return try {
+            tmpFile.outputStream().use { out ->
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    input.copyTo(out, 64 * 1024)
+                } ?: return null
             }
-            if (ok) {
-                FileOutputStream(thumbFile).use { out ->
-                    if (!thumb.compress(Bitmap.CompressFormat.JPEG, 90, out)) ok = false
+
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(tmpFile.absolutePath, bounds)
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+
+            val sampleSize = calculateInSampleSize(bounds.outWidth, bounds.outHeight, maxEdge)
+            val opts = BitmapFactory.Options().apply {
+                inSampleSize = sampleSize
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+            }
+            var bitmap = BitmapFactory.decodeFile(tmpFile.absolutePath, opts) ?: return null
+
+            val orientation = try {
+                ExifInterface(tmpFile.absolutePath).getAttributeInt(
+                    ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_NORMAL
+                )
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                ExifInterface.ORIENTATION_NORMAL
+            }
+
+            val matrix = orientationMatrix(orientation, bitmap.width, bitmap.height)
+            if (matrix != null) {
+                val rotated = Bitmap.createBitmap(
+                    bitmap,
+                    0,
+                    0,
+                    bitmap.width,
+                    bitmap.height,
+                    matrix,
+                    true
+                )
+                if (rotated !== bitmap) bitmap.recycle()
+                bitmap = rotated
+            }
+
+            val scaled = if (maxOf(bitmap.width, bitmap.height) > maxEdge) {
+                val ratio = maxEdge.toFloat() / maxOf(bitmap.width, bitmap.height)
+                val nb = Bitmap.createScaledBitmap(
+                    bitmap,
+                    (bitmap.width * ratio).toInt().coerceAtLeast(1),
+                    (bitmap.height * ratio).toInt().coerceAtLeast(1),
+                    true
+                )
+                if (nb !== bitmap) bitmap.recycle()
+                nb
+            } else {
+                bitmap
+            }
+
+            val directory = dir(context)
+            directory.mkdirs()
+            val name = newName()
+            imageFile = File(directory, name)
+            thumbFile = File(directory, "$name$THUMB_SUFFIX")
+
+            val thumbLong = 128
+            val thumbEdge = maxOf(scaled.width, scaled.height)
+            val thumb = if (thumbEdge > thumbLong) {
+                val ratio = thumbLong.toFloat() / thumbEdge
+                Bitmap.createScaledBitmap(
+                    scaled,
+                    (scaled.width * ratio).toInt().coerceAtLeast(1),
+                    (scaled.height * ratio).toInt().coerceAtLeast(1),
+                    true
+                )
+            } else {
+                scaled
+            }
+
+            var ok = true
+            try {
+                FileOutputStream(imageFile).use { out ->
+                    if (!scaled.compress(Bitmap.CompressFormat.JPEG, 90, out)) ok = false
                 }
+                if (ok) {
+                    FileOutputStream(thumbFile).use { out ->
+                        if (!thumb.compress(Bitmap.CompressFormat.JPEG, 90, out)) ok = false
+                    }
+                }
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                ok = false
             }
+            if (!ok) {
+                imageFile.delete()
+                thumbFile.delete()
+                return null
+            }
+            name
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
-            ok = false
+            imageFile?.delete()
+            thumbFile?.delete()
+            null
+        } finally {
+            tmpFile.delete()
         }
-        if (!ok) {
-            imageFile.delete()
-            thumbFile.delete()
-            return null
+    }
+
+    internal fun orientationMatrix(orientation: Int, width: Int, height: Int): Matrix? {
+        val matrix = Matrix()
+        return when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> {
+                matrix.postRotate(90f)
+                matrix
+            }
+
+            ExifInterface.ORIENTATION_ROTATE_180 -> {
+                matrix.postRotate(180f)
+                matrix
+            }
+
+            ExifInterface.ORIENTATION_ROTATE_270 -> {
+                matrix.postRotate(270f)
+                matrix
+            }
+
+            ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> {
+                matrix.postScale(-1f, 1f)
+                matrix
+            }
+
+            ExifInterface.ORIENTATION_FLIP_VERTICAL -> {
+                matrix.postScale(1f, -1f)
+                matrix
+            }
+
+            ExifInterface.ORIENTATION_TRANSPOSE -> {
+                matrix.postRotate(90f)
+                matrix.postScale(-1f, 1f)
+                matrix
+            }
+
+            ExifInterface.ORIENTATION_TRANSVERSE -> {
+                matrix.postRotate(270f)
+                matrix.postScale(-1f, 1f)
+                matrix
+            }
+
+            else -> null
         }
-        return name
     }
 
     fun resolve(context: Context, name: String, reqHeight: Int): Bitmap? {

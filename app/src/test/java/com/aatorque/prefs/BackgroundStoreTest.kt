@@ -1,6 +1,8 @@
 package com.aatorque.prefs
 
 import android.content.Context
+import android.graphics.Matrix
+import android.media.ExifInterface
 import androidx.test.core.app.ApplicationProvider
 import java.io.File
 import org.junit.Assert.assertEquals
@@ -150,5 +152,34 @@ class BackgroundStoreTest {
         File(dir, "bg-ffffffff.jpg").writeBytes(byteArrayOf(2))
         val names = BackgroundStore.list(context)
         assertEquals(listOf("bg-ffffffff.jpg"), names)
+    }
+
+    @Test
+    fun orientationMatrixReturnsMatrixForAllEightCodes() {
+        // EXIF orientations 2..8 (all except NORMAL) must yield a matrix.
+        for (code in 2..8) {
+            assertTrue(BackgroundStore.orientationMatrix(code, 1600, 900) != null)
+        }
+    }
+
+    @Test
+    fun orientationMatrixNullForNormalAndUndefined() {
+        assertEquals(
+            null,
+            BackgroundStore.orientationMatrix(ExifInterface.ORIENTATION_NORMAL, 1600, 900)
+        )
+        assertEquals(
+            null,
+            BackgroundStore.orientationMatrix(ExifInterface.ORIENTATION_UNDEFINED, 1600, 900)
+        )
+    }
+
+    @Test
+    fun orientationMatrixMaps90() {
+        val m = BackgroundStore.orientationMatrix(ExifInterface.ORIENTATION_ROTATE_90, 1600, 900)!!
+        val pts = floatArrayOf(1600f, 900f)
+        m.mapPoints(pts)
+        assertEquals(-900f, pts[0], 0.5f)
+        assertEquals(1600f, pts[1], 0.5f)
     }
 }
