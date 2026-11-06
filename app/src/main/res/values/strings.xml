@@ -116,6 +116,7 @@
     <string name="num_screens">Number of dashboards to display</string>
     <string name="unit">Unit</string>
     <string name="dashboards">Dashboards</string>
+    <string name="action_delete">Delete</string>
     <string name="rotary_input">Rotary input</string>
     <string name="rotary_desc">Disable buttons and use rotary dial if equipped</string>
     <string name="enable_script">Run unit conversion</string>
@@ -210,8 +211,6 @@
     <string name="developer_simulation_title">Simulate metrics</string>
     <string name="developer_simulation_summary">Sweep every gauge from its minimum to its maximum. Off reads Torque data.</string>
     <string name="pref_default_background">Default background</string>
-    <string name="pref_default_background_summary">Each dashboard can override this</string>
-    <string name="pref_card_category">Android Auto card</string>
     <string name="pref_count_category">Dashboards shown</string>
     <string name="pref_count_warning">Lowering the number deletes the last dashboard and its settings.</string>
     <plurals name="dashboards_count">

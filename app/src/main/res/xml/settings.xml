@@ -66,16 +66,6 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="@string/pref_card_category">
-        <ListPreference
-            android:key="cardStyle"
-            android:title="Card style"
-            android:persistent="false" />
-        <Preference
-            android:key="cardPreview"
-            android:title="Card preview"
-            android:persistent="false" />
-    </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/media">
         <CheckBoxPreference

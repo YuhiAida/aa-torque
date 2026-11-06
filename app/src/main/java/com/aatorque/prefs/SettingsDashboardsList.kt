@@ -1,8 +1,8 @@
 package com.aatorque.prefs
 
-import android.app.AlertDialog
 import android.os.Bundle
 import android.text.InputType
+import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.EditTextPreference
 import androidx.preference.Preference
@@ -22,10 +22,6 @@ class SettingsDashboardsList : PreferenceFragmentCompat() {
     lateinit var countPref: EditTextPreference
     private var currentCount: Int = 1
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
-
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         addPreferencesFromResource(R.xml.dashboards_setting)
         shownInCar = findPreference("shownInCar")!!
@@ -44,7 +40,7 @@ class SettingsDashboardsList : PreferenceFragmentCompat() {
             AlertDialog.Builder(requireContext())
                 .setMessage(R.string.pref_count_warning)
                 .setNegativeButton(android.R.string.cancel) { dialog, _ -> dialog.dismiss() }
-                .setPositiveButton("Delete") { dialog, _ ->
+                .setPositiveButton(R.string.action_delete) { dialog, _ ->
                     dialog.dismiss()
                     applyCount(intVal)
                     countPref.text = intVal.toString()

@@ -63,6 +63,10 @@ class SettingsActivity :
                             )
                         }
 
+                        is SettingsDashboardsList -> {
+                            resources.getString(R.string.dashboards)
+                        }
+
                         is SettingsPIDFragment -> {
                             f.requireArguments().getCharSequence("title")
                         }
