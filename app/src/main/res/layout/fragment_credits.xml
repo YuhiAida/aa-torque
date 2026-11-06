@@ -107,7 +107,8 @@
         android:layout_gravity="center_horizontal"
         android:drawableLeft="@drawable/github"
         android:drawableTint="@color/secondaryTextColor"
-        android:text=" Github"/>
+        android:text=" Github"
+        android:textAllCaps="false" />
 
 
         <androidx.appcompat.widget.AppCompatButton
@@ -119,7 +120,8 @@
         android:drawableLeft="@drawable/ic_coffee"
         android:drawableTint="@color/secondaryTextColor"
         android:drawablePadding="6dp"
-        android:text="@string/donate" />
+        android:text="@string/donate"
+        android:textAllCaps="false" />
 
     </LinearLayout>
 
