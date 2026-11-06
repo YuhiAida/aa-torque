@@ -25,7 +25,6 @@ import com.aatorque.stats.TorqueServiceWrapper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -70,7 +69,7 @@ class SettingsDashboard : PreferenceFragmentCompat() {
             val appContext = requireContext().applicationContext
             val dbIndex = dashboardIndex()
             lifecycleScope.launch(Dispatchers.IO) {
-                backgroundFiles.withLock {
+                BackgroundStore.filesLock.withLock {
                     val name = BackgroundStore.import(appContext, uri)
                     if (name == null) {
                         withContext(Dispatchers.Main) {
@@ -177,7 +176,7 @@ class SettingsDashboard : PreferenceFragmentCompat() {
         backgroundPref.onChooseImage = { imagePicker.launch(arrayOf("image/*")) }
         backgroundPref.setOnPreferenceChangeListener { _, newValue ->
             lifecycleScope.launch {
-                backgroundFiles.withLock {
+                BackgroundStore.filesLock.withLock {
                     val index = dashboardIndex()
                     val prefs = requireContext().dataStore.updateData { prefs ->
                         if (!prefs.hasScreen(index)) return@updateData prefs
@@ -206,7 +205,7 @@ class SettingsDashboard : PreferenceFragmentCompat() {
             }
         }
         lifecycleScope.launch(Dispatchers.IO) {
-            backgroundFiles.withLock {
+            BackgroundStore.filesLock.withLock {
                 val prefs = requireContext().dataStore.data.first()
                 BackgroundStore.sweep(requireContext(), prefs.referencedBackgroundFiles())
             }
@@ -363,11 +362,5 @@ class SettingsDashboard : PreferenceFragmentCompat() {
             }
             mBound = false
         }
-    }
-
-    companion object {
-        // The import, the reference update and the cleanup run in three coroutines. One guard
-        // stops a sweep from deleting an image before the reference that names it is stored.
-        private val backgroundFiles = Mutex()
     }
 }

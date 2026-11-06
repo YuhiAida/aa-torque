@@ -32,6 +32,7 @@ import javax.net.ssl.HttpsURLConnection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
 
 class SettingsActivity :
@@ -216,8 +217,12 @@ class SettingsActivity :
                 }
                 try {
                     inStream.use { stream ->
-                        this@SettingsActivity.applicationContext.dataStore.updateData {
-                            return@updateData UserPreference.parseFrom(stream)
+                        // The dashboard settings delete background files no reference names.
+                        // Take the same lock so these references are stored before that read.
+                        BackgroundStore.filesLock.withLock {
+                            this@SettingsActivity.applicationContext.dataStore.updateData {
+                                return@updateData UserPreference.parseFrom(stream)
+                            }
                         }
                     }
                 } catch (e: InvalidProtocolBufferException) {

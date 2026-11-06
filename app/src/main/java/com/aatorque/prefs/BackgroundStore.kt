@@ -8,6 +8,7 @@ import android.media.ExifInterface
 import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
+import kotlinx.coroutines.sync.Mutex
 
 /**
  * File-backed store for user-imported background images.
@@ -16,6 +17,13 @@ import java.util.UUID
  * call; callers are responsible for running them on [kotlinx.coroutines.Dispatchers.IO].
  */
 object BackgroundStore {
+
+    /**
+     * Guards every import, reference write and sweep together. A sweep that runs between an
+     * import and the update that references the new file deletes that file, and a settings
+     * import can add a reference the sweep has not read yet, so all three take this first.
+     */
+    val filesLock = Mutex()
 
     private const val DIR_NAME = "backgrounds"
     private const val THUMB_SUFFIX = ".thumb.jpg"
