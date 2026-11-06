@@ -7,6 +7,7 @@ reviews:
   profile: chill
   request_changes_workflow: false
   high_level_summary: true
+  high_level_summary_in_walkthrough: true
   poem: false
   review_status: true
   collapse_walkthrough: true
@@ -26,12 +27,34 @@ reviews:
     auto_incremental_review: true
     base_branches:
       - master
+  tools:
+    # The project gate is ktlint, tools/check_docs.py and tools/check_themes.py.
+    # Keep the tools that match it, and silence the ones that do not.
+    actionlint:
+      enabled: true
+    yamllint:
+      enabled: true
+    ruff:
+      enabled: true
+    gitleaks:
+      enabled: true
+    detekt:
+      enabled: false
+    markdownlint:
+      enabled: false
+    vale:
+      enabled: false
   path_filters:
     - "!app/src/test/screenshots/**"
     - "!lib/**"
     - "!docs/generated/**"
     - "!dist/**"
   path_instructions:
+    - path: "app/src/main/aidl/**"
+      instructions: |
+        Verbatim copy of Torque's AIDL interface. Treat it as third-party code.
+        Do not suggest style, naming or formatting changes. Report only defects.
+        An interface change breaks the binding at runtime, so flag it as a defect.
     - path: "app/src/main/java/org/prowl/torque/**"
       instructions: |
         This is a verbatim mirror of Torque's AIDL interface. Treat it as third-party code.
