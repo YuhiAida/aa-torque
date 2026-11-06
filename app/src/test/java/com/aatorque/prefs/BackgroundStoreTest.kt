@@ -51,8 +51,8 @@ class BackgroundStoreTest {
         dir.mkdirs()
         dir.listFiles()?.forEach { it.delete() }
 
-        val a = "a.jpg"
-        val b = "b.jpg"
+        val a = "bg-aaaaaaaa.jpg"
+        val b = "bg-bbbbbbbb.jpg"
         File(dir, a).writeBytes(byteArrayOf(1))
         File(dir, b).writeBytes(byteArrayOf(2))
 
@@ -68,8 +68,8 @@ class BackgroundStoreTest {
         dir.mkdirs()
         dir.listFiles()?.forEach { it.delete() }
 
-        val older = File(dir, "older.jpg")
-        val newer = File(dir, "newer.jpg")
+        val older = File(dir, "bg-cccccccc.jpg")
+        val newer = File(dir, "bg-dddddddd.jpg")
         older.writeBytes(byteArrayOf(1))
         // ensure mtime difference
         older.setLastModified(1000L)
@@ -77,7 +77,7 @@ class BackgroundStoreTest {
         newer.setLastModified(2000L)
 
         val names = BackgroundStore.list(context)
-        assertEquals(listOf("newer.jpg", "older.jpg"), names)
+        assertEquals(listOf("bg-dddddddd.jpg", "bg-cccccccc.jpg"), names)
     }
 
     @Test
@@ -85,10 +85,10 @@ class BackgroundStoreTest {
         val dir = BackgroundStore.dir(context)
         dir.mkdirs()
         dir.listFiles()?.forEach { it.delete() }
-        File(dir, "img.jpg").writeBytes(byteArrayOf(1))
-        File(dir, "img.jpg.thumb.jpg").writeBytes(byteArrayOf(2))
+        File(dir, "bg-eeeeeeee.jpg").writeBytes(byteArrayOf(1))
+        File(dir, "bg-eeeeeeee.jpg.thumb.jpg").writeBytes(byteArrayOf(2))
         val names = BackgroundStore.list(context)
-        assertEquals(listOf("img.jpg"), names)
+        assertEquals(listOf("bg-eeeeeeee.jpg"), names)
     }
 
     @Test
@@ -128,5 +128,27 @@ class BackgroundStoreTest {
         } finally {
             outside.delete()
         }
+    }
+
+    @Test
+    fun sweepLeavesNonMatchingStaleFileAlone() {
+        val dir = BackgroundStore.dir(context)
+        dir.mkdirs()
+        dir.listFiles()?.forEach { it.delete() }
+        File(dir, "notes.jpg").writeBytes(byteArrayOf(1))
+        val deleted = BackgroundStore.sweep(context, emptySet())
+        assertEquals(0, deleted)
+        assertTrue(File(dir, "notes.jpg").exists())
+    }
+
+    @Test
+    fun listExcludesNonMatchingJpg() {
+        val dir = BackgroundStore.dir(context)
+        dir.mkdirs()
+        dir.listFiles()?.forEach { it.delete() }
+        File(dir, "notes.jpg").writeBytes(byteArrayOf(1))
+        File(dir, "bg-ffffffff.jpg").writeBytes(byteArrayOf(2))
+        val names = BackgroundStore.list(context)
+        assertEquals(listOf("bg-ffffffff.jpg"), names)
     }
 }

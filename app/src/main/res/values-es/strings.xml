@@ -113,6 +113,7 @@
     <string name="bg_test">Prueba</string>
     <string name="bg_beetle">Herbie</string>
     <string name="pref_background">Fondo</string>
+    <string name="pref_default_background">Fondo</string>
     <string name="bg_dots">Puntos</string>
     <string name="bg_aa">Android Auto</string>
     <string name="item_details_go_back">Volver</string>

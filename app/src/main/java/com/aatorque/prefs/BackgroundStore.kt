@@ -3,7 +3,7 @@ package com.aatorque.prefs
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import java.io.ByteArrayOutputStream
+import android.graphics.ImageDecoder
 import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
@@ -18,7 +18,6 @@ object BackgroundStore {
 
     private const val DIR_NAME = "backgrounds"
     private const val THUMB_SUFFIX = ".thumb.jpg"
-    private const val MAX_READ_BYTES = 64 * 1024 * 1024
 
     fun dir(context: Context): File = File(context.filesDir, DIR_NAME)
 
@@ -26,7 +25,12 @@ object BackgroundStore {
         val directory = dir(context)
         val files = directory.listFiles() ?: return emptyList()
         return files
-            .filter { it.isFile && it.name.endsWith(".jpg") && !it.name.endsWith(THUMB_SUFFIX) }
+            .filter {
+                it.isFile &&
+                    it.name.endsWith(".jpg") &&
+                    !it.name.endsWith(THUMB_SUFFIX) &&
+                    it.name.matches(SAFE_NAME)
+            }
             .sortedByDescending { it.lastModified() }
             .map { it.name }
     }
@@ -62,58 +66,26 @@ object BackgroundStore {
     fun newName(): String = "bg-${UUID.randomUUID().toString().replace("-", "").take(8)}.jpg"
 
     fun import(context: Context, uri: android.net.Uri, maxEdge: Int = 2048): String? {
-        val resolver = context.contentResolver
-        val bytes = try {
-            resolver.openInputStream(uri)?.use { input ->
-                val buffer = ByteArrayOutputStream()
-                val tmp = ByteArray(8192)
-                var total = 0
-                while (true) {
-                    val read = input.read(tmp)
-                    if (read < 0) break
-                    if (total + read > MAX_READ_BYTES) return null
-                    buffer.write(tmp, 0, read)
-                    total += read
+        val decoded = try {
+            val source = ImageDecoder.createSource(context.contentResolver, uri)
+            ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+                decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+                val size = info.size
+                val longEdge = maxOf(size.width, size.height)
+                if (longEdge > maxEdge) {
+                    val ratio = maxEdge.toFloat() / longEdge
+                    decoder.setTargetSize(
+                        (size.width * ratio).toInt().coerceAtLeast(1),
+                        (size.height * ratio).toInt().coerceAtLeast(1)
+                    )
                 }
-                buffer.toByteArray()
-            } ?: return null
+            }
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
             return null
         }
-        if (bytes.isEmpty()) return null
 
-        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
-        val mime = bounds.outMimeType
-        if (mime == null || !mime.startsWith("image/")) return null
-
-        val sampleSize = calculateInSampleSize(bounds.outWidth, bounds.outHeight, maxEdge)
-        val decoded = try {
-            BitmapFactory.decodeByteArray(
-                bytes,
-                0,
-                bytes.size,
-                BitmapFactory.Options().apply { inSampleSize = sampleSize }
-            )
-        } catch (e: Exception) {
-            if (e is kotlinx.coroutines.CancellationException) throw e
-            null
-        } ?: return null
-
-        val longEdge = maxOf(decoded.width, decoded.height)
-        val scaled = if (longEdge > maxEdge) {
-            val ratio = maxEdge.toFloat() / longEdge
-            Bitmap.createScaledBitmap(
-                decoded,
-                (decoded.width * ratio).toInt().coerceAtLeast(1),
-                (decoded.height * ratio).toInt().coerceAtLeast(1),
-                true
-            )
-        } else {
-            decoded
-        }
+        val scaled = decoded
 
         val thumbLong = 128
         val thumbEdge = maxOf(scaled.width, scaled.height)

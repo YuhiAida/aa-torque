@@ -134,13 +134,21 @@ class BackgroundPreference(context: Context, attrs: AttributeSet?) : Preference(
                     BackgroundRow.Kind.DRAWABLE -> {
                         val drawableName = parseDrawableName(row.value)
                         val resId = bundledThumbRes[drawableName] ?: 0
-                        if (resId != 0) icon.setImageResource(resId)
+                        if (resId != 0) {
+                            icon.setImageResource(resId)
+                        } else {
+                            icon.setImageDrawable(null)
+                        }
                     }
 
                     BackgroundRow.Kind.FILE -> {
                         val name = parseStoredName(row.value)
                         val bmp = storedThumbs[name]
-                        if (bmp != null) icon.setImageBitmap(bmp)
+                        if (bmp != null) {
+                            icon.setImageBitmap(bmp)
+                        } else {
+                            icon.setImageDrawable(null)
+                        }
                     }
 
                     BackgroundRow.Kind.CHOOSE -> icon.setImageResource(

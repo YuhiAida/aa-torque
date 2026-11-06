@@ -61,6 +61,7 @@
     <string name="bg_seat2">Тёмная сетка</string>
     <string name="bg_test">Тест</string>
     <string name="pref_background">Фон</string>
+    <string name="pref_default_background">Фон</string>
     <string name="bg_dots">Точки</string>
     <string name="bg_aa">Андроид Авто</string>
     <string name="item_details_go_back">Назад</string>

@@ -77,6 +77,7 @@
     <string name="bg_blackboard">Quadro-negro</string>
     <string name="bg_test">Teste</string>
     <string name="pref_background">Plano de fundo</string>
+    <string name="pref_default_background">Plano de fundo</string>
     <string name="bg_dots">Pontos</string>
     <string name="item_details_go_back">Voltar</string>
     <string name="pidLabel">Rótulo</string>

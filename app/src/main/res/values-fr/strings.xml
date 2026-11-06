@@ -78,6 +78,7 @@
     <string name="bg_test">Test</string>
     <string name="bg_beetle">Herbie</string>
     <string name="pref_background">Arrière-plan</string>
+    <string name="pref_default_background">Arrière-plan</string>
     <string name="bg_dots">Points</string>
     <string name="bg_aa">Android Auto</string>
     <string name="item_details_go_back">Retourner</string>

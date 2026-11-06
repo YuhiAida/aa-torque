@@ -56,4 +56,5 @@
     <string name="element_barometer">Barómetro</string>
     <string name="bg_vw2">Fibra de carbono</string>
     <string name="pref_background">Segundo plano</string>
+    <string name="pref_default_background">Segundo plano</string>
 </resources>
