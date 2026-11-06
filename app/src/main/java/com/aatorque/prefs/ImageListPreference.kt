@@ -95,7 +95,7 @@ class ImageListPreference(context: Context, attrs: AttributeSet?) : ListPreferen
         AlertDialog.Builder(context)
             .setTitle(dialogTitle)
             .setView(lv)
-            .setAdapter(adapter) { dialog, which ->
+            .setSingleChoiceItems(adapter, items.indexOfFirst { it.checked }) { dialog, which ->
                 val value = items[which].value
                 if (callChangeListener(value)) {
                     setValue(value)
