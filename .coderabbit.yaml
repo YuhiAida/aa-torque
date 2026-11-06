@@ -12,6 +12,14 @@ reviews:
   collapse_walkthrough: true
   sequence_diagrams: false
   estimate_code_review_effort: true
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
   auto_review:
     enabled: true
     drafts: true
