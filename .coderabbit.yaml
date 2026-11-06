@@ -1,0 +1,55 @@
+# CodeRabbit configuration for AA Torque.
+# Docs: https://docs.coderabbit.ai/reference/configuration
+
+language: "en-US"
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+  sequence_diagrams: false
+  estimate_code_review_effort: true
+  auto_review:
+    enabled: true
+    drafts: true
+    auto_incremental_review: true
+    base_branches:
+      - master
+  path_filters:
+    - "!app/src/test/screenshots/**"
+    - "!lib/**"
+    - "!docs/generated/**"
+    - "!dist/**"
+  path_instructions:
+    - path: "app/src/main/java/org/prowl/torque/**"
+      instructions: |
+        This is a verbatim mirror of Torque's AIDL interface. Treat it as third-party code.
+        Do not suggest style, naming or formatting changes. Report only defects.
+    - path: "app/src/main/java/**/*.kt"
+      instructions: |
+        Kotlin style comes from .editorconfig (android_studio) and ktlint runs in CI.
+        Do not report formatting, import order or trailing comma issues.
+        Focus on main-thread work, coroutine scope and cancellation, lifecycle misuse,
+        and lateinit or nullable access that can throw.
+    - path: "app/src/main/proto/**"
+      instructions: |
+        Protobuf field numbers are permanent. Flag a reused, renumbered or removed field
+        as a defect. A new field must use the next free number.
+    - path: "app/src/main/res/values*/**"
+      instructions: |
+        Every translation folder must keep the same format placeholders as values/strings.xml.
+        Flag a missing or extra %1$s, %d or plural quantity.
+    - path: "docs/**"
+      instructions: |
+        tools/check_docs.py verifies that every relative link and backticked repository path
+        resolves. Do not report link style. Flag a claim that contradicts the code.
+    - path: "**/*.md"
+      instructions: |
+        Follow AGENTS.md: state what was verified and what was not. Flag a claim of runtime
+        verification with no evidence, and a new finding that no issue or commit records.
+
+chat:
+  auto_reply: true
