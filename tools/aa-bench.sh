@@ -17,7 +17,7 @@
 #   - The AA head unit server switched on in the phone's Android Auto settings.
 #     The script detects it and names the toggle when it is off.
 #
-# Environment overrides: ANDROID_HOME, DHU_SDK, AVD, SERIAL, DHU_CONFIG
+# Environment overrides: ANDROID_HOME, DHU_SDK, AVD, SERIAL, DHU_CONFIG, GPU
 
 set -euo pipefail
 
@@ -26,6 +26,9 @@ DHU_SDK=${DHU_SDK:-$HOME/Android/Sdk-dhu}
 AVD=${AVD:-aa36}
 SERIAL=${SERIAL:-emulator-5554}
 DHU_CONFIG=${DHU_CONFIG:-config/aa-1024x600.ini}
+# Host GLES translation segfaults qemu on NVIDIA drivers (bad colour buffer handle,
+# glTexImage2D 0x505). Software rendering is slower but stable.
+GPU=${GPU:-swiftshader_indirect}
 
 ADB="$ANDROID_HOME/platform-tools/adb"
 EMULATOR="$ANDROID_HOME/emulator/emulator"
@@ -54,8 +57,10 @@ start_phone() {
         say "phone: $SERIAL already running"
         return
     fi
-    say "phone: starting AVD $AVD"
-    "$EMULATOR" -avd "$AVD" -gpu host -memory 4096 -cores 4 \
+    say "phone: starting AVD $AVD (gpu $GPU)"
+    # No core dumps: a crashed qemu writes a 1.5 GB core and stalls the desktop.
+    ulimit -c 0
+    "$EMULATOR" -avd "$AVD" -gpu "$GPU" -feature -Vulkan -memory 4096 -cores 4 \
         -no-snapshot -no-boot-anim >"$EMULATOR_LOG" 2>&1 &
     "$ADB" wait-for-device
     for _ in $(seq 1 90); do
