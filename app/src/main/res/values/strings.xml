@@ -169,7 +169,7 @@
     <string name="no_update_available">You are on the newest version.</string>
     <string name="update_check_failed">Could not reach the release page.</string>
     <string name="convert_minutes_seconds">Seconds to Minutes:Seconds</string>
-    <string name="donate">Support</string>
+    <string name="donate">Buy me a coffee</string>
     <string name="pref_chart_title">Chart line color</string>
     <string name="pref_chart_summary">Color to be used to draw lines on the chart</string>
     <string name="font_ev" translatable="false">Electro Vehicle</string>
