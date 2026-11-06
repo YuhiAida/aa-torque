@@ -25,6 +25,8 @@ import com.aatorque.stats.TorqueServiceWrapper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
@@ -64,31 +66,35 @@ class SettingsDashboard : PreferenceFragmentCompat() {
                 return@registerForActivityResult
             }
             lifecycleScope.launch(Dispatchers.IO) {
-                val name = BackgroundStore.import(requireContext(), uri)
-                if (name == null) {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(
-                            requireContext(),
-                            R.string.background_import_failed,
-                            Toast.LENGTH_SHORT
-                        ).show()
+                backgroundFiles.withLock {
+                    val name = BackgroundStore.import(requireContext(), uri)
+                    if (name == null) {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                requireContext(),
+                                R.string.background_import_failed,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        return@withLock
                     }
-                    return@launch
-                }
-                val value = encodeFile(name)
-                val dbIndex = dashboardIndex()
-                val prefs = requireContext().dataStore.updateData { prefs ->
-                    val screen = prefs.getScreens(dbIndex).toBuilder().setBackground(value).build()
-                    prefs.toBuilder().setScreens(dbIndex, screen).build()
-                }
-                val referenced = prefs.screensList.mapNotNull { screen ->
-                    val src = parseBackground(screen.background)
-                    if (src is BackgroundSource.Stored) src.name else null
-                }.toSet()
-                BackgroundStore.sweep(requireContext(), referenced)
-                val storedNames = BackgroundStore.list(requireContext())
-                withContext(Dispatchers.Main) {
-                    updateBackgroundSummary(value, "", storedNames)
+                    val value = encodeFile(name)
+                    val dbIndex = dashboardIndex()
+                    val prefs = requireContext().dataStore.updateData { prefs ->
+                        if (!prefs.hasScreen(dbIndex)) return@updateData prefs
+                        val screen =
+                            prefs.getScreens(dbIndex).toBuilder().setBackground(value).build()
+                        prefs.toBuilder().setScreens(dbIndex, screen).build()
+                    }
+                    val referenced = prefs.screensList.mapNotNull { screen ->
+                        val src = parseBackground(screen.background)
+                        if (src is BackgroundSource.Stored) src.name else null
+                    }.toSet()
+                    BackgroundStore.sweep(requireContext(), referenced)
+                    val storedNames = BackgroundStore.list(requireContext())
+                    withContext(Dispatchers.Main) {
+                        updateBackgroundSummary(value, "", storedNames)
+                    }
                 }
             }
         }
@@ -119,6 +125,9 @@ class SettingsDashboard : PreferenceFragmentCompat() {
     fun dashboardIndex(): Int =
         requireArguments().getCharSequence("prefix")?.split("_")!!.last().toInt()
 
+    /** The dashboard can be deleted while its screen is open, so the index may be stale. */
+    private fun UserPreference.hasScreen(index: Int): Boolean = index in 0 until screensCount
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mBound = TorqueServiceWrapper.runStartIntent(requireContext(), torqueConnection)
@@ -136,10 +145,11 @@ class SettingsDashboard : PreferenceFragmentCompat() {
         performanceTitle.summaryProvider = EditTextPreference.SimpleSummaryProvider.getInstance()
         performanceTitle.setOnPreferenceChangeListener { _, newValue ->
             lifecycleScope.launch {
+                val index = dashboardIndex()
                 requireContext().dataStore.updateData {
-                    val screen =
-                        it.getScreens(dashboardIndex()).toBuilder().setTitle(newValue as String)
-                    return@updateData it.toBuilder().setScreens(dashboardIndex(), screen).build()
+                    if (!it.hasScreen(index)) return@updateData it
+                    val screen = it.getScreens(index).toBuilder().setTitle(newValue as String)
+                    return@updateData it.toBuilder().setScreens(index, screen).build()
                 }
             }
             return@setOnPreferenceChangeListener true
@@ -151,26 +161,30 @@ class SettingsDashboard : PreferenceFragmentCompat() {
         backgroundPref.onChooseImage = { imagePicker.launch(arrayOf("image/*")) }
         backgroundPref.setOnPreferenceChangeListener { _, newValue ->
             lifecycleScope.launch {
-                val prefs = requireContext().dataStore.updateData { prefs ->
-                    val screen =
-                        prefs.getScreens(
-                            dashboardIndex()
-                        ).toBuilder().setBackground(newValue as String)
-                    return@updateData prefs.toBuilder().setScreens(dashboardIndex(), screen).build()
-                }
-                val referenced = prefs.screensList.mapNotNull { screen ->
-                    val src = parseBackground(screen.background)
-                    if (src is BackgroundSource.Stored) src.name else null
-                }.toSet()
-                withContext(Dispatchers.IO) {
-                    BackgroundStore.sweep(requireContext(), referenced)
+                backgroundFiles.withLock {
+                    val index = dashboardIndex()
+                    val prefs = requireContext().dataStore.updateData { prefs ->
+                        if (!prefs.hasScreen(index)) return@updateData prefs
+                        val screen =
+                            prefs.getScreens(index).toBuilder().setBackground(newValue as String)
+                        return@updateData prefs.toBuilder().setScreens(index, screen).build()
+                    }
+                    val referenced = prefs.screensList.mapNotNull { screen ->
+                        val src = parseBackground(screen.background)
+                        if (src is BackgroundSource.Stored) src.name else null
+                    }.toSet()
+                    withContext(Dispatchers.IO) {
+                        BackgroundStore.sweep(requireContext(), referenced)
+                    }
                 }
             }
             return@setOnPreferenceChangeListener true
         }
         lifecycleScope.launch {
             requireContext().dataStore.data.collect { prefs ->
-                val screen = prefs.getScreens(dashboardIndex())
+                val index = dashboardIndex()
+                if (!prefs.hasScreen(index)) return@collect
+                val screen = prefs.getScreens(index)
                 backgroundPref.value = screen.background
                 val storedNames = withContext(Dispatchers.IO) {
                     BackgroundStore.list(requireContext())
@@ -179,12 +193,14 @@ class SettingsDashboard : PreferenceFragmentCompat() {
             }
         }
         lifecycleScope.launch(Dispatchers.IO) {
-            val prefs = requireContext().dataStore.data.first()
-            val referenced = prefs.screensList.mapNotNull { screen ->
-                val src = parseBackground(screen.background)
-                if (src is BackgroundSource.Stored) src.name else null
-            }.toSet()
-            BackgroundStore.sweep(requireContext(), referenced)
+            backgroundFiles.withLock {
+                val prefs = requireContext().dataStore.data.first()
+                val referenced = prefs.screensList.mapNotNull { screen ->
+                    val src = parseBackground(screen.background)
+                    if (src is BackgroundSource.Stored) src.name else null
+                }.toSet()
+                BackgroundStore.sweep(requireContext(), referenced)
+            }
         }
     }
 
@@ -213,7 +229,9 @@ class SettingsDashboard : PreferenceFragmentCompat() {
         activity?.let { act ->
             act.runOnUiThread {
                 val dbIndex = dashboardIndex()
+                if (!userPreference.hasScreen(dbIndex)) return@runOnUiThread
                 val screen = userPreference.getScreens(dbIndex)
+                val currentPids = pids
                 performanceTitle.text = screen.title
                 gaugesCat.removeAll()
                 displaysCat.removeAll()
@@ -231,16 +249,16 @@ class SettingsDashboard : PreferenceFragmentCompat() {
                         cats[i].addPreference(
                             Preference(requireContext()).also {
                                 it.key = "${type}_${dbIndex}_$j"
-                                it.summary = if (pids == null) {
+                                it.summary = if (currentPids.isNullOrEmpty()) {
                                     if (disp.label.isBlank()) {
                                         getString(R.string.not_set)
                                     } else {
                                         disp.label
                                     }
                                 } else {
-                                    pids!!.firstOrNull { pid ->
+                                    currentPids.firstOrNull { pid ->
                                         "torque_${pid.first}" == disp.pid
-                                    }?.second?.get(0) ?: ""
+                                    }?.second?.firstOrNull() ?: ""
                                 }
                                 it.title = texts[i][j]
                                 it.icon = AppCompatResources.getDrawable(
@@ -336,5 +354,11 @@ class SettingsDashboard : PreferenceFragmentCompat() {
             }
             mBound = false
         }
+    }
+
+    companion object {
+        // The import, the reference update and the cleanup run in three coroutines. One guard
+        // stops a sweep from deleting an image before the reference that names it is stored.
+        private val backgroundFiles = Mutex()
     }
 }
