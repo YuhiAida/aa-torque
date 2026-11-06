@@ -47,6 +47,13 @@ android {
         }
         buildConfigField "boolean", "SIMULATE_METRICS", "false"
         resourceConfigurations += ['en', 'cs', 'de', 'el', 'es', 'fr', 'fr-rCA', 'it', 'nl', 'pl', 'pt', 'pt-rBR', 'ru', 'sl', 'uk', 'zh-rHK']
+        // The debug build installs beside the stable app, so its label has to say which one is
+        // running. A placeholder carries a literal into the manifest; a values-<locale>/app_name
+        // would otherwise win over a debug override on a phone that is not in English.
+        manifestPlaceholders = [
+                appLabel     : "@string/app_name",
+                launcherLabel: "@string/activity_settings_title",
+        ]
     }
     applicationVariants.configureEach {
         // The release asset URL redirects to /releases/download/<tag>/aa-torque.apk, so the
@@ -58,6 +65,8 @@ android {
         debug {
             applicationIdSuffix ".debug"
             versionNameSuffix ".debug"
+            // Name and icon are badged so the dev channel is never mistaken for the release.
+            manifestPlaceholders = [appLabel: "AA Torque Debug", launcherLabel: "AA Torque Debug"]
             resValue "string", "app_version",
                     "${defaultConfig.versionName}${versionNameSuffix}"
             buildConfigField "boolean", "SIMULATE_METRICS", "true"
