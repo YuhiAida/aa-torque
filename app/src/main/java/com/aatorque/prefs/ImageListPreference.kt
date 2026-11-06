@@ -36,6 +36,7 @@ class ImageListPreference(context: Context, attrs: AttributeSet?) : ListPreferen
             val view =
                 convertView ?: LayoutInflater.from(context).inflate(layoutResource, parent, false)
             val item = items[position]
+            val row = view as IconListRow
             val icon = view.findViewById<ImageView>(R.id.icon)
             val title = view.findViewById<TextView>(R.id.title)
             val selected = view.findViewById<AppCompatRadioButton>(R.id.selected)
@@ -44,8 +45,8 @@ class ImageListPreference(context: Context, attrs: AttributeSet?) : ListPreferen
                 icon.setColorFilter(tintColor)
             }
             title.text = item.title
+            row.isChecked = item.checked
             selected.isChecked = item.checked
-            view.isSelected = item.checked
             return view
         }
     }
