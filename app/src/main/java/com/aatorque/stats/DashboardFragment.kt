@@ -448,12 +448,16 @@ open class DashboardFragment : AlbumArt() {
         if (medadata != null) {
             binding.backgroundBitmap = metaDataToArt(medadata)
             if (binding.backgroundBitmap != null) {
+                // A background load already in flight must not replace this artwork when it lands.
+                ++bgRequestToken
                 binding.blurEffect = albumBlurEffect
                 binding.colorFilter = albumColorFilter
                 displayingArtwork = true
                 return
             }
         }
+        // The artwork is gone, so applyBackground may run: clear the flag first or it returns.
+        displayingArtwork = false
         applyBackground(currentScreenBackground, currentGlobalBackground)
     }
 
