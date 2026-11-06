@@ -45,6 +45,7 @@ class ImageListPreference(context: Context, attrs: AttributeSet?) : ListPreferen
             }
             title.text = item.title
             selected.isChecked = item.checked
+            view.isSelected = item.checked
             return view
         }
     }
