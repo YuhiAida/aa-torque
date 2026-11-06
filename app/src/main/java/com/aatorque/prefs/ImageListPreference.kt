@@ -11,6 +11,7 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.appcompat.widget.AppCompatRadioButton
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.preference.ListPreference
 import com.aatorque.stats.R
@@ -37,11 +38,13 @@ class ImageListPreference(context: Context, attrs: AttributeSet?) : ListPreferen
             val item = items[position]
             val icon = view.findViewById<ImageView>(R.id.icon)
             val title = view.findViewById<TextView>(R.id.title)
+            val selected = view.findViewById<AppCompatRadioButton>(R.id.selected)
             icon.setImageResource(item.iconRes)
             if (tintColor != null) {
                 icon.setColorFilter(tintColor)
             }
             title.text = item.title
+            selected.isChecked = item.checked
             return view
         }
     }
