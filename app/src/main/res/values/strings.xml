@@ -116,6 +116,7 @@
     <string name="num_screens">Number of dashboards to display</string>
     <string name="unit">Unit</string>
     <string name="dashboards">Dashboards</string>
+    <string name="action_delete">Delete</string>
     <string name="rotary_input">Rotary input</string>
     <string name="rotary_desc">Disable buttons and use rotary dial if equipped</string>
     <string name="enable_script">Run unit conversion</string>
@@ -209,4 +210,19 @@
     <string name="developer_simulation">Simulation</string>
     <string name="developer_simulation_title">Simulate metrics</string>
     <string name="developer_simulation_summary">Sweep every gauge from its minimum to its maximum. Off reads Torque data.</string>
+    <string name="pref_default_background">Default background</string>
+    <string name="pref_count_category">Dashboards shown</string>
+    <string name="pref_count_warning">Lowering the number deletes the last dashboard and its settings.</string>
+    <plurals name="dashboards_count">
+        <item quantity="one">%d dashboard</item>
+        <item quantity="other">%d dashboards</item>
+    </plurals>
+    <string name="pref_torque_status">Torque</string>
+    <string name="status_torque_waiting">Waiting for Torque</string>
+    <string name="status_torque_connected">Connected</string>
+    <string name="pref_this_dashboard">This dashboard</string>
+    <string name="pref_dashboard_name">Name</string>
+    <string name="pref_gauges">Gauges</string>
+    <string name="pref_displays">Displays</string>
+    <string name="not_set">Not set</string>
 </resources>

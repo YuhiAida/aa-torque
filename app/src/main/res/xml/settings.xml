@@ -2,10 +2,17 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <PreferenceCategory android:title="@string/dashboards">
+        <Preference
+            android:key="dashboardsEntry"
+            android:title="@string/dashboards"
+            android:fragment="com.aatorque.prefs.SettingsDashboardsList"
+            android:persistent="false" />
+    </PreferenceCategory>
+
     <PreferenceCategory
         android:singleLineTitle="false"
         android:title="@string/pref_appearance">
-
 
         <com.aatorque.prefs.ImageListPreference
             android:entries="@array/Themes"
@@ -21,15 +28,14 @@
             android:title="@string/pref_font"
             app:entryImages="@array/FontThumbs"
             android:persistent="false"
-            app:tint="@color/tintColor"
-        />
+            app:tint="@color/tintColor" />
         <com.aatorque.prefs.ImageListPreference
             android:entries="@array/backgroundstrings"
             android:entryValues="@array/backgrounds"
             app:entryImages="@array/thumbs_backgrounds"
             android:key="selectedBackground"
             android:persistent="false"
-            android:title="@string/pref_background" />
+            android:title="@string/pref_default_background" />
 
         <CheckBoxPreference
             android:layout_width="wrap_content"
@@ -39,28 +45,27 @@
             android:summaryOff="@string/pref_shrink_gauge_off"
             android:summaryOn="@string/pref_shrink_gauge_on"
             android:persistent="false"
-            android:title="@string/pref_shrink_gauge"
-             />
+            android:title="@string/pref_shrink_gauge" />
 
         <CheckBoxPreference
             android:defaultValue="false"
             android:key="minMaxBelow"
             android:summary="@string/minmax_below_desc"
             android:persistent="false"
-            android:title="@string/minmax_below"
-            />
+            android:title="@string/minmax_below" />
 
-
-        <EditTextPreference
-            android:inputType="number"
-            android:key="dashboardCount"
-            android:title="@string/num_screens"
-            android:defaultValue="1"
+        <SeekBarPreference
+            android:defaultValue="100"
+            android:key="gaugeOpacity"
+            android:max="100"
             android:persistent="false"
-
-            />
+            android:summary="@string/opacity_summary"
+            android:title="@string/opacity_title"
+            app:min="50"
+            app:showSeekBarValue="true" />
 
     </PreferenceCategory>
+
 
     <PreferenceCategory android:title="@string/media">
         <CheckBoxPreference
@@ -88,24 +93,8 @@
             android:title="@string/media_darken_title"
             app:min="0"
             app:showSeekBarValue="true" />
-        <SeekBarPreference
-            android:defaultValue="100"
-            android:key="gaugeOpacity"
-            android:max="100"
-            android:persistent="false"
-            android:summary="@string/opacity_summary"
-            android:title="@string/opacity_title"
-            app:min="50"
-            app:showSeekBarValue="true" />
-
     </PreferenceCategory>
 
-    <PreferenceCategory
-        android:singleLineTitle="false"
-        android:title="@string/dashboards"
-        android:key="dashboardsCat">
-
-    </PreferenceCategory>
     <Preference
         android:fragment="com.aatorque.prefs.DeveloperFragment"
         android:key="developerOptions"

@@ -4,27 +4,21 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.text.InputType
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.CheckBoxPreference
-import androidx.preference.EditTextPreference
 import androidx.preference.ListPreference
 import androidx.preference.Preference
-import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SeekBarPreference
 import com.aatorque.datastore.UserPreference
 import com.aatorque.stats.NotiService
 import com.aatorque.stats.R
-import java.util.Collections
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
 class SettingsFragment : PreferenceFragmentCompat() {
-    lateinit var numScreensPref: EditTextPreference
-    lateinit var dashboardsCat: PreferenceCategory
+    lateinit var dashboardsEntry: Preference
     lateinit var backgroundPref: ImageListPreference
     lateinit var themePref: ImageListPreference
     lateinit var fontPref: ImageListPreference
@@ -38,8 +32,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         preferenceManager.sharedPreferencesName = null
-        dashboardsCat = findPreference("dashboardsCat")!!
-        numScreensPref = findPreference("dashboardCount")!!
+        dashboardsEntry = findPreference("dashboardsEntry")!!
         backgroundPref = findPreference("selectedBackground")!!
         themePref = findPreference("selectedTheme")!!
         fontPref = findPreference("selectedFont")!!
@@ -52,30 +45,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
         themePref.summaryProvider = ListPreference.SimpleSummaryProvider.getInstance()
         fontPref.summaryProvider = ListPreference.SimpleSummaryProvider.getInstance()
         backgroundPref.summaryProvider = ListPreference.SimpleSummaryProvider.getInstance()
-        numScreensPref.summaryProvider = EditTextPreference.SimpleSummaryProvider.getInstance()
-        numScreensPref.setOnPreferenceChangeListener { _, newValue ->
-            val intVal = screensCountOrNull(newValue as? String)
-                ?: return@setOnPreferenceChangeListener false
-            lifecycleScope.launch {
-                requireContext().dataStore.updateData { currentSettings ->
-                    var bldr = currentSettings.toBuilder()
-                    if (bldr.screensCount > intVal) {
-                        val keeping = bldr.screensList.subList(0, intVal)
-                        bldr = bldr.clearScreens().addAllScreens(keeping)
-                    } else if (currentSettings.screensCount < intVal) {
-                        val newItms = Collections.nCopies(
-                            intVal - currentSettings.screensCount,
-                            UserPreferenceSerializer.defaultScreen.build()
-                        )
-                        bldr = bldr.addAllScreens(newItms.toMutableList())
-                        Timber.i("${newItms.size} added, $intVal specified")
-                    }
-                    return@updateData bldr.build()
-                }
-            }
-            return@setOnPreferenceChangeListener true
-        }
-
         themePref.setOnPreferenceChangeListener { _, newValue ->
             updateDatastorePref {
                 it.setSelectedTheme(newValue as String)
@@ -147,10 +116,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
         blurArtPref.isVisible = Build.VERSION.SDK_INT >= 31
 
-        numScreensPref.setOnBindEditTextListener {
-            it.inputType = InputType.TYPE_CLASS_NUMBER
-        }
-
         lifecycleScope.launch {
             requireContext().dataStore.data.collect {
                 themePref.value = it.selectedTheme
@@ -166,24 +131,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
             }
         }
         lifecycleScope.launch {
-            requireContext().dataStore.data.distinctUntilChangedBy {
-                it.screensList.map { it.title }
-            }.collect { userPreference ->
-                numScreensPref.text = userPreference.screensCount.toString()
-                dashboardsCat.removeAll()
-                userPreference.screensList.forEachIndexed { i, screen ->
-                    dashboardsCat.addPreference(
-                        Preference(requireContext()).also {
-                            it.title = requireContext().getString(
-                                R.string.pref_data_element_settings,
-                                i + 1
-                            )
-                            it.key = "dashboard_$i"
-                            it.fragment = SettingsDashboard::class.java.canonicalName
-                            it.summary = screen.title
-                        }
-                    )
-                }
+            requireContext().dataStore.data.collect { prefs ->
+                val count = prefs.screensCount
+                dashboardsEntry.summary =
+                    resources.getQuantityString(R.plurals.dashboards_count, count, count)
             }
         }
     }
