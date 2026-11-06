@@ -46,7 +46,7 @@ reviews:
       enabled: false
   path_filters:
     - "!app/src/test/screenshots/**"
-    - "!lib/**"
+    - "!lib/*.aar"
     - "!docs/generated/**"
     - "!dist/**"
   path_instructions:
