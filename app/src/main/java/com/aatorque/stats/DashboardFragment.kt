@@ -153,7 +153,14 @@ open class DashboardFragment : AlbumArt() {
                 binding.showBtns = false
                 settingsViewModel.chartVisible.value = it.showChart
                 settingsViewModel.minMaxBelow.value = it.minMaxBelow
+                val artworkWasOn = shouldDisplayArtwork
                 shouldDisplayArtwork = it.albumArt
+                if (artworkWasOn && !shouldDisplayArtwork) {
+                    // applyBackground returns at once while the artwork flag is set, so
+                    // clearing it here is the only path back to the dashboard background.
+                    displayingArtwork = false
+                    applyBackground(screens.background, it.selectedBackground)
+                }
 
                 albumArtReady.countDown()
 

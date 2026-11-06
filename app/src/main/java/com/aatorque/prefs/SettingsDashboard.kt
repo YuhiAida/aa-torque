@@ -65,13 +65,17 @@ class SettingsDashboard : PreferenceFragmentCompat() {
             if (uri == null) {
                 return@registerForActivityResult
             }
+            // The fragment can detach while a large image imports, and requireContext() would
+            // then throw. The file work and the store only need the application context.
+            val appContext = requireContext().applicationContext
+            val dbIndex = dashboardIndex()
             lifecycleScope.launch(Dispatchers.IO) {
                 backgroundFiles.withLock {
-                    val name = BackgroundStore.import(requireContext(), uri)
+                    val name = BackgroundStore.import(appContext, uri)
                     if (name == null) {
                         withContext(Dispatchers.Main) {
                             Toast.makeText(
-                                requireContext(),
+                                appContext,
                                 R.string.background_import_failed,
                                 Toast.LENGTH_SHORT
                             ).show()
@@ -79,21 +83,20 @@ class SettingsDashboard : PreferenceFragmentCompat() {
                         return@withLock
                     }
                     val value = encodeFile(name)
-                    val dbIndex = dashboardIndex()
-                    val prefs = requireContext().dataStore.updateData { prefs ->
+                    // If this coroutine dies before the update, the file stays unreferenced and
+                    // the next sweep on this screen deletes it.
+                    val prefs = appContext.dataStore.updateData { prefs ->
                         if (!prefs.hasScreen(dbIndex)) return@updateData prefs
                         val screen =
                             prefs.getScreens(dbIndex).toBuilder().setBackground(value).build()
                         prefs.toBuilder().setScreens(dbIndex, screen).build()
                     }
-                    val referenced = prefs.screensList.mapNotNull { screen ->
-                        val src = parseBackground(screen.background)
-                        if (src is BackgroundSource.Stored) src.name else null
-                    }.toSet()
-                    BackgroundStore.sweep(requireContext(), referenced)
-                    val storedNames = BackgroundStore.list(requireContext())
+                    BackgroundStore.sweep(appContext, prefs.referencedBackgroundFiles())
+                    val storedNames = BackgroundStore.list(appContext)
                     withContext(Dispatchers.Main) {
-                        updateBackgroundSummary(value, "", storedNames)
+                        if (isAdded) {
+                            updateBackgroundSummary(value, "", storedNames)
+                        }
                     }
                 }
             }
@@ -127,6 +130,19 @@ class SettingsDashboard : PreferenceFragmentCompat() {
 
     /** The dashboard can be deleted while its screen is open, so the index may be stale. */
     private fun UserPreference.hasScreen(index: Int): Boolean = index in 0 until screensCount
+
+    /**
+     * Every stored background file the settings point at. The global selection counts: an
+     * imported settings file can name a stored image there, and a sweep that ignored it would
+     * delete the file and drop the dashboard back to black.
+     */
+    private fun UserPreference.referencedBackgroundFiles(): Set<String> {
+        val perScreen = screensList.mapNotNull { screen ->
+            (parseBackground(screen.background) as? BackgroundSource.Stored)?.name
+        }
+        val global = (parseBackground(selectedBackground) as? BackgroundSource.Stored)?.name
+        return (perScreen + listOfNotNull(global)).toSet()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -169,10 +185,7 @@ class SettingsDashboard : PreferenceFragmentCompat() {
                             prefs.getScreens(index).toBuilder().setBackground(newValue as String)
                         return@updateData prefs.toBuilder().setScreens(index, screen).build()
                     }
-                    val referenced = prefs.screensList.mapNotNull { screen ->
-                        val src = parseBackground(screen.background)
-                        if (src is BackgroundSource.Stored) src.name else null
-                    }.toSet()
+                    val referenced = prefs.referencedBackgroundFiles()
                     withContext(Dispatchers.IO) {
                         BackgroundStore.sweep(requireContext(), referenced)
                     }
@@ -195,11 +208,7 @@ class SettingsDashboard : PreferenceFragmentCompat() {
         lifecycleScope.launch(Dispatchers.IO) {
             backgroundFiles.withLock {
                 val prefs = requireContext().dataStore.data.first()
-                val referenced = prefs.screensList.mapNotNull { screen ->
-                    val src = parseBackground(screen.background)
-                    if (src is BackgroundSource.Stored) src.name else null
-                }.toSet()
-                BackgroundStore.sweep(requireContext(), referenced)
+                BackgroundStore.sweep(requireContext(), prefs.referencedBackgroundFiles())
             }
         }
     }
