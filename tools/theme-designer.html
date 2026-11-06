@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AA Torque theme designer</title>
+<style>
+  html, body { margin: 0; background: #f1f2f4; color: #1c1c1e;
+               font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px; display: flex;
+          flex-direction: column; gap: 16px; }
+  h1 { font-size: 17px; margin: 0; font-weight: 600; }
+  .sub { font-size: 12px; color: #6b6b70; margin: 2px 0 4px; }
+  .row { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+  fieldset { border: 1px solid #d7d8dc; border-radius: 12px; padding: 12px 14px;
+             margin: 0 0 12px; background: #fff; min-width: 320px; }
+  legend { font-size: 12px; font-weight: 600; color: #6b6b70; padding: 0 4px; }
+  .slider { display: grid; grid-template-columns: 96px 1fr 44px; gap: 10px;
+            align-items: center; font-size: 12px; margin: 7px 0; }
+  input[type=range] { width: 100%; accent-color: #1c1c1e; }
+  .val { font-variant-numeric: tabular-nums; text-align: right; color: #6b6b70; }
+  .role { display: grid; grid-template-columns: 64px 1fr; gap: 8px;
+          align-items: center; margin: 7px 0; }
+  .role > span { font-size: 12px; color: #3a3a3e; }
+  .swatches { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .sw { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent;
+        padding: 0; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); }
+  .sw[aria-pressed=true] { border-color: #1c1c1e; }
+  .custom { width: 28px; height: 28px; padding: 0; border: 1px dashed #b9bac0;
+            border-radius: 50%; background: none; cursor: pointer; }
+  canvas { display: block; border-radius: 50%; background: #fff;
+           box-shadow: 0 2px 6px rgba(0,0,0,.15), 0 0 0 1px #d0d1d5; }
+  .panels { display: flex; gap: 16px; }
+  .panel { text-align: center; font-size: 11px; letter-spacing: .08em;
+           color: #5a5a60; font-weight: 600; background: #e2e4e8;
+           padding: 12px 12px 8px; border-radius: 16px; }
+  textarea { width: 100%; box-sizing: border-box; height: 190px; padding: 12px;
+             font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+             font-size: 12px; line-height: 1.5; color: #1c1c1e; background: #fff;
+             border: 1px solid #d7d8dc; border-radius: 12px; resize: vertical; }
+  .out { display: flex; flex-direction: column; gap: 8px; }
+  button.copy { font: inherit; font-size: 13px; padding: 9px 18px; border-radius: 9px;
+                border: 0; background: #1c1c1e; color: #fff; cursor: pointer; }
+  button.copy:hover { background: #333; }
+  button.ghost { font: inherit; font-size: 11px; padding: 4px 9px; border-radius: 7px;
+                 border: 1px solid #d7d8dc; background: #fff; cursor: pointer;
+                 margin-left: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <h1>AA Torque theme designer</h1>
+    <div class="sub">Pick colours and shape, day and night. Copy the YAML into themes/&lt;name&gt;.yml, then run tools/gen_themes.py.</div>
+  </div>
+
+  <div class="row">
+    <div class="panels">
+      <div class="panel"><canvas id="day" width="340" height="340"></canvas>DAY</div>
+      <div class="panel"><canvas id="night" width="340" height="340"></canvas>NIGHT</div>
+    </div>
+
+    <div>
+      <fieldset><legend>Shape</legend>
+        <div class="slider"><label for="sweep">sweep</label>
+          <input type="range" id="sweep" min="90" max="360" step="10" value="240">
+          <span class="val" id="sweepV">240</span></div>
+        <div class="slider"><label for="major">major ticks</label>
+          <input type="range" id="major" min="2" max="12" step="1" value="9">
+          <span class="val" id="majorV">9</span></div>
+        <div class="slider"><label for="minor">minor per major</label>
+          <input type="range" id="minor" min="0" max="9" step="1" value="4">
+          <span class="val" id="minorV">4</span></div>
+        <div class="slider"><label for="ring">ring width</label>
+          <input type="range" id="ring" min="2" max="30" step="1" value="10">
+          <span class="val" id="ringV">10</span></div>
+      </fieldset>
+
+      <fieldset id="dayRoles"><legend>Day colours</legend></fieldset>
+      <fieldset id="nightRoles"><legend>Night colours
+        <button class="ghost" id="copyDay" type="button">copy day</button></legend>
+      </fieldset>
+    </div>
+  </div>
+
+  <div class="out">
+    <textarea id="yaml" spellcheck="false"></textarea>
+    <div><button class="copy" id="copy" type="button">Copy YAML</button></div>
+  </div>
+</div>
+
+<script>
+// Markup below is built from the constants in this file; no user input is interpolated.
+const PRESETS = {
+  surface: ["#FFFFFF", "#F2F2F7", "#E8EAED", "#000000", "#0B0B0F", "#141418"],
+  face:    ["#FFFFFF", "#F7F7F7", "#EDEDF0", "#0A0A0A", "#141418", "#1C1C1E"],
+  ring:    ["#4A4A4A", "#1C1C1E", "#8E8E93", "#B8B8B8", "#EDEDF0", "#FFFFFF"],
+  tick:    ["#2B2B2B", "#1C1C1E", "#6B6B70", "#E8E8E8", "#EDEDF0", "#FFFFFF"],
+  accent:  ["#C8102E", "#FF2D55", "#0A84FF", "#FF9F0A", "#30D158", "#BF5AF2"],
+  needle:  ["#C8102E", "#FF2D55", "#FF9F0A", "#FFFFFF", "#0A84FF", "#30D158"]
+};
+const ROLES = ["surface", "face", "ring", "tick", "accent", "needle"];
+const state = {
+  shape: { sweep: 240, major: 9, minor: 4, ring: 10 },
+  day:   { surface: "#FFFFFF", face: "#F7F7F7", ring: "#4A4A4A",
+           tick: "#2B2B2B", accent: "#C8102E", needle: "#C8102E" },
+  night: { surface: "#000000", face: "#0A0A0A", ring: "#B8B8B8",
+           tick: "#E8E8E8", accent: "#FF2D55", needle: "#FF2D55" }
+};
+
+const $ = id => document.getElementById(id);
+
+function swatchRow(mode, role) {
+  const current = state[mode][role];
+  const buttons = PRESETS[role].map(c =>
+    `<button class="sw" type="button" data-mode="${mode}" data-role="${role}"
+       data-color="${c}" aria-pressed="${c.toLowerCase() === current.toLowerCase()}"
+       title="${c}" style="background:${c}"></button>`).join("");
+  return `<div class="role"><span>${role}</span>
+    <div class="swatches">${buttons}
+      <input class="custom" type="color" data-mode="${mode}" data-role="${role}"
+             value="${current}" title="custom colour">
+    </div></div>`;
+}
+
+function buildControls() {
+  for (const mode of ["day", "night"]) {
+    const box = $(mode + "Roles");
+    box.querySelectorAll(".role").forEach(n => n.remove());
+    box.insertAdjacentHTML("beforeend", ROLES.map(r => swatchRow(mode, r)).join(""));
+  }
+}
+
+function draw(canvas, p) {
+  const ctx = canvas.getContext("2d");
+  const S = canvas.width, r = S / 2;
+  ctx.clearRect(0, 0, S, S);
+  ctx.fillStyle = p.surface; ctx.fillRect(0, 0, S, S);
+
+  const ringW = state.shape.ring, faceR = r - 18;
+  ctx.beginPath(); ctx.arc(r, r, faceR, 0, Math.PI * 2); ctx.fillStyle = p.face; ctx.fill();
+  ctx.lineWidth = ringW; ctx.strokeStyle = p.ring; ctx.stroke();
+  ctx.beginPath(); ctx.arc(r, r, faceR - ringW - 8, 0, Math.PI * 2); ctx.lineWidth = 2; ctx.stroke();
+
+  const sweep = state.shape.sweep, major = state.shape.major, minor = state.shape.minor;
+  const steps = (major - 1) * (minor + 1);
+  const start = 150, end = start + sweep;
+  for (let i = 0; i <= steps; i++) {
+    const ang = (start + (end - start) * i / steps) * Math.PI / 180;
+    const isMajor = i % (minor + 1) === 0;
+    const r1 = faceR - ringW - 8 - (isMajor ? 30 : 20);
+    const r2 = faceR - ringW - 16;
+    ctx.beginPath();
+    ctx.moveTo(r + r1 * Math.cos(ang), r + r1 * Math.sin(ang));
+    ctx.lineTo(r + r2 * Math.cos(ang), r + r2 * Math.sin(ang));
+    ctx.lineWidth = isMajor ? 4 : 2;
+    ctx.strokeStyle = i >= steps * 0.82 ? p.accent : p.tick;
+    ctx.stroke();
+  }
+
+  const f = Math.max(11, Math.round(S / 24));
+  ctx.fillStyle = p.tick; ctx.font = `${f}px sans-serif`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  for (let j = 0; j < major; j++) {
+    const ang = (start + (end - start) * j / (major - 1)) * Math.PI / 180;
+    const rr = faceR - ringW - 46;
+    ctx.fillText(String(Math.round(j * 100 / (major - 1))), r + rr * Math.cos(ang), r + rr * Math.sin(ang));
+  }
+
+  const ang = (start + (end - start) * 0.62) * Math.PI / 180;
+  ctx.beginPath(); ctx.moveTo(r, r);
+  ctx.lineTo(r + (faceR - 40) * Math.cos(ang), r + (faceR - 40) * Math.sin(ang));
+  ctx.lineWidth = 7; ctx.strokeStyle = p.needle; ctx.stroke();
+  ctx.beginPath(); ctx.arc(r, r, 10, 0, Math.PI * 2); ctx.fillStyle = p.needle; ctx.fill();
+
+  ctx.fillStyle = p.tick; ctx.font = `bold ${Math.round(S / 11)}px sans-serif`;
+  ctx.fillText("50", r, r + 42);
+}
+
+function yaml() {
+  const s = state.shape;
+  const block = (mode) => ROLES.map(r => `  ${r}: "${state[mode][r]}"`).join("\n");
+  return `name: Classic
+shape:
+  sweep: ${s.sweep}
+  major_ticks: ${s.major}
+  minor_per_major: ${s.minor}
+  ring_width: ${s.ring}
+day:
+${block("day")}
+night:
+${block("night")}
+`;
+}
+
+function render() {
+  draw($("day"), state.day);
+  draw($("night"), state.night);
+  $("yaml").value = yaml();
+  for (const mode of ["day", "night"]) {
+    for (const role of ROLES) {
+      const cur = state[mode][role].toLowerCase();
+      document.querySelectorAll(`button.sw[data-mode="${mode}"][data-role="${role}"]`)
+        .forEach(b => b.setAttribute("aria-pressed", String(b.dataset.color.toLowerCase() === cur)));
+      const custom = document.querySelector(`input.custom[data-mode="${mode}"][data-role="${role}"]`);
+      if (custom && custom.value.toLowerCase() !== cur) custom.value = state[mode][role];
+    }
+  }
+  for (const k of ["sweep", "major", "minor", "ring"]) $(k + "V").textContent = s(k);
+  function s(k) { return state.shape[k]; }
+}
+
+document.addEventListener("click", (e) => {
+  const sw = e.target.closest("button.sw");
+  if (sw) { state[sw.dataset.mode][sw.dataset.role] = sw.dataset.color; render(); }
+});
+document.addEventListener("input", (e) => {
+  if (e.target.matches("input.custom")) {
+    state[e.target.dataset.mode][e.target.dataset.role] = e.target.value; render();
+  }
+  if (["sweep", "major", "minor", "ring"].includes(e.target.id)) {
+    state.shape[e.target.id] = Number(e.target.value); render();
+  }
+});
+$("copyDay").addEventListener("click", () => {
+  state.night = { ...state.day }; buildControls(); render();
+});
+$("copy").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText($("yaml").value); }
+  catch (err) { $("yaml").select(); document.execCommand("copy"); }
+  $("copy").textContent = "Copied";
+  setTimeout(() => $("copy").textContent = "Copy YAML", 1200);
+});
+
+buildControls();
+render();
+</script>
+</body>
+</html>
