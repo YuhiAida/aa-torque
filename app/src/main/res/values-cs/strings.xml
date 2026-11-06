@@ -45,5 +45,6 @@
     <string name="pref_ticks_off">Nezobrazí hodnoty v budících</string>
     <string name="pref_ticks_on">Zobrazí hodnoty v budících</string>
     <string name="pref_background">Pozadí</string>
+    <string name="pref_default_background">Pozadí</string>
     <string name="item_details_go_back">Zpět</string>
 </resources>

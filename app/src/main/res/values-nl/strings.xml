@@ -48,5 +48,6 @@
     <string name="bg_gte">GTE ruitjespatroon</string>
     <string name="bg_vwgtd">GTD ruitjespatroon</string>
     <string name="pref_background">Achtergrond</string>
+    <string name="pref_default_background">Achtergrond</string>
     <string name="item_details_go_back">Terug</string>
 </resources>

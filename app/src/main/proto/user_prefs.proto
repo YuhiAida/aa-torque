@@ -61,6 +61,7 @@ message Screen {
   string title = 5;
   repeated Display gauges = 6;
   repeated Display displays = 7;
+  string background = 8;
 }
 
 message UserPreference {

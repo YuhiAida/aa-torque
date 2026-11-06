@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
@@ -31,17 +32,23 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.aatorque.datastore.UserPreference
+import com.aatorque.prefs.BackgroundSource
+import com.aatorque.prefs.BackgroundStore
 import com.aatorque.prefs.DevOptions
 import com.aatorque.prefs.SettingsViewModel
 import com.aatorque.prefs.dataStore
+import com.aatorque.prefs.parseBackground
 import com.aatorque.stats.databinding.FragmentDashboardBinding
 import com.aatorque.utils.CountDownLatch
 import com.google.android.apps.auto.sdk.StatusBarController
 import kotlin.math.abs
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 open class DashboardFragment : AlbumArt() {
@@ -74,7 +81,11 @@ open class DashboardFragment : AlbumArt() {
     lateinit var settingsViewModel: SettingsViewModel
 
     val viewReady = CountDownLatch(1)
-    private var lastBackground: Int = 0
+    private var currentScreenBackground: String = ""
+    private var currentGlobalBackground: String = ""
+    private var bgRequestToken: Int = 0
+    private var cachedBackgroundName: String? = null
+    private var cachedBackgroundBitmap: Bitmap? = null
     val albumArtReady = CountDownLatch(2)
     var shouldDisplayArtwork = false
     var displayingArtwork = false
@@ -116,10 +127,20 @@ open class DashboardFragment : AlbumArt() {
             }
         }
         registerWithView { data ->
-            data.map {
-                it.selectedBackground
-            }.distinctUntilChanged().collect {
-                setupBackground(it)
+            data.map { prefs ->
+                val screenIndex = if (prefs.screensCount > 0) {
+                    abs(prefs.currentScreen) % prefs.screensCount
+                } else {
+                    0
+                }
+                val screenBg = if (prefs.screensCount > 0) {
+                    prefs.screensList.getOrNull(screenIndex)?.background ?: ""
+                } else {
+                    ""
+                }
+                screenBg to prefs.selectedBackground
+            }.distinctUntilChanged().collectLatest { (screen, global) ->
+                applyBackground(screen, global)
                 albumArtReady.countDown()
             }
         }
@@ -132,7 +153,14 @@ open class DashboardFragment : AlbumArt() {
                 binding.showBtns = false
                 settingsViewModel.chartVisible.value = it.showChart
                 settingsViewModel.minMaxBelow.value = it.minMaxBelow
+                val artworkWasOn = shouldDisplayArtwork
                 shouldDisplayArtwork = it.albumArt
+                if (artworkWasOn && !shouldDisplayArtwork) {
+                    // applyBackground returns at once while the artwork flag is set, so
+                    // clearing it here is the only path back to the dashboard background.
+                    displayingArtwork = false
+                    applyBackground(screens.background, it.selectedBackground)
+                }
 
                 albumArtReady.countDown()
 
@@ -427,35 +455,134 @@ open class DashboardFragment : AlbumArt() {
         if (medadata != null) {
             binding.backgroundBitmap = metaDataToArt(medadata)
             if (binding.backgroundBitmap != null) {
+                // A background load already in flight must not replace this artwork when it lands.
+                ++bgRequestToken
                 binding.blurEffect = albumBlurEffect
                 binding.colorFilter = albumColorFilter
                 displayingArtwork = true
                 return
             }
         }
-        setupBackground(lastBackground)
+        // The artwork is gone, so applyBackground may run: clear the flag first or it returns.
+        displayingArtwork = false
+        applyBackground(currentScreenBackground, currentGlobalBackground)
     }
 
     private fun updateScale(largeCenter: Boolean) {
         binding.largeCenter = largeCenter
     }
 
-    private fun setupBackground(newBackground: String?) {
-        lastBackground = context?.let {
-            resources.getIdentifier(
-                newBackground ?: "background_incar_black",
-                "drawable",
-                it.packageName
-            )
-        } ?: lastBackground
-        setupBackground(lastBackground)
-    }
+    private suspend fun applyBackground(screen: String, global: String) {
+        currentScreenBackground = screen
+        currentGlobalBackground = global
+        if (displayingArtwork) return
+        val token = ++bgRequestToken
 
-    private fun setupBackground(resource: Int) {
-        binding.blurEffect = null
-        binding.colorFilter = null
-        displayingArtwork = false
-        binding.backgroundResource = resource
+        fun toSource(value: String): BackgroundSource = if (value.contains(":")) {
+            parseBackground(value)
+        } else if (value.isBlank()) {
+            BackgroundSource.Inherit
+        } else {
+            BackgroundSource.Drawable(value)
+        }
+
+        val screenSource = toSource(screen)
+        val globalSource = toSource(global).let {
+            if (it is BackgroundSource.Inherit) {
+                BackgroundSource.Drawable(
+                    "background_incar_black"
+                )
+            } else {
+                it
+            }
+        }
+
+        var source = if (screenSource is BackgroundSource.Inherit) globalSource else screenSource
+        if (source is BackgroundSource.Inherit) {
+            source =
+                BackgroundSource.Drawable("background_incar_black")
+        }
+
+        when (source) {
+            is BackgroundSource.Inherit -> Unit
+
+            is BackgroundSource.Drawable -> {
+                val context = context ?: return
+                val resId = resources.getIdentifier(source.name, "drawable", context.packageName)
+                val finalRes = if (resId != 0) {
+                    resId
+                } else {
+                    resources.getIdentifier(
+                        "background_incar_black",
+                        "drawable",
+                        context.packageName
+                    )
+                }
+                withContext(Dispatchers.Main) {
+                    if (token != bgRequestToken) return@withContext
+                    binding.blurEffect = null
+                    binding.colorFilter = null
+                    displayingArtwork = false
+                    binding.backgroundBitmap = null
+                    binding.backgroundResource = finalRes
+                }
+            }
+
+            is BackgroundSource.Stored -> {
+                val cached = if (cachedBackgroundName == source.name) {
+                    cachedBackgroundBitmap
+                } else {
+                    cachedBackgroundName = null
+                    cachedBackgroundBitmap = null
+                    null
+                }
+                val reqHeight = if (binding.bgImageView.height > 0) {
+                    binding.bgImageView.height
+                } else {
+                    resources.displayMetrics.heightPixels
+                }
+                val bitmap = cached ?: withContext(Dispatchers.IO) {
+                    context?.let { BackgroundStore.resolve(it, source.name, reqHeight) }
+                }
+                if (token != bgRequestToken) return
+                if (bitmap == null) {
+                    if (screenSource is BackgroundSource.Stored) {
+                        // Fall back to the global background.
+                        val savedScreen = currentScreenBackground
+                        applyBackground("", global)
+                        currentScreenBackground = savedScreen
+                    } else {
+                        val context = context ?: return
+                        val resId = resources.getIdentifier(
+                            "background_incar_black",
+                            "drawable",
+                            context.packageName
+                        )
+                        withContext(Dispatchers.Main) {
+                            if (token != bgRequestToken) return@withContext
+                            binding.blurEffect = null
+                            binding.colorFilter = null
+                            displayingArtwork = false
+                            binding.backgroundBitmap = null
+                            binding.backgroundResource = resId
+                        }
+                    }
+                    return
+                }
+                if (cachedBackgroundName != source.name) {
+                    cachedBackgroundName = source.name
+                    cachedBackgroundBitmap = bitmap
+                }
+                withContext(Dispatchers.Main) {
+                    if (token != bgRequestToken) return@withContext
+                    binding.blurEffect = null
+                    binding.colorFilter = null
+                    displayingArtwork = false
+                    binding.backgroundResource = null
+                    binding.backgroundBitmap = bitmap
+                }
+            }
+        }
     }
 
     fun configureRotaryInput() {

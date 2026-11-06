@@ -99,6 +99,29 @@ Preferences are a Protobuf message, not key-value XML.
 A preference change does not restart the app. The car activity observes the theme and
 recreates, and the fragments observe the selected screen.
 
+### Backgrounds
+
+A dashboard draws one image behind its gauges. `Screen.background` holds a source, not a
+file name:
+
+| Value | Meaning |
+|---|---|
+| empty | Inherit the app-wide `selectedBackground` |
+| `resource:<drawable>` | A bundled drawable from `res/drawable` |
+| `file:<name>` | An image the user imported, stored in the app's private storage |
+
+- Parser: `prefs/BackgroundSource.kt` (pure Kotlin, no Android types).
+- Files: `prefs/BackgroundStore.kt` copies a picked image, downsamples it to 2048 px, writes
+  a 128 px thumbnail, and sweeps images no dashboard references. Every call blocks; callers
+  use `Dispatchers.IO`.
+- Picker: `prefs/BackgroundPreference.kt` and the per-dashboard settings screen
+  (`prefs/SettingsDashboard.kt`). The app-wide list on the appearance screen still comes from
+  `res/xml/settings.xml`.
+- Render: `stats/DashboardFragment.kt` applies album art, then the screen value, then the
+  app-wide value, then `background_incar_black`.
+- Export and import stay a raw `UserPreference` proto, so an imported dashboard whose image is
+  absent falls back to the app-wide background.
+
 ## Threading
 
 - The main thread only draws. `TorqueRefresher` ticks on its own executor and posts results

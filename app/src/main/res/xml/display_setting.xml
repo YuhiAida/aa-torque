@@ -2,18 +2,32 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <PreferenceCategory
-        android:key="displayCat"
-        android:singleLineTitle="false"
-        android:title="@string/torque_waiting">
-
+        android:key="statusCat">
+        <Preference
+            android:key="torqueStatus"
+            android:title="@string/pref_torque_status"
+            android:selectable="false"
+            android:persistent="false" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="thisDashboard"
+        android:title="@string/pref_this_dashboard">
         <EditTextPreference
             android:key="performanceTitle"
-            android:title=""
+            android:title="@string/pref_dashboard_name"
             android:defaultValue=""
             android:icon="@drawable/settings_title_tint"
             android:inputType="text"
+            android:persistent="false" />
+        <com.aatorque.prefs.BackgroundPreference
+            android:key="background"
             android:persistent="false"
-            />
+            android:title="@string/pref_background" />
     </PreferenceCategory>
-    <PreferenceCategory android:key="displayOptions" />
+    <PreferenceCategory
+        android:key="gaugesCat"
+        android:title="@string/pref_gauges" />
+    <PreferenceCategory
+        android:key="displaysCat"
+        android:title="@string/pref_displays" />
 </PreferenceScreen>
