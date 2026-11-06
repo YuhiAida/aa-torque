@@ -162,7 +162,9 @@ class SettingsDashboard : PreferenceFragmentCompat() {
                     val src = parseBackground(screen.background)
                     if (src is BackgroundSource.Stored) src.name else null
                 }.toSet()
-                BackgroundStore.sweep(requireContext(), referenced)
+                withContext(Dispatchers.IO) {
+                    BackgroundStore.sweep(requireContext(), referenced)
+                }
             }
             return@setOnPreferenceChangeListener true
         }
