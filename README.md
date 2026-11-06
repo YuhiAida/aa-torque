@@ -40,6 +40,11 @@ Upstream is unmaintained. The fork keeps the package name `com.aatorque.stats`, 
 
 <img src="docs/assets/gauges.jpg" width="100%" alt="Gauges" />
 
+Each dashboard can carry a background image of its own. **Gauge opacity** dims the gauges
+over it, so the numbers stay readable on a photo.
+
+<img src="docs/assets/custom-background-example.jpg" width="100%" alt="A dashboard with a custom background image" />
+
 ## Install
 
 1. Install **Torque Pro** on your phone and pair your OBD-II adapter in Torque.
