@@ -116,9 +116,10 @@
 
             <TextView
                 android:id="@+id/textTitle"
-                android:layout_width="500dp"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:ellipsize="marquee"
+                android:visibility="@{(title == null || title.isEmpty()) &amp;&amp; !showBtns ? View.GONE : View.VISIBLE}"
                 android:maxLines="1"
                 android:text="@{title}"
                 android:textAlignment="center"
