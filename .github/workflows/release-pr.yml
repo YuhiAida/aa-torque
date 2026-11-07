@@ -60,8 +60,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          branch=$(gh pr list --label release --state open --json headRefName,title --jq '.[0].headRefName // empty')
-          if [ -n "$branch" ]; then
+          number=$(gh pr list --label release --state open --json number --jq '.[0].number // empty')
+          branch=$(gh pr list --label release --state open --json headRefName --jq '.[0].headRefName // empty')
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+          if [ -n "$number" ]; then
             echo "branch=$branch" >> "$GITHUB_OUTPUT"
             echo "found=true" >> "$GITHUB_OUTPUT"
           else
@@ -69,30 +71,12 @@ jobs:
             echo "found=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Keep the branch name on the version
-        id: target
-        if: steps.gate.outputs.run == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -e
-          version="${{ steps.release.outputs.version }}"
-          branch="${{ steps.existing.outputs.branch }}"
-          desired="release/v${version}"
-          if [ -n "$branch" ] && [ "$branch" != "$desired" ]; then
-            encoded=$(python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=''))" "$branch")
-            gh api -X POST "repos/${GITHUB_REPOSITORY}/branches/${encoded}/rename" -f new_name="$desired" >/dev/null
-            echo "Renamed $branch to $desired."
-            branch="$desired"
-          fi
-          echo "branch=$branch" >> "$GITHUB_OUTPUT"
-
       - name: Create or update the release branch
         if: steps.gate.outputs.run == 'true'
         run: |
           set -e
           version="${{ steps.release.outputs.version }}"
-          branch="${{ steps.target.outputs.branch }}"
+          branch="release/v${version}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -B "$branch"
@@ -124,11 +108,14 @@ jobs:
         run: |
           set -e
           version="${{ steps.release.outputs.version }}"
-          branch="${{ steps.target.outputs.branch }}"
+          branch="release/v${version}"
           oldtag="${{ steps.meta.outputs.tag }}"
           body=$(python3 tools/next_release.py --tag "$oldtag" --head HEAD --json | python3 -c "import sys, json; d=json.load(sys.stdin); print('\n'.join('- ' + c for c in d['changes']))")
-          if [ "${{ steps.existing.outputs.found }}" = "true" ]; then
-            gh pr edit "$branch" --title "release: v${version}" --body "$body"
+          if [ "${{ steps.existing.outputs.found }}" = "true" ] && [ "${{ steps.existing.outputs.branch }}" = "$branch" ]; then
+            gh pr edit "${{ steps.existing.outputs.number }}" --title "release: v${version}" --body "$body"
           else
+            if [ "${{ steps.existing.outputs.found }}" = "true" ]; then
+              gh pr close "${{ steps.existing.outputs.number }}" --comment "Superseded by ${branch}: the release version changed, so this branch is no longer the release candidate."
+            fi
             gh pr create --base master --head "$branch" --title "release: v${version}" --body "$body" --label release
           fi
