@@ -121,6 +121,7 @@
                 android:ellipsize="marquee"
                 android:visibility="@{(title == null || title.isEmpty()) &amp;&amp; !showBtns ? View.GONE : View.VISIBLE}"
                 android:maxLines="1"
+                android:singleLine="true"
                 android:text="@{title}"
                 android:textAlignment="center"
                 android:textColor="@android:color/white"
