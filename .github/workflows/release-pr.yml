@@ -86,11 +86,11 @@ jobs:
             exit 0
           fi
           # No PR for this branch. A release PR from an earlier version may still be open; it has
-          # to be closed before a PR for the new branch can exist. --paginate reads every open PR,
-          # so an older candidate is never missed or confused with another branch.
-          stale=$(gh api --paginate \
+          # to be closed before a PR for the new branch can exist. --jq runs once per page, so
+          # emit one line per candidate and pick the newest number across every page.
+          stale=$(REPO="${GITHUB_REPOSITORY}" gh api --paginate \
             "repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" \
-            --jq "[.[] | select(.head.ref | startswith(\"release/\")) | select(.head.repo.full_name == \"${GITHUB_REPOSITORY}\") | select(.base.ref == \"master\")] | sort_by(.number) | last | if . == null then \"\" else \"\(.number) \(.head.ref)\" end")
+            --jq '.[] | select(.head.ref | startswith("release/")) | select(.head.repo.full_name == env.REPO) | select(.base.ref == "master") | "\(.number) \(.head.ref)"' | sort -n | tail -1)
           number=""
           if [ -n "$stale" ]; then
             read -r number _ <<< "$stale"
@@ -161,7 +161,7 @@ jobs:
           # Another run can open the PR between the lookup and this step. Fall back to editing it
           # instead of failing the job with "a pull request already exists".
           if ! gh pr create --base master --head "$branch" --title "release: v${version}" --body "$body" --label release; then
-            number=$(gh pr list --state open --head "$branch" --base master --json number --jq '.[0].number // empty')
+            number=$(gh pr list --state open --head "$branch" --base master --json number,isCrossRepository --jq '[.[] | select(.isCrossRepository == false)][0].number // empty')
             if [ -z "$number" ]; then
               echo "no PR for ${branch} after a failed create" >&2
               exit 1
