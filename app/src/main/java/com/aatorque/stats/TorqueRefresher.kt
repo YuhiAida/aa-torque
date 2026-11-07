@@ -19,7 +19,13 @@ enum class ConnectStatus {
     SETUP_GAUGE,
 
     /** Torque Pro is missing, so no connection can ever be made. See issue #160. */
-    NO_TORQUE
+    NO_TORQUE,
+
+    /**
+     * The bind failed while Torque Pro may still be installed: no permission to bind, or a
+     * service that refuses the caller. Say only that the connection failed. See issue #160.
+     */
+    TORQUE_UNAVAILABLE
 }
 
 class TorqueRefresher {
@@ -89,6 +95,11 @@ class TorqueRefresher {
      */
     fun reportTorqueMissing() {
         conWatcher.tryEmit(ConnectStatus.NO_TORQUE)
+    }
+
+    /** The bind failed, but the package may be present; do not claim it is missing. */
+    fun reportTorqueUnavailable() {
+        conWatcher.tryEmit(ConnectStatus.TORQUE_UNAVAILABLE)
     }
 
     fun doRefresh(service: TorqueService, torqueData: TorqueData) {

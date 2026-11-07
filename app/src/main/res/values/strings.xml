@@ -161,6 +161,7 @@
     <string name="convert_kpa_psi">Kilopascals (kPa) to (PSI)</string>
     <string name="status_setup_gauges">Setup gauges in settings</string>
     <string name="status_no_torque">Torque Pro is not installed. Install it on your phone.</string>
+    <string name="status_torque_unavailable">Could not connect to Torque Pro. Open it on the phone and try again.</string>
     <string name="element_cylinder">Engine Cylinder</string>
     <string name="element_horsepower">Horsepower</string>
     <string name="element_transmission">Transmission</string>

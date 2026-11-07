@@ -29,6 +29,18 @@ class ConnectStatusTest {
     }
 
     @Test
+    fun `an unreachable torque keeps a neutral state`() = runBlocking {
+        val refresher = TorqueRefresher()
+        refresher.reportTorqueUnavailable()
+
+        // A failed bind does not prove the package is absent, so the state must stay distinct.
+        assertEquals(
+            ConnectStatus.TORQUE_UNAVAILABLE,
+            withTimeout(1000) { refresher.connectStatus.first() }
+        )
+    }
+
+    @Test
     fun `the state starts as connecting`() = runBlocking {
         assertEquals(
             ConnectStatus.CONNECTING_TORQUE,
