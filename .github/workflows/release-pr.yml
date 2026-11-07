@@ -7,6 +7,10 @@ on:
   push:
     branches: [master]
 
+concurrency:
+  group: release-pr
+  cancel-in-progress: false
+
 jobs:
   release-pr:
     runs-on: ubuntu-24.04
@@ -54,45 +58,60 @@ jobs:
           echo "json=$json" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
+      - name: Ensure the release label exists
+        if: steps.gate.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/labels/release" >/dev/null 2>&1 ||
+            gh label create release --description "Release candidate" --color 0E8A16
+
       - name: Find existing open release PR
         id: existing
         if: steps.gate.outputs.run == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEXT_VERSION: ${{ steps.release.outputs.version }}
         run: |
-          branch=$(gh pr list --label release --state open --json headRefName,title --jq '.[0].headRefName // empty')
-          if [ -n "$branch" ]; then
+          branch="release/v${NEXT_VERSION}"
+          # The PR for the computed branch, wherever it sits in the open list.
+          exact=$(gh pr list --state open --head "$branch" --base master \
+            --json number,headRefName,isCrossRepository --jq '[.[] | select(.isCrossRepository == false)][0] | if . == null then "" else "\(.number) \(.headRefName)" end')
+          if [ -n "$exact" ]; then
+            read -r number _ <<< "$exact"
+            echo "number=$number" >> "$GITHUB_OUTPUT"
             echo "branch=$branch" >> "$GITHUB_OUTPUT"
             echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "exact=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # No PR for this branch. A release PR from an earlier version may still be open; it has
+          # to be closed before a PR for the new branch can exist. --jq runs once per page, so
+          # emit one line per candidate and pick the newest number across every page.
+          stale=$(REPO="${GITHUB_REPOSITORY}" gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" \
+            --jq '.[] | select(.head.ref | startswith("release/")) | select(.head.repo.full_name == env.REPO) | select(.base.ref == "master") | "\(.number) \(.head.ref)"' | sort -n | tail -1)
+          number=""
+          if [ -n "$stale" ]; then
+            read -r number _ <<< "$stale"
+          fi
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "exact=false" >> "$GITHUB_OUTPUT"
+          if [ -n "$number" ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
           else
-            echo "branch=release/v${{ steps.release.outputs.version }}" >> "$GITHUB_OUTPUT"
             echo "found=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Keep the branch name on the version
-        id: target
-        if: steps.gate.outputs.run == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -e
-          version="${{ steps.release.outputs.version }}"
-          branch="${{ steps.existing.outputs.branch }}"
-          desired="release/v${version}"
-          if [ -n "$branch" ] && [ "$branch" != "$desired" ]; then
-            encoded=$(python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=''))" "$branch")
-            gh api -X POST "repos/${GITHUB_REPOSITORY}/branches/${encoded}/rename" -f new_name="$desired" >/dev/null
-            echo "Renamed $branch to $desired."
-            branch="$desired"
-          fi
-          echo "branch=$branch" >> "$GITHUB_OUTPUT"
-
       - name: Create or update the release branch
         if: steps.gate.outputs.run == 'true'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
         run: |
           set -e
-          version="${{ steps.release.outputs.version }}"
-          branch="${{ steps.target.outputs.branch }}"
+          version="$VERSION"
+          branch="release/v${version}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -B "$branch"
@@ -121,14 +140,31 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.release.outputs.version }}
+          OLD_TAG: ${{ steps.meta.outputs.tag }}
+          FOUND: ${{ steps.existing.outputs.found }}
+          EXACT: ${{ steps.existing.outputs.exact }}
+          PR_NUMBER: ${{ steps.existing.outputs.number }}
+          PR_BRANCH: ${{ steps.existing.outputs.branch }}
         run: |
           set -e
-          version="${{ steps.release.outputs.version }}"
-          branch="${{ steps.target.outputs.branch }}"
-          oldtag="${{ steps.meta.outputs.tag }}"
-          body=$(python3 tools/next_release.py --tag "$oldtag" --head HEAD --json | python3 -c "import sys, json; d=json.load(sys.stdin); print('\n'.join('- ' + c for c in d['changes']))")
-          if [ "${{ steps.existing.outputs.found }}" = "true" ]; then
-            gh pr edit "$branch" --title "release: v${version}" --body "$body"
-          else
-            gh pr create --base master --head "$branch" --title "release: v${version}" --body "$body" --label release
+          version="$VERSION"
+          branch="release/v${version}"
+          body=$(python3 tools/next_release.py --tag "$OLD_TAG" --head HEAD --json | python3 -c "import sys, json; d=json.load(sys.stdin); print('\n'.join('- ' + c for c in d['changes']))")
+          if [ "$EXACT" = "true" ] && [ "$PR_BRANCH" = "$branch" ]; then
+            gh pr edit "$PR_NUMBER" --title "release: v${version}" --body "$body" --add-label release
+            exit 0
+          fi
+          if [ "$FOUND" = "true" ]; then
+            gh pr close "$PR_NUMBER" --comment "Superseded by ${branch}: the release version changed, so this branch is no longer the release candidate."
+          fi
+          # Another run can open the PR between the lookup and this step. Fall back to editing it
+          # instead of failing the job with "a pull request already exists".
+          if ! gh pr create --base master --head "$branch" --title "release: v${version}" --body "$body" --label release; then
+            number=$(gh pr list --state open --head "$branch" --base master --json number,isCrossRepository --jq '[.[] | select(.isCrossRepository == false)][0].number // empty')
+            if [ -z "$number" ]; then
+              echo "no PR for ${branch} after a failed create" >&2
+              exit 1
+            fi
+            gh pr edit "$number" --title "release: v${version}" --body "$body" --add-label release
           fi
