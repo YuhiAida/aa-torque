@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="primary">#243659</color>
+    <!-- Adaptive icon background: the gauge artwork sits on black, so the tile keeps that field. -->
+    <color name="ic_launcher_background">#000000</color>
     <color name="primary_dark">#000000</color>
     <color name="accent">#ACABAB</color>
     <color name="red">#eec50101</color>
