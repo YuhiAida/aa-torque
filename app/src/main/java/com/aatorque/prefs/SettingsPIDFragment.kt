@@ -21,8 +21,7 @@ import com.aatorque.datastore.Screen
 import com.aatorque.stats.R
 import com.aatorque.stats.TorqueServiceWrapper
 import com.aatorque.stats.iconEntryValue
-import kotlin.math.ceil
-import kotlin.math.floor
+import com.aatorque.stats.pidRange
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -146,15 +145,10 @@ class SettingsPIDFragment : PreferenceFragmentCompat() {
                 torqueService?.pids?.firstOrNull {
                     it.first == pidOnly
                 }?.let { entryVal ->
-                    var minVal = ceil(entryVal.second[3].toDouble()).toInt()
-                    var maxVal = floor(entryVal.second[4].toDouble()).toInt()
-                    if (minVal == 0 && maxVal == 0) {
-                        minVal = 0
-                        maxVal = 100
-                    }
+                    val (minValue, maxValue) = pidRange(entryVal.second)
                     labelPref.text = entryVal.second[1]
-                    maxValuePref.text = minVal.toString()
-                    minValuePref.text = maxVal.toString()
+                    maxValuePref.text = maxValue.toString()
+                    minValuePref.text = minValue.toString()
                     unitPref.text = entryVal.second[2]
                 }
                 enableItems(true)
