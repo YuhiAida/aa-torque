@@ -119,7 +119,11 @@ open class DashboardFragment : AlbumArt() {
         val context = requireContext()
         torqueRefresher.simulate = DevOptions.simulateValues(context)
         DevOptions.prefs(context).registerOnSharedPreferenceChangeListener(devPrefListener)
-        torqueService.startTorque(context)
+        if (!torqueService.startTorque(context) && !torqueRefresher.simulate) {
+            // No Torque Pro on this phone. Nothing will ever connect, so do not sit on the
+            // connecting message until the user guesses what is missing.
+            torqueRefresher.reportTorqueMissing()
+        }
         val registerWithView = { call: suspend (Flow<UserPreference>) -> Unit ->
             lifecycleScope.launch {
                 viewReady.await()
@@ -250,6 +254,7 @@ open class DashboardFragment : AlbumArt() {
                     ConnectStatus.CONNECTING_TORQUE -> R.string.status_connecting_torque
                     ConnectStatus.CONNECTING_ECU -> R.string.status_connecting_to_ecu
                     ConnectStatus.SETUP_GAUGE -> R.string.status_setup_gauges
+                    ConnectStatus.NO_TORQUE -> R.string.status_no_torque
                     ConnectStatus.CONNECTED -> null
                 }
             }

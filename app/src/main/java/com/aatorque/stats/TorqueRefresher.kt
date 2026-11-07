@@ -16,7 +16,10 @@ enum class ConnectStatus {
     CONNECTING_TORQUE,
     CONNECTING_ECU,
     CONNECTED,
-    SETUP_GAUGE
+    SETUP_GAUGE,
+
+    /** Torque Pro is missing, so no connection can ever be made. See issue #160. */
+    NO_TORQUE
 }
 
 class TorqueRefresher {
@@ -78,6 +81,14 @@ class TorqueRefresher {
                 conWatcher.tryEmit(ConnectStatus.CONNECTING_ECU)
             }
         }
+    }
+
+    /**
+     * The bind to Torque failed, so no connect callback will ever advance the state. Say so
+     * instead of leaving the car on an unbounded "Connecting to Torque…" message.
+     */
+    fun reportTorqueMissing() {
+        conWatcher.tryEmit(ConnectStatus.NO_TORQUE)
     }
 
     fun doRefresh(service: TorqueService, torqueData: TorqueData) {
