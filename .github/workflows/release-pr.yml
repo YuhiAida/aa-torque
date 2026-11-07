@@ -73,18 +73,34 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEXT_VERSION: ${{ steps.release.outputs.version }}
         run: |
-          number=""
-          branch=""
-          pr=$(gh pr list --state open --limit 100 --json number,headRefName,isCrossRepository,baseRefName --jq '[.[] | select((.headRefName | startswith("release/")) and (.isCrossRepository == false) and (.baseRefName == "master"))][0] | if . == null then "" else "\(.number) \(.headRefName)" end')
-          if [ -n "$pr" ]; then
-            read -r number branch <<< "$pr"
-          fi
-          echo "number=$number" >> "$GITHUB_OUTPUT"
-          if [ -n "$number" ]; then
+          branch="release/v${NEXT_VERSION}"
+          # The PR for the computed branch, wherever it sits in the open list.
+          exact=$(gh pr list --state open --head "$branch" --base master \
+            --json number,headRefName,isCrossRepository --jq '[.[] | select(.isCrossRepository == false)][0] | if . == null then "" else "\(.number) \(.headRefName)" end')
+          if [ -n "$exact" ]; then
+            read -r number _ <<< "$exact"
+            echo "number=$number" >> "$GITHUB_OUTPUT"
             echo "branch=$branch" >> "$GITHUB_OUTPUT"
             echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "exact=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # No PR for this branch. A release PR from an earlier version may still be open; it has
+          # to be closed before a PR for the new branch can exist. --paginate reads every open PR,
+          # so an older candidate is never missed or confused with another branch.
+          stale=$(gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" \
+            --jq "[.[] | select(.head.ref | startswith(\"release/\")) | select(.head.repo.full_name == \"${GITHUB_REPOSITORY}\") | select(.base.ref == \"master\")] | sort_by(.number) | last | if . == null then \"\" else \"\(.number) \(.head.ref)\" end")
+          number=""
+          if [ -n "$stale" ]; then
+            read -r number _ <<< "$stale"
+          fi
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "exact=false" >> "$GITHUB_OUTPUT"
+          if [ -n "$number" ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
           else
-            echo "branch=release/v${NEXT_VERSION}" >> "$GITHUB_OUTPUT"
             echo "found=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -127,6 +143,7 @@ jobs:
           VERSION: ${{ steps.release.outputs.version }}
           OLD_TAG: ${{ steps.meta.outputs.tag }}
           FOUND: ${{ steps.existing.outputs.found }}
+          EXACT: ${{ steps.existing.outputs.exact }}
           PR_NUMBER: ${{ steps.existing.outputs.number }}
           PR_BRANCH: ${{ steps.existing.outputs.branch }}
         run: |
@@ -134,11 +151,20 @@ jobs:
           version="$VERSION"
           branch="release/v${version}"
           body=$(python3 tools/next_release.py --tag "$OLD_TAG" --head HEAD --json | python3 -c "import sys, json; d=json.load(sys.stdin); print('\n'.join('- ' + c for c in d['changes']))")
-          if [ "$FOUND" = "true" ] && [ "$PR_BRANCH" = "$branch" ]; then
+          if [ "$EXACT" = "true" ] && [ "$PR_BRANCH" = "$branch" ]; then
             gh pr edit "$PR_NUMBER" --title "release: v${version}" --body "$body" --add-label release
-          else
-            if [ "$FOUND" = "true" ]; then
-              gh pr close "$PR_NUMBER" --comment "Superseded by ${branch}: the release version changed, so this branch is no longer the release candidate."
+            exit 0
+          fi
+          if [ "$FOUND" = "true" ]; then
+            gh pr close "$PR_NUMBER" --comment "Superseded by ${branch}: the release version changed, so this branch is no longer the release candidate."
+          fi
+          # Another run can open the PR between the lookup and this step. Fall back to editing it
+          # instead of failing the job with "a pull request already exists".
+          if ! gh pr create --base master --head "$branch" --title "release: v${version}" --body "$body" --label release; then
+            number=$(gh pr list --state open --head "$branch" --base master --json number --jq '.[0].number // empty')
+            if [ -z "$number" ]; then
+              echo "no PR for ${branch} after a failed create" >&2
+              exit 1
             fi
-            gh pr create --base master --head "$branch" --title "release: v${version}" --body "$body" --label release
+            gh pr edit "$number" --title "release: v${version}" --body "$body" --add-label release
           fi
