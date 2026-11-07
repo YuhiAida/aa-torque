@@ -63,7 +63,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh label list --json name --jq '.[].name' | grep -qx release ||
+          gh api "repos/${GITHUB_REPOSITORY}/labels/release" >/dev/null 2>&1 ||
             gh label create release --description "Release candidate" --color 0E8A16
 
       - name: Find existing open release PR
@@ -75,7 +75,7 @@ jobs:
         run: |
           number=""
           branch=""
-          pr=$(gh pr list --state open --limit 100 --json number,headRefName --jq '[.[] | select(.headRefName | startswith("release/"))][0] | if . == null then "" else "\(.number) \(.headRefName)" end')
+          pr=$(gh pr list --state open --limit 100 --json number,headRefName,isCrossRepository,baseRefName --jq '[.[] | select((.headRefName | startswith("release/")) and (.isCrossRepository == false) and (.baseRefName == "master"))][0] | if . == null then "" else "\(.number) \(.headRefName)" end')
           if [ -n "$pr" ]; then
             read -r number branch <<< "$pr"
           fi
