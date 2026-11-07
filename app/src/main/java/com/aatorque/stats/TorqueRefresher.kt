@@ -16,7 +16,16 @@ enum class ConnectStatus {
     CONNECTING_TORQUE,
     CONNECTING_ECU,
     CONNECTED,
-    SETUP_GAUGE
+    SETUP_GAUGE,
+
+    /** Torque Pro is missing, so no connection can ever be made. See issue #160. */
+    NO_TORQUE,
+
+    /**
+     * The bind failed while Torque Pro may still be installed: no permission to bind, or a
+     * service that refuses the caller. Say only that the connection failed. See issue #160.
+     */
+    TORQUE_UNAVAILABLE
 }
 
 class TorqueRefresher {
@@ -78,6 +87,19 @@ class TorqueRefresher {
                 conWatcher.tryEmit(ConnectStatus.CONNECTING_ECU)
             }
         }
+    }
+
+    /**
+     * The bind to Torque failed, so no connect callback will ever advance the state. Say so
+     * instead of leaving the car on an unbounded "Connecting to Torque…" message.
+     */
+    fun reportTorqueMissing() {
+        conWatcher.tryEmit(ConnectStatus.NO_TORQUE)
+    }
+
+    /** The bind failed, but the package may be present; do not claim it is missing. */
+    fun reportTorqueUnavailable() {
+        conWatcher.tryEmit(ConnectStatus.TORQUE_UNAVAILABLE)
     }
 
     fun doRefresh(service: TorqueService, torqueData: TorqueData) {
