@@ -13,6 +13,19 @@ apps: one projection app for the gauges and one media app for the card. Two apps
 rejected by the maintainer. A single app that takes the whole screen remains the product
 model. This document keeps the technical detail as history of the rejected investigation.
 
+The record for that conclusion is the closing comment on
+[issue #60](https://github.com/YuhiAida/aa-torque/issues/60). Bench: OnePlus CPH2551,
+Android 16, Android Auto 17.9.664044, Desktop Head Unit 2.1, 2026-11-01. The build carried
+both launcher entries, the projection app and the media browser. With both entries
+present, the projection entry takes the whole screen and the media entry gives only the
+rail card. With projection dropped, choosing the app opens an empty media screen, because
+`CardService.onLoadChildren` returns an empty list. No screenshot was captured: the head
+unit window landed off-screen, so the evidence is the two launcher entries and the card
+metadata read on the bench.
+
+The implementation was never merged. It lives on `feat/media-card-artwork`, head
+`a7e0ec7`, which is closed pull request [#62](https://github.com/YuhiAida/aa-torque/pull/62).
+
 The sections below record the rejected investigation; they are kept for history.
 
 ## The problem
@@ -73,18 +86,30 @@ gauge jump.
 
 Measured on a real phone with Android Auto 17.9 and the Desktop Head Unit 2.1: a 20 frame/s offer
 was accepted at **17.94 frame/s** over 30 s, p50 gap 56 ms. A 10 frame/s offer was accepted at
-9.51 frame/s over 55 s. No throttling was observed in that range. Method and caveats are in the
-issue.
+9.51 frame/s over 55 s. No throttling was observed in that range.
 
-That is well above what needles need, which is why the dial styles are offered at all.
+The measurement used a separate probe app, not AA Torque. The probe served flat 512x512 PNGs and
+logged every artwork fetch from a `ContentProvider`. Android Auto asks for a frame only when it
+draws it, so that log is the accepted rate. The probe never drew the app's renderer, so the figure
+is a limit of the Android Auto artwork pipeline, not a measurement of the gauge needles. Method
+and further caveats are in the issue.
+
+That headroom is above what needles need, which is why the dial styles are offered at all. A dial
+style also pays an encode cost on the phone for each frame; see Known limits.
 
 ## How to check it without a car
 
+These checks ran on `feat/media-card-artwork`, head `a7e0ec7`, which is closed pull request
+[#62](https://github.com/YuhiAida/aa-torque/pull/62). That branch holds `CardService`,
+`CardFrames`, `CardArtworkProvider`, `CardArtwork`, `CardPreviewActivity` and the card tests.
+`master` does not: this document is the only file that survived the closure, so the commands
+below do not run on this checkout.
+
 | Check | Command | What it proves |
 |---|---|---|
-| Card pixels | `./gradlew verifyRoborazziDebug` | the three styles against committed goldens |
+| Card pixels | `./gradlew verifyRoborazziDebug` | the three styles against the goldens committed on that branch |
 | Card text and frames | `./gradlew testDebugUnitTest` | subtitle, ECU gating, frame ring |
-| On the phone | Settings → Android Auto card → Preview the card | the real renderer at real size, no AA |
+| On the phone | Settings → Appearance → **Preview the card**, below **Android Auto card** | the real renderer at real size, no AA |
 
 The preview screen calls the same `CardArtwork.render` the service calls. If it looks wrong there,
 it will look wrong in the car.

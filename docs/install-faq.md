@@ -59,7 +59,15 @@ That is why every update must go through KingInstaller. Measured on Android 16:
 
 The system installer drops `EXTRA_INSTALLER_PACKAGE_NAME` unless the calling app
 is the installer itself or holds `INSTALL_PACKAGES`. An ordinary app cannot ask
-for `com.android.vending`. Only KingInstaller with Shizuku sets both fields.
+for `com.android.vending`. KingInstaller with Shizuku, or with root, sets both
+fields.
+
+KingInstaller reports one exception. On affected **Xiaomi, POCO and Redmi**
+devices running MIUI or HyperOS, Shizuku without root cannot set the Play Store
+installer. The vendor refuses it with `SecurityException: Caller does not have
+same cert as new installer package com.android.vending`. On those devices use
+KingInstaller's **Root Trick**, or start Shizuku with root, then check both
+fields. See the [KingInstaller guide](https://github.com/fcaronte/KingInstaller).
 
 ## Clean install
 
@@ -69,10 +77,12 @@ for `com.android.vending`. Only KingInstaller with Shizuku sets both fields.
    [Shizuku](https://shizuku.rikka.app/) from the Play Store.
 4. On OnePlus, OPPO or Realme, enable **Disable permission monitoring** in the
    developer options, at the bottom of the Apps section. The same switch over adb:
-   `settings put global direct_control_permission_monitoring 0`
+   `adb shell settings put global direct_control_permission_monitoring 0`
 5. Start Shizuku with wireless debugging and grant the permission prompt.
 6. In KingInstaller choose **Shizuku** as the installation method, select the APK,
    and install. Success reads `App installed successfully! (AA Compatible)`.
+   On a Xiaomi, POCO or Redmi device this step can fail with a `SecurityException`;
+   use the **Root Trick** instead, as described under *How the record is set*.
 7. Force-stop Android Auto so it rebuilds its list:
    `adb shell am force-stop com.google.android.projection.gearhead`
 8. Open the Android Auto settings on the phone:
@@ -80,7 +90,7 @@ for `com.android.vending`. Only KingInstaller with Shizuku sets both fields.
    Look for AA Torque under **Add a shortcut to the Launcher**. Its presence proves
    the install record is correct. No car is needed for this check.
 9. Read the two fields yourself to confirm:
-   `adb shell dumpsys package com.aatorque.stats | grep -E "installerPackageName|initiatingPackageName"`
+   `adb shell "dumpsys package com.aatorque.stats | grep -E 'installerPackageName|initiatingPackageName'"`
 
 ## Update an existing install
 
@@ -98,9 +108,16 @@ uninstalling.
 
 Two limits apply. Builds up to version 2.0.33 were signed with a per-run key and
 cannot update in place: uninstall once, then install version 2.0.34 or later
-normally. Moving from the upstream build to this fork also replaces the app,
-because both use the package `com.aatorque.stats`: install the fork through
-KingInstaller, not by tapping the APK.
+normally. Uninstalling deletes the app's data, so export first when the installed
+build has that menu: **Export dashboards** in the Settings overflow, then
+**Import dashboards** after the new install.
+
+Moving from the upstream build to this fork also replaces the app, because both
+use the package `com.aatorque.stats`. The two builds are signed with different
+keys, so an update over the upstream build fails with a signature mismatch.
+Uninstall the upstream build first, and export a backup before you do, if that
+build has the menu. Then install the fork through KingInstaller, not by tapping
+the APK.
 
 ## What it cannot do
 
@@ -130,7 +147,7 @@ KingInstaller, not by tapping the APK.
 Open an issue at https://github.com/YuhiAida/aa-torque/issues. Include the
 Android Auto version, the phone model, and the two install-record fields from:
 
-`adb shell dumpsys package com.aatorque.stats | grep -E "installerPackageName|initiatingPackageName"`
+`adb shell "dumpsys package com.aatorque.stats | grep -E 'installerPackageName|initiatingPackageName'"`
 
 Also read [troubleshooting.md](troubleshooting.md) and [aa-install-gate.md](aa-install-gate.md)
 before you file. For install problems, read [building.md](building.md) only if you
