@@ -6,7 +6,7 @@ Every source file under `app/src/main/java`, grouped by package. CI regenerates
 this file on each push, so it always matches the tree.
 
 - Files: 46 (43 Kotlin, 3 Java)
-- Lines: 8646
+- Lines: 8647
 - Packages: 5
 
 ## `com/aatorque/prefs`
@@ -38,7 +38,7 @@ this file on each push, so it always matches the tree.
 | `CardArtworkProvider.kt` | 72 |
 | `CardFrames.kt` | 63 |
 | `CardPreviewActivity.kt` | 74 |
-| `CardService.kt` | 233 |
+| `CardService.kt` | 234 |
 | `CreditsFragment.kt` | 44 |
 | `DashboardFragment.kt` | 480 |
 | `LegendAdapter.kt` | 46 |
