@@ -54,6 +54,9 @@ over it, so the numbers stay readable on a photo.
 4. Continue with the next section. A plain install does **not** make the app visible in
    Android Auto.
 
+Install and update problems have their own page: [docs/install-faq.md](docs/install-faq.md).
+It covers the install-record gate, the update path, and what the app cannot do.
+
 A rolling `dev` pre-release is also published under the `dev` tag. It installs beside the
 stable app (package `com.aatorque.stats.debug`) and is not the stable channel; use it only
 if you want to test unreleased changes.
