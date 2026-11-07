@@ -168,7 +168,11 @@ open class DashboardFragment : AlbumArt() {
                 val screens = it.screensList[screenIndex]
                 val showChartChanged = binding.showChart != it.showChart
                 binding.title = screens.title
-                binding.showBtns = false
+                // The chart toggle is always useful; the dashboard arrows only when there is
+                // a second dashboard to reach. Both are real touch targets on a car screen,
+                // not a swipe gesture the driver has to discover. See issue #159.
+                binding.showBtns = true
+                binding.showNav = it.screensCount > 1
                 settingsViewModel.chartVisible.value = it.showChart
                 settingsViewModel.minMaxBelow.value = it.minMaxBelow
                 val artworkWasOn = shouldDisplayArtwork
@@ -365,11 +369,14 @@ open class DashboardFragment : AlbumArt() {
                 }
             )
         rootView.setOnTouchListener { v, event ->
-            gestureDetector.onTouchEvent(event)
+            val handled = gestureDetector.onTouchEvent(event)
             if (event.action == MotionEvent.ACTION_UP) {
                 v.performClick() // Handle accessibility
             }
-            true
+            // Keep ACTION_DOWN, or the detector never sees the rest of the gesture. Every
+            // event the detector did not use goes back to the framework instead of being
+            // swallowed by the root view.
+            handled || event.action == MotionEvent.ACTION_DOWN
         }
         configureRotaryInput()
         return rootView
