@@ -94,6 +94,7 @@
             android:layout_height="wrap_content"
             android:elevation="1dp"
             android:layout_marginBottom="4dp"
+            android:visibility="@{((status == null || status == 0) &amp;&amp; (title == null || title.isEmpty())) ? View.GONE : View.VISIBLE}"
             app:layout_constraintTop_toTopOf="parent">
 
             <TextView
@@ -115,10 +116,12 @@
 
             <TextView
                 android:id="@+id/textTitle"
-                android:layout_width="500dp"
-                android:layout_height="0dp"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:ellipsize="marquee"
+                android:visibility="@{(title == null || title.isEmpty()) &amp;&amp; !showBtns ? View.GONE : View.VISIBLE}"
                 android:maxLines="1"
+                android:singleLine="true"
                 android:text="@{title}"
                 android:textAlignment="center"
                 android:textColor="@android:color/white"

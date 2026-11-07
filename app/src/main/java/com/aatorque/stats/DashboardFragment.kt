@@ -283,6 +283,7 @@ open class DashboardFragment : AlbumArt() {
         mBtnPrev.setOnClickListener { setScreen(-1) }
         binding.chartBtn.setOnClickListener { toggleShowChart(binding.showChart != true) }
         mTitleElement = binding.textTitle
+        mTitleElement.isSelected = true
         mWrapper = binding.includeWrap
         mConStatus = binding.conStatus
         gaugeViews[0] = binding.gaugeLeft
