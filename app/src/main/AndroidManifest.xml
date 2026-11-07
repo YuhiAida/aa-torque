@@ -90,6 +90,9 @@
             tools:ignore="ExportedService">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
+                <!-- Voice search must reach the card service; the session is not a player, so
+                     the callback answers with the current values instead of starting playback. -->
+                <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
             </intent-filter>
         </service>
 

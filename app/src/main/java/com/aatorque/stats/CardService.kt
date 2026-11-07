@@ -74,6 +74,7 @@ class CardService : MediaBrowserService() {
             override fun onPlay() = publishState()
             override fun onPause() = publishState()
             override fun onStop() = publishState()
+            override fun onPlayFromSearch(query: String?, extras: Bundle?) = publishState()
         })
         session.isActive = true
         setSessionToken(session.sessionToken)
