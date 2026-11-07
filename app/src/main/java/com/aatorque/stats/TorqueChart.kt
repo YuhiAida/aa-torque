@@ -179,8 +179,8 @@ class TorqueChart : Fragment() {
         val range = (data.display.maxValue - data.display.minValue).toDouble()
         val scaled = if (range == 0.0) 0.0 else (data.lastData / range) * 100.0
         line.appendData(DataPoint(now, scaled), true, 100)
-        if (data.hasReceivedNonZero) {
-            binding.value.value = "${data.lastDataStr}${data.display.unit}"
-        }
+        // Zero is a reading, not a missing value: show it. The series and the label follow
+        // the same rule, or the chart plots a point its legend hides. See issue #158.
+        binding.value.value = "${data.lastDataStr}${data.display.unit}"
     }
 }
