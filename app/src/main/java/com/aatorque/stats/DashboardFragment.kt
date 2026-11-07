@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.PorterDuff
@@ -111,6 +112,15 @@ open class DashboardFragment : AlbumArt() {
 
     companion object {
         const val DISPLAY_OFFSET = 3
+        private const val TORQUE_PACKAGE = "org.prowl.torque"
+    }
+
+    /** A failed bind also covers a permission refusal, so ask the package manager directly. */
+    private fun isTorqueInstalled(context: Context): Boolean = try {
+        context.packageManager.getApplicationInfo(TORQUE_PACKAGE, 0)
+        true
+    } catch (e: PackageManager.NameNotFoundException) {
+        false
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -119,7 +129,15 @@ open class DashboardFragment : AlbumArt() {
         val context = requireContext()
         torqueRefresher.simulate = DevOptions.simulateValues(context)
         DevOptions.prefs(context).registerOnSharedPreferenceChangeListener(devPrefListener)
-        torqueService.startTorque(context)
+        if (!torqueService.startTorque(context) && !torqueRefresher.simulate) {
+            // bindService returns false for a missing app, a missing permission and a service
+            // that refuses the caller. Only the missing package is a fact worth stating.
+            if (isTorqueInstalled(context)) {
+                torqueRefresher.reportTorqueUnavailable()
+            } else {
+                torqueRefresher.reportTorqueMissing()
+            }
+        }
         val registerWithView = { call: suspend (Flow<UserPreference>) -> Unit ->
             lifecycleScope.launch {
                 viewReady.await()
@@ -250,6 +268,8 @@ open class DashboardFragment : AlbumArt() {
                     ConnectStatus.CONNECTING_TORQUE -> R.string.status_connecting_torque
                     ConnectStatus.CONNECTING_ECU -> R.string.status_connecting_to_ecu
                     ConnectStatus.SETUP_GAUGE -> R.string.status_setup_gauges
+                    ConnectStatus.NO_TORQUE -> R.string.status_no_torque
+                    ConnectStatus.TORQUE_UNAVAILABLE -> R.string.status_torque_unavailable
                     ConnectStatus.CONNECTED -> null
                 }
             }
