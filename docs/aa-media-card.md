@@ -2,9 +2,9 @@
 
 Why the gauges are also a media app, and how that path works.
 
-See [issue #60](https://github.com/YuhiAida/aa-torque/issues/60) — the request to show
-the gauges beside Maps stays open as a product request; this media-card implementation
-route is closed.
+See [issue #60](https://github.com/YuhiAida/aa-torque/issues/60). That request is closed:
+one app cannot do it, and the two-app arrangement was rejected. This document keeps the
+record of the route.
 
 ## Status: closed after testing
 
