@@ -94,13 +94,17 @@ class TorqueRefresher {
             }
             torqueData.lastData = value
             Timber.d("Got valid $value from torque for ${torqueData.display.label}")
-            if (value != 0.0 || torqueData.hasReceivedNonZero) {
+            // Publish every successful read, including 0.0. A real zero is data: speed and
+            // throttle are zero when the car stands still. The flag stays for the alarm
+            // threshold check in TorqueData, which must ignore the values Torque reports
+            // before the ECU answers at all.
+            if (value != 0.0) {
                 torqueData.hasReceivedNonZero = true
-                handler.post {
-                    torqueData.sendNotifyUpdate()
-                }
-                conWatcher.tryEmit(ConnectStatus.CONNECTED)
             }
+            handler.post {
+                torqueData.sendNotifyUpdate()
+            }
+            conWatcher.tryEmit(ConnectStatus.CONNECTED)
         }
     }
 
