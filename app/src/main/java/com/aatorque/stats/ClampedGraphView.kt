@@ -28,9 +28,12 @@ class ClampedGraphView(context: Context, attrs: AttributeSet?) : GraphView(conte
 
     /** Pull the visible window back inside [minAllowed]..[maxAllowed]. */
     fun clamp() {
-        if (maxAllowed <= minAllowed) return
+        val dataSpan = maxAllowed - minAllowed
+        if (dataSpan <= 0.0) return
         val viewport = viewport
-        val span = viewport.getMaxX(true) - viewport.getMinX(true)
+        // A zoomed-out viewport can be wider than the readings; keep the data range as the
+        // ceiling so a gesture cannot leave the window showing empty grid.
+        val span = (viewport.getMaxX(true) - viewport.getMinX(true)).coerceAtMost(dataSpan)
         var min = viewport.getMinX(true)
         if (min < minAllowed) min = minAllowed
         if (min + span > maxAllowed) min = maxAllowed - span

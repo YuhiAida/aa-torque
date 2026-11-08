@@ -150,6 +150,9 @@ class TorqueChart : Fragment() {
             if (snapshot.isNotEmpty()) {
                 val points = snapshot.map { DataPoint(it.time.toDouble(), scale(data, it.value)) }
                 line.resetData(points.toTypedArray())
+                // The tick that follows setupItems() reads this watermark. Without it every
+                // seeded reading is appended again, out of order, and GraphView throws.
+                lastPoint[data] = snapshot.last().time
                 oldest = minOf(oldest, snapshot.first().time)
             }
 
@@ -220,12 +223,15 @@ class TorqueChart : Fragment() {
     private fun tick() {
         if (items.isEmpty()) return
         val now = System.currentTimeMillis()
+        // Decide before appending: a scrolling append moves the viewport to the series end,
+        // so a check afterwards cannot tell whether the user had dragged back. See issue #193.
+        val following = graph.viewport.getMaxX(true) >= now - 2_000
         items.forEachIndexed { index, data ->
             val binding = legendBinding.getOrNull(index) ?: return@forEachIndexed
             appendNewReadings(data, binding)
         }
         graph.maxAllowed = now.toDouble()
-        if (graph.viewport.getMaxX(true) >= now - 2_000) {
+        if (following) {
             follow(now)
         }
     }
@@ -238,7 +244,7 @@ class TorqueChart : Fragment() {
         snapshot.filter { it.time > last }.forEach { reading ->
             line.appendData(
                 DataPoint(reading.time.toDouble(), scale(data, reading.value)),
-                true,
+                false,
                 PidHistory.DEFAULT_CAPACITY
             )
         }
