@@ -36,8 +36,8 @@ CarService (CarActivityService)
                   │ LiveData
              TorqueData                      formats one value, evaluates expressions
                   ▲
-                  │ cache per gauge, 300 ms tick
-             TorqueRefresher                 ScheduledThreadPoolExecutor, ConnectStatus flow
+                  │ one batched read per 300 ms tick
+             TorqueRefresher                 single-thread executor, ConnectStatus flow
                   ▲
                   │ AIDL
              TorqueServiceWrapper (Service)  binds org.prowl.torque.remote.ITorqueService
@@ -56,9 +56,10 @@ Read it in this order:
 3. `stats/DashboardFragment.kt` — reads the selected dashboard from the preference store and
    inflates one view per gauge. It owns the gesture handling, the album-art background and
    the status bar title.
-4. `stats/TorqueRefresher.kt` — the clock of the app. A `ScheduledThreadPoolExecutor` with
-   7 threads ticks every 300 ms, asks Torque for the values of the subscribed gauges, and
-   publishes `ConnectStatus` (`CONNECTING_TORQUE`, `CONNECTING_ECU`, `CONNECTED`,
+4. `stats/TorqueRefresher.kt` — the clock of the app. A single-thread
+   `ScheduledThreadPoolExecutor` runs one dashboard task every 300 ms. The task asks Torque
+   for the values of every subscribed gauge in one call, applies them, and publishes
+   `ConnectStatus` (`CONNECTING_TORQUE`, `CONNECTING_ECU`, `CONNECTED`,
    `SETUP_GAUGE`) as a flow. It keeps a cache per dashboard so a switch does not blank the
    screen. When the developer option simulates metrics, the same tick reads
    `stats/SimulatedValue.kt` instead of Torque: every gauge sweeps between its configured

@@ -74,7 +74,8 @@ one. Rejected.
   instead of being called inline from `makeExecutors`, which used to block the caller with one
   Binder call per gauge.
 * If Torque returns fewer values than requested, the tick falls back to one call per PID for
-  that tick and logs a warning. Order is assumed to match the request, as the AIDL documents.
+  that tick and logs a warning. The values are applied in the order they come back, which is
+  assumed to match the request; the length check catches a short result but not a reorder.
 * `applyValues` keeps the rule from issue #158: every successful read is published, including
   `0.0`, and only a non-zero read arms the alarm gate.
 * A guard around the scheduled body stops an exception from cancelling the task for good.
