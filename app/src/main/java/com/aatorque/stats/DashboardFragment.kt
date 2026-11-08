@@ -280,6 +280,7 @@ open class DashboardFragment : AlbumArt() {
                     ConnectStatus.SETUP_GAUGE -> R.string.status_setup_gauges
                     ConnectStatus.NO_TORQUE -> R.string.status_no_torque
                     ConnectStatus.TORQUE_UNAVAILABLE -> R.string.status_torque_unavailable
+                    ConnectStatus.STALE -> R.string.status_ecu_lost
                     ConnectStatus.CONNECTED -> null
                 }
             }

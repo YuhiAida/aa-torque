@@ -47,4 +47,13 @@ class ConnectStatusTest {
             withTimeout(1000) { TorqueRefresher().connectStatus.first() }
         )
     }
+
+    @Test
+    fun `a lost ecu is visible as stale`() = runBlocking {
+        val refresher = TorqueRefresher()
+        refresher.reportEcuLost()
+
+        // The values stay on screen, so the state has to say they are no longer live.
+        assertEquals(ConnectStatus.STALE, withTimeout(1000) { refresher.connectStatus.first() })
+    }
 }
