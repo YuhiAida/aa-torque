@@ -30,8 +30,8 @@ class ClampedGraphView(context: Context, attrs: AttributeSet?) : GraphView(conte
     fun clamp() {
         if (maxAllowed <= minAllowed) return
         val viewport = viewport
-        val span = viewport.getMaxX(false) - viewport.getMinX(false)
-        var min = viewport.getMinX(false)
+        val span = viewport.getMaxX(true) - viewport.getMinX(true)
+        var min = viewport.getMinX(true)
         if (min < minAllowed) min = minAllowed
         if (min + span > maxAllowed) min = maxAllowed - span
         if (min < minAllowed) min = minAllowed

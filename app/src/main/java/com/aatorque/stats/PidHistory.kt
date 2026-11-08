@@ -27,6 +27,19 @@ class PidHistory(private val capacity: Int = DEFAULT_CAPACITY) {
     /** Time of the oldest reading, or null while the record is empty. */
     val oldestTime: Long? get() = if (count == 0) null else times[start]
 
+    /**
+     * A copy of the readings, oldest first, taken under the same lock as [add]. The refresh
+     * loop writes from a worker thread while the chart seeds itself on the main thread, so a
+     * reader that walked the ring directly could pair one reading's time with another's value.
+     */
+    @Synchronized
+    fun snapshot(): List<Reading> = (0 until count).map { i ->
+        Reading(times[(start + i) % capacity], values[(start + i) % capacity])
+    }
+
+    class Reading(val time: Long, val value: Double)
+
+    @Synchronized
     fun add(time: Long, value: Double) {
         if (count < capacity) {
             times[(start + count) % capacity] = time

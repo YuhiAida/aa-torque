@@ -43,6 +43,18 @@ class PidHistoryTest {
     }
 
     @Test
+    fun `snapshot copies the readings in order`() {
+        val history = PidHistory(3)
+        listOf(1.0, 2.0, 3.0, 4.0).forEachIndexed { i, v -> history.add((i + 1) * 100L, v) }
+
+        val snapshot = history.snapshot()
+
+        assertEquals(3, snapshot.size)
+        assertEquals(listOf(200L, 300L, 400L), snapshot.map { it.time })
+        assertEquals(listOf(2.0, 3.0, 4.0), snapshot.map { it.value })
+    }
+
+    @Test
     fun `an empty record has no oldest time`() {
         val history = PidHistory(2)
 
