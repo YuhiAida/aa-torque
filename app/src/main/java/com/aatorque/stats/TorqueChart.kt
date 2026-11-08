@@ -17,14 +17,12 @@ import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.aatorque.prefs.SettingsViewModel
 import com.aatorque.stats.databinding.FragmentChartBinding
 import com.google.common.collect.ImmutableList
-import com.jjoe64.graphview.DefaultLabelFormatter
+import com.jjoe64.graphview.GridLabelRenderer
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.DataPointInterface
 import com.jjoe64.graphview.series.LineGraphSeries
 import java.util.Date
 import java.util.IdentityHashMap
-import kotlin.math.absoluteValue
-import kotlin.math.roundToInt
 import kotlin.properties.Delegates
 import timber.log.Timber
 
@@ -40,6 +38,9 @@ class TorqueChart : Fragment() {
     private companion object {
         /** Visible width of the chart. Older readings are reached by dragging left. */
         const val WINDOW_MS = 60_000L
+
+        /** 15% white: enough to read the scale against any wallpaper, faint enough to ignore. */
+        const val GRID_COLOR = 0x26FFFFFF
     }
 
     // Keyed by the gauge instance on purpose: each gauge owns one series, and setupItems()
@@ -75,23 +76,13 @@ class TorqueChart : Fragment() {
         graph.legendRenderer.width = graph.width
         graph.viewport.isScalable = true
         graph.viewport.isScrollable = true
-        graph.gridLabelRenderer.labelFormatter = object : DefaultLabelFormatter() {
-            override fun formatLabel(value: Double, isValueX: Boolean): String {
-                if (isValueX) {
-                    val diff = (value * 0.001) - (startDate * 0.001)
-                    val minutes = diff.div(60).toInt().absoluteValue
-                    val seconds = (diff % 60).absoluteValue.roundToInt()
-                    return "%s%02d:%02d".format(if (diff < 0) "-" else "", minutes, seconds)
-                }
-                return super.formatLabel(value, false)
-            }
-        }
-        graph.gridLabelRenderer.numHorizontalLabels = 8
+        graph.gridLabelRenderer.numHorizontalLabels = 5
         graph.gridLabelRenderer.numVerticalLabels = 7
-        graph.gridLabelRenderer.gridColor = Color.TRANSPARENT
-        graph.gridLabelRenderer.horizontalLabelsColor = Color.WHITE
-        graph.gridLabelRenderer.verticalLabelsColor = Color.WHITE
-        graph.gridLabelRenderer.isHorizontalLabelsVisible = true
+        // A grid instead of time labels: the labels had to be squeezed into the pane width and
+        // ran into each other, and a driver reads the shape of the trace, not the second.
+        graph.gridLabelRenderer.gridColor = GRID_COLOR
+        graph.gridLabelRenderer.gridStyle = GridLabelRenderer.GridStyle.BOTH
+        graph.gridLabelRenderer.isHorizontalLabelsVisible = false
         graph.gridLabelRenderer.isVerticalLabelsVisible = false
 
         view.viewTreeObserver.addOnGlobalLayoutListener(object :
@@ -106,6 +97,12 @@ class TorqueChart : Fragment() {
                 if (canvasWidth != previousCanvasWidth || canvasHeight != previousCanvasHeight) {
                     previousCanvasHeight = canvasHeight
                     previousCanvasWidth = canvasWidth
+                    // Eight fixed labels do not fit every width: on a narrow pane the last two
+                    // were drawn on top of each other and the axis read "00:0100:03". The count
+                    // follows the measured width instead.
+                    val perLabel = 60f * resources.displayMetrics.density
+                    graph.gridLabelRenderer.numHorizontalLabels =
+                        (canvasWidth / perLabel).toInt().coerceIn(2, 8)
                 }
             }
         })
