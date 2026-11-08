@@ -38,6 +38,11 @@ class TorqueChart : Fragment() {
         var icon = MutableLiveData<Int>()
     }
 
+    private companion object {
+        /** Visible width of the chart. Older readings are reached by dragging left. */
+        const val WINDOW_MS = 60_000L
+    }
+
     // Keyed by the gauge instance on purpose: each gauge owns one series, and setupItems()
     // rebuilds both together. A recreated TorqueData must get a new series, never reuse one, so
     // identity is the correct semantics and IdentityHashMap says so out loud. See issue #24.
@@ -173,13 +178,22 @@ class TorqueChart : Fragment() {
             }
         binding.legendData = LegendAdapter(settingsViewModel, ImmutableList.copyOf(legendBinding))
         val now = Date().time
-        // The x axis is labelled relative to the oldest point, so the history starts at 00:00
-        // instead of the labels running backwards past the moment the chart opened.
+        // Labels count from the oldest reading, so the axis shows elapsed time rather than
+        // running backwards past the moment the chart opened.
         startDate = torqueData.mapNotNull { it.history.oldestTime }.minOrNull() ?: now
-        graph.viewport.setMinX(startDate.toDouble())
-        graph.viewport.setMaxX(now.toDouble())
         graph.viewport.setMaxY(100.0)
         graph.viewport.setMinY(0.0)
+        // Manual bounds, or a drag is clamped to the data GraphView can see and the older
+        // readings cannot be reached. The window ends at the newest point and follows it
+        // until the user drags back.
+        graph.viewport.setXAxisBoundsManual(true)
+        showWindow(now)
+    }
+
+    /** Put the last [WINDOW_MS] of data on screen, ending at [now]. */
+    private fun showWindow(now: Long) {
+        graph.viewport.setMinX((now - WINDOW_MS).toDouble())
+        graph.viewport.setMaxX(now.toDouble())
     }
 
     fun notifyUpdate(data: TorqueData, binding: LegendBinding) {
@@ -192,6 +206,11 @@ class TorqueChart : Fragment() {
         val now = Date()
         val point = DataPoint(now, scale(data, data.lastData))
         line.appendData(point, true, PidHistory.DEFAULT_CAPACITY)
+        // Follow the newest reading only while the view is parked at the right edge. A user
+        // who dragged back through the history stays where they are.
+        if (graph.viewport.getMaxX(false) >= now.time - 2_000) {
+            showWindow(now.time)
+        }
         // Zero is a reading, not a missing value: show it. The series and the label follow
         // the same rule, or the chart plots a point its legend hides. See issue #158.
         binding.value.value = "${data.lastDataStr}${data.display.unit}"
