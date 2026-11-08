@@ -307,13 +307,20 @@ class SettingsActivity :
             if (!file.isFile) return@forEach
             file.copyTo(File(staged, file.name), overwrite = true)
         }
-        // Replace the old copy only after the new one is complete.
-        if (target.exists() && !target.deleteRecursively()) {
-            throw IOException("Could not clear $IMPORT_BACKUP_DIR")
+        // Swap in the new copy only after it is complete, and keep the old one until then.
+        val previous = File(filesDir, "$IMPORT_BACKUP_DIR.old")
+        if (target.exists()) {
+            previous.deleteRecursively()
+            if (!target.renameTo(previous)) {
+                throw IOException("Could not set aside $IMPORT_BACKUP_DIR")
+            }
         }
         if (!staged.renameTo(target)) {
+            // Put the previous copy back rather than leave no backup at all.
+            previous.renameTo(target)
             throw IOException("Could not replace $IMPORT_BACKUP_DIR")
         }
+        previous.deleteRecursively()
     }
 
     class ExportFileContract : ActivityResultContract<String, Uri?>() {
