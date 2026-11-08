@@ -18,7 +18,6 @@ import com.aatorque.prefs.SettingsViewModel
 import com.aatorque.stats.databinding.FragmentChartBinding
 import com.google.common.collect.ImmutableList
 import com.jjoe64.graphview.DefaultLabelFormatter
-import com.jjoe64.graphview.GraphView
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.DataPointInterface
 import com.jjoe64.graphview.series.LineGraphSeries
@@ -47,7 +46,7 @@ class TorqueChart : Fragment() {
     // rebuilds both together. A recreated TorqueData must get a new series, never reuse one, so
     // identity is the correct semantics and IdentityHashMap says so out loud. See issue #24.
     private val series = IdentityHashMap<TorqueData, LineGraphSeries<DataPointInterface>>()
-    private lateinit var graph: GraphView
+    private lateinit var graph: ClampedGraphView
     private lateinit var binding: FragmentChartBinding
     private var startDate by Delegates.notNull<Long>()
     lateinit var legendBinding: List<LegendBinding>
@@ -187,12 +186,19 @@ class TorqueChart : Fragment() {
         // readings cannot be reached. The window ends at the newest point and follows it
         // until the user drags back.
         graph.viewport.setXAxisBoundsManual(true)
+        graph.minAllowed = startDate.toDouble()
+        graph.maxAllowed = now.toDouble()
         showWindow(now)
     }
 
-    /** Put the last [WINDOW_MS] of data on screen, ending at [now]. */
+    /**
+     * Put the last [WINDOW_MS] of data on screen, ending at [now]. The window never starts
+     * before the oldest reading: a session younger than the window would otherwise show empty
+     * grid on the left and negative time labels.
+     */
     private fun showWindow(now: Long) {
-        graph.viewport.setMinX((now - WINDOW_MS).toDouble())
+        val from = maxOf(now - WINDOW_MS, graph.minAllowed.toLong())
+        graph.viewport.setMinX(from.toDouble())
         graph.viewport.setMaxX(now.toDouble())
     }
 
@@ -208,6 +214,7 @@ class TorqueChart : Fragment() {
         line.appendData(point, true, PidHistory.DEFAULT_CAPACITY)
         // Follow the newest reading only while the view is parked at the right edge. A user
         // who dragged back through the history stays where they are.
+        graph.maxAllowed = now.time.toDouble()
         if (graph.viewport.getMaxX(false) >= now.time - 2_000) {
             showWindow(now.time)
         }
