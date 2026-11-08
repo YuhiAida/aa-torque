@@ -27,6 +27,7 @@ jobs:
       code: ${{ steps.diff.outputs.code }}
       themes: ${{ steps.diff.outputs.themes }}
       docs: ${{ steps.diff.outputs.docs }}
+      locales: ${{ steps.diff.outputs.locales }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -43,6 +44,7 @@ jobs:
             code=false
             themes=false
             docs=false
+            locales=false
           else
             # Prose only (LICENSE, markdown, docs/) must not mint a version; the old
             # paths-ignore guaranteed that for the release job.
@@ -61,10 +63,16 @@ jobs:
             else
               docs=false
             fi
+            if echo "$changed" | grep -qE '^app/src/main/res/values[^/]*/strings\.xml|^tools/check_locales\.py|^tools/locale_baseline\.txt|^\.github/workflows/ci\.yml'; then
+              locales=true
+            else
+              locales=false
+            fi
           fi
           echo "code=$code" >> "$GITHUB_OUTPUT"
           echo "themes=$themes" >> "$GITHUB_OUTPUT"
           echo "docs=$docs" >> "$GITHUB_OUTPUT"
+          echo "locales=$locales" >> "$GITHUB_OUTPUT"
 
       - name: Guard against stray version bumps
         if: github.event_name == 'pull_request'
@@ -192,6 +200,20 @@ jobs:
       - name: No docs changes
         if: needs.changes.outputs.docs != 'true'
         run: echo "No markdown changes; skipping the reference check."
+
+  locales:
+    needs: changes
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check translation coverage
+        if: needs.changes.outputs.locales == 'true'
+        run: python3 tools/check_locales.py
+
+      - name: No string changes
+        if: needs.changes.outputs.locales != 'true'
+        run: echo "No string changes; skipping the locale check."
 
   pr_artifact:
     needs: changes

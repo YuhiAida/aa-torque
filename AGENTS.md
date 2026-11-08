@@ -60,11 +60,12 @@ CI is the required gate. It runs on every pull request and on pushes to `master`
 
 1. Work on a branch, push it, and open a pull request. A branch push alone starts no checks.
 2. Read the run: `gh run list -R YuhiAida/aa-torque -L 5`
-3. Four checks must pass, each its own job:
+3. Five checks must pass, each its own job:
    - `lint` — `./gradlew ktlintCheck` and `./gradlew lintRelease`
    - `render` — `./gradlew verifyRoborazziDebug`: the JVM tests and the theme goldens
    - `themes` — `tools/check_themes.py` when theme resources changed
    - `docs` — `tools/check_docs.py` when markdown changed
+   - `locales` — `tools/check_locales.py` when a `strings.xml` changed
 4. Do not merge. Open a **draft** pull request and stop. Yuhi merges.
 
 A local build is optional. This machine has no Android SDK installed. The setup steps are
@@ -83,6 +84,11 @@ commit it with the theme change. Never hand-edit a golden.
 Markdown is checked by `tools/check_docs.py`, which runs in the `docs` job whenever a `.md` file
 or anything under `docs/` changes. It verifies that every relative link and every repository path
 written in backticks resolves. Run it before pushing a doc change.
+
+Translations are checked by `tools/check_locales.py`, which runs in the `locales` job whenever
+a `strings.xml` changes. Each locale has a budget of missing keys in
+`tools/locale_baseline.txt`; the check fails when a locale misses more than its budget, so the
+gap cannot grow. Translate the keys and lower the number in the same change.
 
 Themes are checked by `tools/check_themes.py`, which runs in the `themes` job whenever theme
 resources change. It verifies that `Themes`, `ThemesThumbs` and `ThemeList` agree by index,
