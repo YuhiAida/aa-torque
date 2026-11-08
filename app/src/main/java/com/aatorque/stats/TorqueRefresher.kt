@@ -26,7 +26,13 @@ enum class ConnectStatus {
      * The bind failed while Torque Pro may still be installed: no permission to bind, or a
      * service that refuses the caller. Say only that the connection failed. See issue #160.
      */
-    TORQUE_UNAVAILABLE
+    TORQUE_UNAVAILABLE,
+
+    /**
+     * Torque Pro still answers but the ECU does not. The last values stay on screen, marked
+     * as no longer live, instead of passing for a live reading. See issue #161.
+     */
+    STALE
 }
 
 class TorqueRefresher {
@@ -112,6 +118,28 @@ class TorqueRefresher {
     }
 
     /**
+     * Torque answered but the ECU did not. The dashboard keeps its last values, so it has to
+     * say that they are not live. See issue #161.
+     */
+    fun reportEcuLost() {
+        conWatcher.tryEmit(ConnectStatus.STALE)
+    }
+
+    /**
+     * True when Torque still sees the ECU. A thrown call counts as present: the read that
+     * follows reports its own failure, and a wrong "ECU lost" banner is worse than none.
+     */
+    private fun ecuPresent(service: TorqueService): Boolean {
+        val ts = service.torqueService ?: return false
+        return try {
+            ts.isConnectedToECU()
+        } catch (e: Exception) {
+            Timber.e(e, "Torque failed the ECU state check")
+            true
+        }
+    }
+
+    /**
      * One dashboard read: every gauge PID in a single call, then one main-thread post so all
      * the needles move on the same frame. Public so the JVM test can drive it without a
      * scheduler.
@@ -131,6 +159,12 @@ class TorqueRefresher {
             return
         }
         service.runIfConnected { ts ->
+            // Ask before the read: Torque answers from its own cache after the adapter is
+            // gone, so a read alone cannot tell live data from the last frame. See issue #161.
+            if (!ecuPresent(service)) {
+                reportEcuLost()
+                return@runIfConnected
+            }
             val values = try {
                 ts.getPIDValuesAsDouble(pids.toTypedArray())
             } catch (e: Exception) {
@@ -170,6 +204,10 @@ class TorqueRefresher {
             return
         }
         service.runIfConnected { ts ->
+            if (!ecuPresent(service)) {
+                reportEcuLost()
+                return@runIfConnected
+            }
             val value = try {
                 ts.getPIDValuesAsDouble(arrayOf(torqueData.pid!!))[0]
             } catch (e: ArrayIndexOutOfBoundsException) {
