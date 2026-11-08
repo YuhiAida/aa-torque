@@ -9,8 +9,8 @@ keys than its budget allows.
 A key added to the base file after the baseline was taken is not charged to any
 locale, so adding a string does not fail every other pull request. The baseline
 records the base key count in its ``base-keys`` line, and that count raises the
-allowance. Translate a new key or leave it in English; either way the numbers in
-the file do not have to be edited, so two pull requests cannot conflict there.
+allowance. A new key needs no edit to the numbers in that file, so two pull
+requests cannot conflict there.
 
 Filling keys never fails: a locale may sit below its budget until the budget is
 lowered. Lower the number in the same change that adds the translations, so the
@@ -63,16 +63,22 @@ def read_keys(path: pathlib.Path) -> tuple[set[str], set[str]]:
 def read_baseline() -> tuple[dict[str, int], int]:
     """Return (locale budgets, the base key count the budgets were measured against)."""
     budgets: dict[str, int] = {}
-    base_keys = 0
+    base_keys: int | None = None
     for line in BASELINE.read_text(encoding="utf-8").splitlines():
         line = line.split("#", 1)[0].strip()
         if not line:
             continue
         if line.startswith("base-keys"):
+            # A missing line used to read as zero, which raised every budget by the whole
+            # base key count and let the gate pass. One line, always.
+            if base_keys is not None:
+                raise SystemExit("tools/locale_baseline.txt has more than one base-keys line")
             base_keys = int(line.split()[1])
             continue
         locale, _, budget = line.partition(" ")
         budgets[locale] = int(budget)
+    if base_keys is None:
+        raise SystemExit("tools/locale_baseline.txt has no base-keys line")
     return budgets, base_keys
 
 
