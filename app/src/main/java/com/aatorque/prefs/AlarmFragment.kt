@@ -99,35 +99,54 @@ data class FormData(
     }
 }
 
+/**
+ * The order of the rules is their precedence: the first rule that matches supplies the
+ * colour. Every path that adds a rule re-sorts with this comparator so the order stays
+ * canonical.
+ */
+private val RULE_ORDER = compareBy<FormData>(
+    {
+        when (it.operation) {
+            Operation.EQ -> 0
+            Operation.GT, Operation.GTE -> 1
+            Operation.LTE, Operation.LT -> 2
+            Operation.UNRECOGNIZED -> 3
+        }
+    },
+    {
+        when (it.operation) {
+            Operation.GT, Operation.GTE -> -it.value
+            else -> it.value
+        }
+    }
+)
+
 class StateModel : ViewModel() {
 
     val uiState = mutableStateListOf<FormData>()
+
     fun prependItem(it: FormData) {
         uiState.add(it)
-        uiState.sortWith(
-            compareBy({
-                when (it.operation) {
-                    Operation.EQ -> 0
-                    Operation.GT, Operation.GTE -> 1
-                    Operation.LTE, Operation.LT -> 2
-                    Operation.UNRECOGNIZED -> 3
-                }
-            }, {
-                when (it.operation) {
-                    Operation.GT, Operation.GTE -> -it.value
-                    else -> it.value
-                }
-            })
-        )
+        sortRules()
     }
 
     fun delete(current: FormData) {
         uiState.remove(current)
     }
 
-    /** Put a deleted rule back where it was. See issue #169. */
-    fun restore(index: Int, current: FormData) {
-        uiState.add(index.coerceIn(0, uiState.size), current)
+    /**
+     * Put a deleted rule back. The rule is re-sorted into the list rather than dropped at a
+     * remembered index: another delete or edit while the undo bar is up moves every index,
+     * and a rule restored into the wrong place changes which threshold wins. See issue #169.
+     */
+    fun restore(current: FormData) {
+        if (uiState.contains(current)) return
+        uiState.add(current)
+        sortRules()
+    }
+
+    private fun sortRules() {
+        uiState.sortWith(RULE_ORDER)
     }
 }
 
@@ -444,8 +463,7 @@ fun VerticalReorderList(model: StateModel = viewModel()) {
 
                     trailingContent = {
                         Button(onClick = {
-                            val position = model.uiState.indexOf(current)
-                            if (position >= 0) {
+                            if (model.uiState.contains(current)) {
                                 model.delete(current)
                                 scope.launch {
                                     val result = snackbarHostState.showSnackbar(
@@ -454,7 +472,7 @@ fun VerticalReorderList(model: StateModel = viewModel()) {
                                         duration = SnackbarDuration.Long
                                     )
                                     if (result == SnackbarResult.ActionPerformed) {
-                                        model.restore(position, current)
+                                        model.restore(current)
                                     }
                                 }
                             }
