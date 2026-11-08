@@ -14,3 +14,6 @@ dist/
 
 # agent worktrees, one per branch, removed after the pull request merges
 .worktrees/
+
+# Python bytecode from the tools/ scripts
+__pycache__/
