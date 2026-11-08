@@ -234,24 +234,35 @@ class SettingsActivity :
             } catch (e: IOException) {
                 Timber.w(e, "Could not read settings file for import")
                 null
+            } catch (e: SecurityException) {
+                // The picker grant can be gone by the time the read runs.
+                Timber.w(e, "No permission to read settings file for import")
+                null
             }
         }
 
     /**
-     * Replace the whole store, after keeping a copy of what was there. The copy goes to the
-     * app cache, so an accidental import can still be undone by hand.
+     * Replace the whole store, after keeping a copy of what was there.
+     *
+     * The copy goes to the app files directory, not the cache, so clearing the cache cannot
+     * take it. Images are copied first and the store second: a failure leaves the settings
+     * untouched instead of half replaced. Everything runs under [BackgroundStore.filesLock]
+     * because the dashboard settings sweep deletes background files no setting names, and
+     * that sweep would otherwise eat the images the copy refers to. See issue #168.
      */
     private suspend fun replaceSettings(imported: UserPreference) {
         val result = withContext(Dispatchers.IO) {
             try {
-                val current = applicationContext.dataStore.data.first()
-                File(cacheDir, IMPORT_BACKUP_FILE).outputStream().use { stream ->
-                    UserPreferenceSerializer.writeTo(current, stream)
-                }
-                // The dashboard settings delete background files no reference names. Take the
-                // same lock so these references are stored before that read.
                 BackgroundStore.filesLock.withLock {
-                    applicationContext.dataStore.updateData { imported }
+                    copyBackgroundsToBackup()
+                    // The transform gets the settings that are still live, and a throw here
+                    // aborts the whole write, so a failed copy never replaces anything.
+                    applicationContext.dataStore.updateData { current ->
+                        File(filesDir, IMPORT_BACKUP_FILE).outputStream().use { stream ->
+                            UserPreferenceSerializer.writeTo(current, stream)
+                        }
+                        imported
+                    }
                 }
                 R.string.import_complete
             } catch (e: IOException) {
@@ -260,6 +271,17 @@ class SettingsActivity :
             }
         }
         Toast.makeText(baseContext, result, Toast.LENGTH_SHORT).show()
+    }
+
+    /** Keep the background images and their thumbnails with the settings copy. */
+    private fun copyBackgroundsToBackup() {
+        val target = File(filesDir, IMPORT_BACKUP_DIR)
+        target.deleteRecursively()
+        target.mkdirs()
+        BackgroundStore.dir(this).listFiles()?.forEach { file ->
+            if (!file.isFile) return@forEach
+            file.copyTo(File(target, file.name), overwrite = true)
+        }
     }
 
     class ExportFileContract : ActivityResultContract<String, Uri?>() {
@@ -471,5 +493,6 @@ class SettingsActivity :
 
         /** Where the store is copied before an import replaces it. */
         private const val IMPORT_BACKUP_FILE = "settings-before-import.pb"
+        private const val IMPORT_BACKUP_DIR = "settings-before-import-backgrounds"
     }
 }
