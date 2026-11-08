@@ -3,6 +3,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import com.aatorque.datastore.Display
+import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,17 +35,29 @@ class TorqueRefresher {
     /** True while the developer option simulates values instead of reading Torque. */
     var simulate = false
 
-    private val executor = ScheduledThreadPoolExecutor(7)
+    private val executor = ScheduledThreadPoolExecutor(1)
     val handler = Handler(Looper.getMainLooper())
     private var conWatcher = MutableStateFlow(ConnectStatus.CONNECTING_TORQUE)
     val connectStatus = conWatcher.asSharedFlow()
     val cache = mutableMapOf<Int, HashMap<Int, TorqueData>>()
+    private var refreshTimer: ScheduledFuture<*>? = null
 
     companion object {
+        /**
+         * How often the dashboard reads Torque. Torque returns the value its own adapter loop
+         * already fetched, so this sets how fresh the screen is, not the OBD load.
+         */
         const val REFRESH_INTERVAL = 300L
+
+        /**
+         * How long a needle takes to reach a new value. Deliberately shorter than
+         * [REFRESH_INTERVAL]: the needle lands, holds, then moves again. An animation that
+         * lasts the whole interval never finishes, so the needle creeps until the next sample.
+         */
+        const val NEEDLE_ANIM_MS = 200L
     }
 
-    fun populateQuery(pos: Int, screen: Int, query: Display): TorqueData {
+    fun populateQuery(pos: Int, screen: Int, query: Display): TorqueData = synchronized(data) {
         data[pos]?.stopRefreshing(true)
         val cacheItem = cache[screen]?.get(pos)
         val torqueData = if (cacheItem?.display?.equals(query) == true) {
@@ -57,31 +70,27 @@ class TorqueRefresher {
         }[pos] = torqueData
         data[pos] = torqueData
         Timber.i("Setting query: $query for pos $pos on screen $screen")
-        return torqueData
+        torqueData
     }
 
     suspend fun makeExecutors(service: TorqueService) {
-        var foundValid = false
-        data.values.forEachIndexed { index, torqueData ->
-            val refreshOffset = (REFRESH_INTERVAL / data.size) * index
-            if (torqueData.pid != null) {
-                foundValid = true
-                if (torqueData.refreshTimer == null) {
-                    Timber.i("Scheduled item in position $index with $refreshOffset delay")
-                    doRefresh(service, torqueData)
-                    torqueData.refreshTimer = executor.scheduleWithFixedDelay({
-                        try {
-                            doRefresh(service, torqueData)
-                        } catch (e: Exception) {
-                            Timber.e("Refresh failed in pos $index", e)
-                        }
-                    }, refreshOffset, REFRESH_INTERVAL, TimeUnit.MILLISECONDS)
+        val targets = activeTargets()
+        if (targets.isEmpty()) {
+            stopRefreshTimer()
+        } else if (refreshTimer == null) {
+            // One task for the whole dashboard: every gauge is read and applied in the same
+            // tick, so they share a phase and move on the same frame.
+            Timber.i("Scheduling the dashboard refresh for ${targets.size} items")
+            refreshTimer = executor.scheduleWithFixedDelay({
+                try {
+                    refreshDashboard(service)
+                } catch (e: Exception) {
+                    Timber.e("Dashboard refresh failed", e)
                 }
-            } else {
-                Timber.i("No reason to schedule item in position $index")
-            }
+            }, 0L, REFRESH_INTERVAL, TimeUnit.MILLISECONDS)
         }
-        conWatcher.emit(if (foundValid) conWatcher.value else ConnectStatus.SETUP_GAUGE)
+        val status = if (targets.isNotEmpty()) conWatcher.value else ConnectStatus.SETUP_GAUGE
+        conWatcher.emit(status)
         service.addConnectCallback {
             if (conWatcher.value == ConnectStatus.CONNECTING_TORQUE) {
                 conWatcher.tryEmit(ConnectStatus.CONNECTING_ECU)
@@ -102,6 +111,59 @@ class TorqueRefresher {
         conWatcher.tryEmit(ConnectStatus.TORQUE_UNAVAILABLE)
     }
 
+    /**
+     * One dashboard read: every gauge PID in a single call, then one main-thread post so all
+     * the needles move on the same frame. Public so the JVM test can drive it without a
+     * scheduler.
+     */
+    fun refreshDashboard(service: TorqueService) {
+        val targets = activeTargets()
+        if (targets.isEmpty()) {
+            return
+        }
+        if (simulate) {
+            targets.forEach { doSimulatedRefresh(it) }
+            return
+        }
+        val pids = targets.mapNotNull { it.pid }
+        if (pids.size != targets.size) {
+            targets.forEach { doRefresh(service, it) }
+            return
+        }
+        service.runIfConnected { ts ->
+            val values = try {
+                ts.getPIDValuesAsDouble(pids.toTypedArray())
+            } catch (e: Exception) {
+                Timber.e(e, "Torque failed the batched dashboard refresh")
+                null
+            }
+            if (values == null || values.size != targets.size) {
+                Timber.w("Torque returned ${values?.size ?: 0} values for ${pids.size} PIDs")
+                targets.forEach { doRefresh(service, it) }
+                return@runIfConnected
+            }
+            applyValues(targets, values)
+            handler.post {
+                targets.forEach { it.sendNotifyUpdate() }
+            }
+            conWatcher.tryEmit(ConnectStatus.CONNECTED)
+        }
+    }
+
+    /**
+     * Put a batched Torque result on its targets, in request order. Every successful read is
+     * published, including 0.0; only a non-zero read arms the alarm gate. See issue #158.
+     */
+    fun applyValues(targets: List<TorqueData>, values: DoubleArray) {
+        targets.forEachIndexed { index, torqueData ->
+            val value = values.getOrNull(index) ?: return@forEachIndexed
+            torqueData.lastData = value
+            if (value != 0.0) {
+                torqueData.hasReceivedNonZero = true
+            }
+        }
+    }
+
     fun doRefresh(service: TorqueService, torqueData: TorqueData) {
         if (simulate) {
             doSimulatedRefresh(torqueData)
@@ -116,10 +178,9 @@ class TorqueRefresher {
             }
             torqueData.lastData = value
             Timber.d("Got valid $value from torque for ${torqueData.display.label}")
-            // Publish every successful read, including 0.0. A real zero is data: speed and
-            // throttle are zero when the car stands still. The flag stays for the alarm
-            // threshold check in TorqueData, which must ignore the values Torque reports
-            // before the ECU answers at all.
+            // A real zero is data: speed and throttle are zero when the car stands still. The
+            // flag stays for the alarm threshold check in TorqueData, which must ignore the
+            // values Torque reports before the ECU answers at all.
             if (value != 0.0) {
                 torqueData.hasReceivedNonZero = true
             }
@@ -130,11 +191,18 @@ class TorqueRefresher {
         }
     }
 
+    private fun activeTargets(): List<TorqueData> =
+        synchronized(data) { data.values.filter { it.pid != null } }
+
     fun stopExecutors() {
         Timber.i("Telling Torque refreshers to stop")
-        for (td in data.values) {
-            td.stopRefreshing()
-        }
+        stopRefreshTimer()
+        synchronized(data) { data.values.toList() }.forEach { it.stopRefreshing() }
+    }
+
+    private fun stopRefreshTimer() {
+        refreshTimer?.cancel(false)
+        refreshTimer = null
     }
 
     private fun doSimulatedRefresh(torqueData: TorqueData) {

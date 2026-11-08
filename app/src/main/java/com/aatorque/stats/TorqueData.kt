@@ -9,7 +9,6 @@ import com.aatorque.datastore.Operation
 import com.ezylang.evalex.BaseException
 import com.ezylang.evalex.Expression
 import com.ezylang.evalex.data.EvaluationValue
-import java.util.concurrent.ScheduledFuture
 import timber.log.Timber
 
 class TorqueData(var display: Display) {
@@ -46,7 +45,6 @@ class TorqueData(var display: Display) {
     var maxValue: Double = Double.NEGATIVE_INFINITY
     private var expression: Expression? = null
     var lastDataStr: String = "-"
-    var refreshTimer: ScheduledFuture<*>? = null
     var hasReceivedNonZero = false
     var currentAlarm = MutableLiveData<Coloring?>()
 
@@ -169,8 +167,6 @@ class TorqueData(var display: Display) {
     }
 
     fun stopRefreshing(isDestroying: Boolean = false) {
-        refreshTimer?.cancel(true)
-        refreshTimer = null
         if (isDestroying) {
             notifyUpdate = null
         }
