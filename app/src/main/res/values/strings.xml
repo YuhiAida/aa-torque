@@ -227,4 +227,6 @@
     <string name="pref_gauges">Gauges</string>
     <string name="pref_displays">Displays</string>
     <string name="not_set">Not set</string>
+    <string name="chart_live" translatable="false">Live</string>
+    <string name="chart_toggle" translatable="false">Chart</string>
 </resources>

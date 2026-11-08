@@ -36,5 +36,19 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"/>
+        <!-- Shown only while the window is parked in the history: brings it back to now. -->
+        <ImageButton
+            android:id="@+id/liveBtn"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_margin="8dp"
+            android:background="#59000000"
+            android:contentDescription="@string/chart_live"
+            android:padding="10dp"
+            android:src="@drawable/arrow_forward"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

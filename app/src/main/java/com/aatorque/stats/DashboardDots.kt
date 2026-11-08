@@ -19,6 +19,19 @@ import android.view.View
  */
 class DashboardDots(context: Context, attrs: AttributeSet?) : View(context, attrs) {
 
+    /** Tapping the row toggles the chart, which is what the chevron points at. */
+    var onChartToggle: (() -> Unit)? = null
+
+    init {
+        isClickable = true
+        contentDescription = context.getString(R.string.chart_toggle)
+    }
+
+    override fun performClick(): Boolean {
+        onChartToggle?.invoke()
+        return super.performClick()
+    }
+
     var count = 0
         set(value) {
             field = value

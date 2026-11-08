@@ -134,25 +134,12 @@
             <com.aatorque.stats.DashboardDots
                 android:id="@+id/dashboardDots"
                 android:layout_width="0dp"
-                android:layout_height="18dp"
+                android:layout_height="32dp"
                 android:layout_marginTop="2dp"
                 android:visibility="@{showDots ? View.VISIBLE : View.GONE}"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/textTitle" />
-
-            <ImageButton
-                android:id="@+id/chartBtn"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_marginStart="15dp"
-                android:src="@drawable/chart"
-                android:background="@android:color/transparent"
-                android:scaleType="centerCrop"
-                app:layout_constraintBottom_toBottomOf="@+id/textTitle"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="@+id/textTitle"
-                app:layout_constraintDimensionRatio="1:1" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
