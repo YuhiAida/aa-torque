@@ -640,10 +640,17 @@ open class DashboardFragment : AlbumArt() {
             if (ev.action == MotionEvent.ACTION_SCROLL &&
                 !ev.isFromSource(InputDeviceCompat.SOURCE_TOUCHSCREEN)
             ) {
-                val delta = ev.getAxisValue(MotionEvent.AXIS_VSCROLL)
+                // A wheel reports AXIS_VSCROLL. A rotary encoder reports AXIS_SCROLL,
+                // which no older wheel sets, so try it only when the vertical axis is empty.
+                val vertical = ev.getAxisValue(MotionEvent.AXIS_VSCROLL)
+                val delta = if (vertical != 0f) {
+                    vertical
+                } else {
+                    ev.getAxisValue(MotionEvent.AXIS_SCROLL)
+                }
                 if (delta == 0f) {
-                    // A scroll with no vertical axis is not a turn. Without this guard the
-                    // screen would step backwards on a click.
+                    // A scroll with no axis is not a turn. Without this guard the screen
+                    // would step backwards on a click.
                     false
                 } else {
                     setScreen(if (delta < 0) 1 else -1)
