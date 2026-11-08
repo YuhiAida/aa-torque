@@ -132,6 +132,18 @@ class TorqueChart : Fragment() {
             graph.addSeries(line)
             series[data] = line
 
+            // Seed from the readings the gauge kept while the chart was closed, so a swipe
+            // down shows the recent past instead of an empty grid. See issue #193.
+            val history = data.history
+            if (history.size > 0) {
+                val points = ArrayList<DataPointInterface>(history.size)
+                for (i in 0 until history.size) {
+                    val time = history.timeAt(i).toDouble()
+                    points.add(DataPoint(time, scale(data, history.valueAt(i))))
+                }
+                line.resetData(points.toTypedArray())
+            }
+
             val iconRes = try {
                 resources.getIdentifier(
                     data.getDrawableName(),
@@ -160,7 +172,12 @@ class TorqueChart : Fragment() {
                 gapStrategy = StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS
             }
         binding.legendData = LegendAdapter(settingsViewModel, ImmutableList.copyOf(legendBinding))
-        graph.viewport.setMinX(Date().time - 22_000.0)
+        val now = Date().time
+        // The x axis is labelled relative to the oldest point, so the history starts at 00:00
+        // instead of the labels running backwards past the moment the chart opened.
+        startDate = torqueData.mapNotNull { it.history.oldestTime }.minOrNull() ?: now
+        graph.viewport.setMinX(startDate.toDouble())
+        graph.viewport.setMaxX(now.toDouble())
         graph.viewport.setMaxY(100.0)
         graph.viewport.setMinY(0.0)
     }
@@ -173,14 +190,21 @@ class TorqueChart : Fragment() {
             return
         }
         val now = Date()
-        // A zero range (user set min == max, or a PID the car never answers) would scale to
-        // NaN or Infinity and empty the series. TorqueGauge.setMinMax() already bumps an equal
-        // max, so 0 is the only value this chart can receive. See issue #23.
-        val range = (data.display.maxValue - data.display.minValue).toDouble()
-        val scaled = if (range == 0.0) 0.0 else (data.lastData / range) * 100.0
-        line.appendData(DataPoint(now, scaled), true, 100)
+        val point = DataPoint(now, scale(data, data.lastData))
+        line.appendData(point, true, PidHistory.DEFAULT_CAPACITY)
         // Zero is a reading, not a missing value: show it. The series and the label follow
         // the same rule, or the chart plots a point its legend hides. See issue #158.
         binding.value.value = "${data.lastDataStr}${data.display.unit}"
+    }
+
+    /**
+     * The series is plotted as a percentage of the gauge range, which the user can change in
+     * settings, so the conversion happens when a point is plotted rather than when it is read.
+     * A zero range (min == max, or a PID the car never answers) would scale to NaN or
+     * Infinity; TorqueGauge.setMinMax() already bumps an equal max, so 0 is the only case.
+     */
+    private fun scale(data: TorqueData, value: Double): Double {
+        val range = (data.display.maxValue - data.display.minValue).toDouble()
+        return if (range == 0.0) 0.0 else (value / range) * 100.0
     }
 }

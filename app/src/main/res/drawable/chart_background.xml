@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Contrast panel behind the chart. The dashboard can carry a photo or a bright wallpaper, and
+  white lines and labels disappear on it. 65% black keeps the lines readable without hiding
+  the background completely.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#CC000000" />
+    <corners android:radius="12dp" />
+</shape>
