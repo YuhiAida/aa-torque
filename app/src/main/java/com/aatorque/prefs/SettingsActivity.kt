@@ -245,10 +245,12 @@ class SettingsActivity :
      * Replace the whole store, after keeping a copy of what was there.
      *
      * The copy goes to the app files directory, not the cache, so clearing the cache cannot
-     * take it. Images are copied first and the store second: a failure leaves the settings
-     * untouched instead of half replaced. Everything runs under [BackgroundStore.filesLock]
-     * because the dashboard settings sweep deletes background files no setting names, and
-     * that sweep would otherwise eat the images the copy refers to. See issue #168.
+     * take it. Each copy is staged and swapped in only when complete, so a failed import leaves
+     * the previous copy usable. Images are copied first and the store second: a failure leaves
+     * the settings untouched instead of half replaced. Everything runs under
+     * [BackgroundStore.filesLock] because the dashboard settings sweep deletes background files
+     * no setting names, and that sweep would otherwise eat the images the copy refers to. See
+     * issue #168.
      */
     private suspend fun replaceSettings(imported: UserPreference) {
         val result = withContext(Dispatchers.IO) {
@@ -258,9 +260,7 @@ class SettingsActivity :
                     // The transform gets the settings that are still live, and a throw here
                     // aborts the whole write, so a failed copy never replaces anything.
                     applicationContext.dataStore.updateData { current ->
-                        File(filesDir, IMPORT_BACKUP_FILE).outputStream().use { stream ->
-                            UserPreferenceSerializer.writeTo(current, stream)
-                        }
+                        writeSettingsBackup(current)
                         imported
                     }
                 }
@@ -273,14 +273,46 @@ class SettingsActivity :
         Toast.makeText(baseContext, result, Toast.LENGTH_SHORT).show()
     }
 
+    /** Write the live settings aside, then move them over the last copy in one step. */
+    private suspend fun writeSettingsBackup(current: UserPreference) {
+        val target = File(filesDir, IMPORT_BACKUP_FILE)
+        val staged = File(filesDir, "$IMPORT_BACKUP_FILE.tmp")
+        try {
+            staged.outputStream().use { stream ->
+                UserPreferenceSerializer.writeTo(current, stream)
+            }
+            if (!staged.renameTo(target)) {
+                throw IOException("Could not replace $IMPORT_BACKUP_FILE")
+            }
+        } finally {
+            staged.delete()
+        }
+    }
+
     /** Keep the background images and their thumbnails with the settings copy. */
     private fun copyBackgroundsToBackup() {
+        val source = BackgroundStore.dir(this)
         val target = File(filesDir, IMPORT_BACKUP_DIR)
-        target.deleteRecursively()
-        target.mkdirs()
-        BackgroundStore.dir(this).listFiles()?.forEach { file ->
+        val staged = File(filesDir, "$IMPORT_BACKUP_DIR.tmp")
+        // A staged directory left by an earlier failure is rebuilt from nothing.
+        staged.deleteRecursively()
+        if (!staged.mkdirs()) {
+            throw IOException("Could not create $IMPORT_BACKUP_DIR.tmp")
+        }
+        val files = source.listFiles()
+        if (files == null && source.exists()) {
+            throw IOException("Could not list ${source.name}")
+        }
+        files?.forEach { file ->
             if (!file.isFile) return@forEach
-            file.copyTo(File(target, file.name), overwrite = true)
+            file.copyTo(File(staged, file.name), overwrite = true)
+        }
+        // Replace the old copy only after the new one is complete.
+        if (target.exists() && !target.deleteRecursively()) {
+            throw IOException("Could not clear $IMPORT_BACKUP_DIR")
+        }
+        if (!staged.renameTo(target)) {
+            throw IOException("Could not replace $IMPORT_BACKUP_DIR")
         }
     }
 
