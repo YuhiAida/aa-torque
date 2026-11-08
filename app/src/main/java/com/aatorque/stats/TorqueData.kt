@@ -50,6 +50,13 @@ class TorqueData(var display: Display) {
     var hasReceivedNonZero = false
     var currentAlarm = MutableLiveData<Coloring?>()
 
+    /**
+     * Every reading this gauge received, whether or not a chart was on screen. The chart
+     * seeds itself from this, so a swipe down shows the last minutes instead of starting
+     * from the moment it opened.
+     */
+    val history = PidHistory()
+
     var notifyUpdate: ((TorqueData) -> Unit)? = null
         set(value) {
             field = value
@@ -61,6 +68,7 @@ class TorqueData(var display: Display) {
             val converted = convertValue(value)
             field = converted.first
             lastDataStr = converted.second
+            history.add(System.currentTimeMillis(), field)
             if (field > maxValue) {
                 maxValue = field
             }
