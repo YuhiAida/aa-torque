@@ -45,10 +45,6 @@
             type="Integer" />
 
         <variable
-            name="showBtns"
-            type="Boolean" />
-
-        <variable
             name="showDots"
             type="Boolean" />
 
@@ -123,7 +119,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:ellipsize="marquee"
-                android:visibility="@{(title == null || title.isEmpty()) &amp;&amp; !showBtns ? View.GONE : View.VISIBLE}"
+                android:visibility="@{title == null || title.isEmpty() ? View.GONE : View.VISIBLE}"
                 android:maxLines="1"
                 android:singleLine="true"
                 android:text="@{title}"
@@ -153,44 +149,12 @@
                 android:src="@drawable/chart"
                 android:background="@android:color/transparent"
                 android:scaleType="centerCrop"
-                android:visibility="@{showBtns ? View.VISIBLE : View.GONE}"
                 app:layout_constraintBottom_toBottomOf="@+id/textTitle"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="@+id/textTitle"
                 app:layout_constraintDimensionRatio="1:1" />
 
-            <ImageButton
-                android:id="@+id/prevButton"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:background="@android:color/transparent"
-                android:contentDescription="@string/item_details_go_back"
-                android:src="@drawable/arrow_back"
-                android:scaleType="centerCrop"
-                android:visibility="@{showBtns ? View.VISIBLE : View.GONE}"
-                app:layout_constraintBottom_toBottomOf="@+id/textTitle"
-                app:layout_constraintEnd_toStartOf="@id/nextBtn"
-                app:layout_constraintTop_toTopOf="@+id/textTitle"
-                app:layout_constraintDimensionRatio="1:1" />
-
-            <ImageButton
-                android:id="@+id/nextBtn"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_marginEnd="30dp"
-                android:background="@android:color/transparent"
-                android:contentDescription="@string/item_details_go_back"
-                android:nextFocusForward="@id/include_wrap"
-                android:scaleType="centerCrop"
-                android:src="@drawable/arrow_forward"
-                android:textAlignment="center"
-                android:visibility="@{showBtns ? View.VISIBLE : View.GONE}"
-                app:layout_constraintBottom_toBottomOf="@+id/textTitle"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@+id/textTitle"
-                app:layout_constraintDimensionRatio="1:1" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
         <RelativeLayout
             android:id="@+id/include_wrap"
@@ -239,7 +203,7 @@
                     app:layout_constraintLeft_toLeftOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintRight_toLeftOf="@id/display1"/>
+                    app:layout_constraintRight_toRightOf="parent"/>
 
 
                 <androidx.fragment.app.FragmentContainerView

@@ -23,7 +23,6 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
 import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -65,8 +64,6 @@ open class DashboardFragment : AlbumArt() {
         }
     private val torqueService = TorqueService()
 
-    private lateinit var mBtnNext: ImageButton
-    private lateinit var mBtnPrev: ImageButton
     private lateinit var mTitleElement: TextView
     private lateinit var mWrapper: RelativeLayout
     lateinit var mConStatus: TextView
@@ -172,7 +169,6 @@ open class DashboardFragment : AlbumArt() {
                 val showChartChanged = binding.showChart != it.showChart
                 screensCount = it.screensCount
                 binding.title = screens.title
-                binding.showBtns = false
                 // The row under the title carries the dashboard dots and the chart hint, so it
                 // is shown even for a single dashboard: the swipe down works either way.
                 binding.showDots = true
@@ -309,10 +305,6 @@ open class DashboardFragment : AlbumArt() {
         rootView = binding.root
 
         mLayoutDashboard = rootView.findViewById(R.id.layoutDashboard)
-        mBtnNext = binding.nextBtn
-        mBtnPrev = binding.prevButton
-        mBtnNext.setOnClickListener { setScreen(1) }
-        mBtnPrev.setOnClickListener { setScreen(-1) }
         binding.chartBtn.setOnClickListener { toggleShowChart(binding.showChart != true) }
         mTitleElement = binding.textTitle
         mTitleElement.isSelected = true
@@ -358,18 +350,19 @@ open class DashboardFragment : AlbumArt() {
                             val diffX = e2.x - e1.x
                             val diffY = e2.y - e1.y
 
-                            // Set a minimum swipe distance threshold (e.g., 100 pixels)
+                            // One axis, one job: left and right walk the chart's history, up and
+                            // down move between dashboards. The chart is opened from its button,
+                            // so a vertical swipe never has to double as the toggle.
                             if (abs(diffX) > abs(diffY) && abs(diffX) > 100) {
-                                if (diffX > 0) {
-                                    // Swipe Right
-                                    setScreen(-1)
+                                if (binding.showChart == true) {
+                                    torqueChart.scrollHistory(if (diffX > 0) -1 else 1)
                                 } else {
-                                    // Swipe Left
-                                    setScreen(1)
+                                    setScreen(if (diffX > 0) -1 else 1)
                                 }
                                 return true
                             } else if (abs(diffY) > abs(diffX) && abs(diffY) > 100) {
-                                toggleShowChart(binding.showChart != true)
+                                setScreen(if (diffY > 0) -1 else 1)
+                                return true
                             }
                         }
                         return false

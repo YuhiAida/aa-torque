@@ -266,6 +266,23 @@ class TorqueChart : Fragment() {
     }
 
     /**
+     * Walk the visible window through the readings the gauge kept. Left and right on the car
+     * screen land here; the window keeps its width, and stops at the oldest and newest reading.
+     */
+    fun scrollHistory(direction: Int) {
+        if (!::graph.isInitialized) return
+        val viewport = graph.viewport
+        val span = viewport.getMaxX(true) - viewport.getMinX(true)
+        if (span <= 0.0) return
+        val step = span * 0.8 * direction
+        var min = viewport.getMinX(true) + step
+        if (min + span > graph.maxAllowed) min = graph.maxAllowed - span
+        if (min < graph.minAllowed) min = graph.minAllowed
+        viewport.setMinX(min)
+        viewport.setMaxX(min + span)
+    }
+
+    /**
      * Roll the window forward without changing how much of it is visible, so a zoomed
      * viewport keeps its width while new readings arrive. The window never starts before the
      * oldest reading, and never ends after now.
