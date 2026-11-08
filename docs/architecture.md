@@ -126,6 +126,8 @@ file name:
 
 - The main thread only draws. `TorqueRefresher` ticks on its own executor and posts results
   back through a `Handler(Looper.getMainLooper())`.
+- One tick reads every gauge PID in a single `getPIDValuesAsDouble` call and applies the
+  result in one main-thread post, so the needles move together instead of one after another.
 - `TorqueServiceWrapper` guards the binding with a `ReentrantLock`.
 - `connectStatus` is a `StateFlow`; gauge values are `LiveData` observed from fragments.
 
