@@ -88,7 +88,9 @@ written in backticks resolves. Run it before pushing a doc change.
 Translations are checked by `tools/check_locales.py`, which runs in the `locales` job whenever
 a `strings.xml` changes. Each locale has a budget of missing keys in
 `tools/locale_baseline.txt`; the check fails when a locale misses more than its budget, so the
-gap cannot grow. Translate the keys and lower the number in the same change.
+gap cannot grow. A key added to the base file after the baseline is not charged, so adding a
+string does not fail every other pull request. Translate the keys and lower the number in the
+same change.
 
 Themes are checked by `tools/check_themes.py`, which runs in the `themes` job whenever theme
 resources change. It verifies that `Themes`, `ThemesThumbs` and `ThemeList` agree by index,

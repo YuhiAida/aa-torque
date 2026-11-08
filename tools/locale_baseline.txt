@@ -6,6 +6,10 @@
 #
 # Current total: 1277 keys across 15 locales.
 #
+# The base key count when these budgets were measured. Keys added to the base
+# file after this number are not charged to any locale; see check_locales.py.
+base-keys 209
+
 # locale  max-missing-keys
 cs 166
 de 35
