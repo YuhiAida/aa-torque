@@ -173,9 +173,11 @@ open class DashboardFragment : AlbumArt() {
                 screensCount = it.screensCount
                 binding.title = screens.title
                 binding.showBtns = false
-                // One dot per dashboard, and only when there is more than one to page through.
-                binding.showDots = it.screensCount > 1
+                // The row under the title carries the dashboard dots and the chart hint, so it
+                // is shown even for a single dashboard: the swipe down works either way.
+                binding.showDots = true
                 binding.dashboardDots.count = it.screensCount
+                binding.dashboardDots.chartHint = true
                 binding.dashboardDots.selected = screenIndex
                 settingsViewModel.chartVisible.value = it.showChart
                 settingsViewModel.minMaxBelow.value = it.minMaxBelow
@@ -297,6 +299,8 @@ open class DashboardFragment : AlbumArt() {
         }
         settingsViewModel.chartVisible.observe(viewLifecycleOwner) {
             binding.showChart = it
+            // The hint points at the chart, so it flips when the chart is what is on screen.
+            binding.dashboardDots.chartOpen = it == true
         }
         settingsViewModel.minMaxBelow.observe(viewLifecycleOwner) {
             binding.minMaxBelow = it
