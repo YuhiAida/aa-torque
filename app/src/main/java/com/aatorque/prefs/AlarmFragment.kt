@@ -9,6 +9,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +29,10 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -38,7 +43,9 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -116,6 +123,11 @@ class StateModel : ViewModel() {
 
     fun delete(current: FormData) {
         uiState.remove(current)
+    }
+
+    /** Put a deleted rule back where it was. See issue #169. */
+    fun restore(index: Int, current: FormData) {
+        uiState.add(index.coerceIn(0, uiState.size), current)
     }
 }
 
@@ -386,6 +398,10 @@ fun MainView(
 @Composable
 fun VerticalReorderList(model: StateModel = viewModel()) {
     val openAlertDialog = remember { mutableStateOf<FormData?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val deletedMessage = stringResource(R.string.alarm_deleted)
+    val undoLabel = stringResource(R.string.undo)
 
     when {
         openAlertDialog.value != null -> {
@@ -401,43 +417,59 @@ fun VerticalReorderList(model: StateModel = viewModel()) {
             )
         }
     }
-    Column {
-        model.uiState.forEach { current ->
-            ListItem(
-                headlineContent = {
-                    Text("value ${current.operation.op} ${current.value}")
-                },
-                leadingContent = {
-                    TextButton(
-                        onClick = {
-                            openAlertDialog.value = current
-                        },
-                        modifier = Modifier
-                            .background(
-                                Color(current.color)
-                            )
-                            .border(
-                                BorderStroke(1.dp, Color.Black)
-                            )
-                            .height(50.dp)
-                            .width(50.dp)
-                    ) {
-                    }
-                },
+    Box {
+        Column {
+            model.uiState.forEach { current ->
+                ListItem(
+                    headlineContent = {
+                        Text("value ${current.operation.op} ${current.value}")
+                    },
+                    leadingContent = {
+                        TextButton(
+                            onClick = {
+                                openAlertDialog.value = current
+                            },
+                            modifier = Modifier
+                                .background(
+                                    Color(current.color)
+                                )
+                                .border(
+                                    BorderStroke(1.dp, Color.Black)
+                                )
+                                .height(50.dp)
+                                .width(50.dp)
+                        ) {
+                        }
+                    },
 
-                trailingContent = {
-                    Button(onClick = {
-                        model.delete(current)
-                    }) {
-                        Icon(
-                            Icons.Filled.Delete,
-                            contentDescription = Icons.Filled.Delete.toString()
-                        )
-                    }
-                },
-                shadowElevation = 3.dp,
-                tonalElevation = 1.dp
-            )
+                    trailingContent = {
+                        Button(onClick = {
+                            val position = model.uiState.indexOf(current)
+                            if (position >= 0) {
+                                model.delete(current)
+                                scope.launch {
+                                    val result = snackbarHostState.showSnackbar(
+                                        message = deletedMessage,
+                                        actionLabel = undoLabel,
+                                        duration = SnackbarDuration.Long
+                                    )
+                                    if (result == SnackbarResult.ActionPerformed) {
+                                        model.restore(position, current)
+                                    }
+                                }
+                            }
+                        }) {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = Icons.Filled.Delete.toString()
+                            )
+                        }
+                    },
+                    shadowElevation = 3.dp,
+                    tonalElevation = 1.dp
+                )
+            }
         }
+        SnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
     }
 }
