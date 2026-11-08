@@ -49,7 +49,7 @@
             type="Boolean" />
 
         <variable
-            name="showNav"
+            name="showDots"
             type="Boolean" />
 
         <variable
@@ -98,7 +98,7 @@
             android:layout_height="wrap_content"
             android:elevation="1dp"
             android:layout_marginBottom="4dp"
-            android:visibility="@{((status == null || status == 0) &amp;&amp; (title == null || title.isEmpty()) &amp;&amp; !showBtns) ? View.GONE : View.VISIBLE}"
+            android:visibility="@{((status == null || status == 0) &amp;&amp; (title == null || title.isEmpty()) &amp;&amp; !showDots) ? View.GONE : View.VISIBLE}"
             app:layout_constraintTop_toTopOf="parent">
 
             <TextView
@@ -131,54 +131,64 @@
                 android:textColor="@android:color/white"
                 android:textSize="30sp"
                 android:typeface="@{font}"
-                app:layout_constraintEnd_toStartOf="@id/prevButton"
-                app:layout_constraintStart_toEndOf="@id/chartBtn"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/con_status" />
+
+            <com.aatorque.stats.DashboardDots
+                android:id="@+id/dashboardDots"
+                android:layout_width="0dp"
+                android:layout_height="18dp"
+                android:layout_marginTop="2dp"
+                android:visibility="@{showDots ? View.VISIBLE : View.GONE}"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/textTitle" />
 
             <ImageButton
                 android:id="@+id/chartBtn"
-                android:layout_width="76dp"
-                android:layout_height="76dp"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
                 android:layout_marginStart="15dp"
-                android:layout_marginEnd="8dp"
                 android:src="@drawable/chart"
                 android:background="@android:color/transparent"
-                android:contentDescription="@{showChart ? @string/chart_hide : @string/chart_show}"
                 android:scaleType="centerCrop"
                 android:visibility="@{showBtns ? View.VISIBLE : View.GONE}"
-                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintBottom_toBottomOf="@+id/textTitle"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="@+id/textTitle"
+                app:layout_constraintDimensionRatio="1:1" />
 
             <ImageButton
                 android:id="@+id/prevButton"
-                android:layout_width="76dp"
-                android:layout_height="76dp"
-                android:layout_marginStart="8dp"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
                 android:background="@android:color/transparent"
-                android:contentDescription="@string/dashboard_previous"
+                android:contentDescription="@string/item_details_go_back"
                 android:src="@drawable/arrow_back"
                 android:scaleType="centerCrop"
-                android:visibility="@{showNav ? View.VISIBLE : View.GONE}"
-                app:layout_constraintBottom_toBottomOf="parent"
+                android:visibility="@{showBtns ? View.VISIBLE : View.GONE}"
+                app:layout_constraintBottom_toBottomOf="@+id/textTitle"
                 app:layout_constraintEnd_toStartOf="@id/nextBtn"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="@+id/textTitle"
+                app:layout_constraintDimensionRatio="1:1" />
 
             <ImageButton
                 android:id="@+id/nextBtn"
-                android:layout_width="76dp"
-                android:layout_height="76dp"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
                 android:layout_marginEnd="30dp"
                 android:background="@android:color/transparent"
-                android:contentDescription="@string/dashboard_next"
+                android:contentDescription="@string/item_details_go_back"
                 android:nextFocusForward="@id/include_wrap"
                 android:scaleType="centerCrop"
                 android:src="@drawable/arrow_forward"
                 android:textAlignment="center"
-                android:visibility="@{showNav ? View.VISIBLE : View.GONE}"
-                app:layout_constraintBottom_toBottomOf="parent"
+                android:visibility="@{showBtns ? View.VISIBLE : View.GONE}"
+                app:layout_constraintBottom_toBottomOf="@+id/textTitle"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="@+id/textTitle"
+                app:layout_constraintDimensionRatio="1:1" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
