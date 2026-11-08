@@ -76,6 +76,9 @@ open class DashboardFragment : AlbumArt() {
     var gaugeViews = arrayOfNulls<FragmentContainerView>(3)
 
     private var screensAnimating = false
+
+    /** How many dashboards exist. A single dashboard has nowhere to scroll to. */
+    private var screensCount = 1
     private var mStarted = false
     lateinit var binding: FragmentDashboardBinding
     lateinit var torqueChart: TorqueChart
@@ -167,12 +170,13 @@ open class DashboardFragment : AlbumArt() {
                 val screenIndex = abs(it.currentScreen) % it.screensCount
                 val screens = it.screensList[screenIndex]
                 val showChartChanged = binding.showChart != it.showChart
+                screensCount = it.screensCount
                 binding.title = screens.title
-                // The chart toggle is always useful; the dashboard arrows only when there is
-                // a second dashboard to reach. Both are real touch targets on a car screen,
-                // not a swipe gesture the driver has to discover. See issue #159.
-                binding.showBtns = true
-                binding.showNav = it.screensCount > 1
+                binding.showBtns = false
+                // One dot per dashboard, and only when there is more than one to page through.
+                binding.showDots = it.screensCount > 1
+                binding.dashboardDots.count = it.screensCount
+                binding.dashboardDots.selected = screenIndex
                 settingsViewModel.chartVisible.value = it.showChart
                 settingsViewModel.minMaxBelow.value = it.minMaxBelow
                 val artworkWasOn = shouldDisplayArtwork
@@ -383,7 +387,9 @@ open class DashboardFragment : AlbumArt() {
     }
 
     fun setScreen(direction: Int) {
-        if (screensAnimating) return
+        // With one dashboard the modulo below lands on the same screen, so the car fades out
+        // and back in for nothing, which reads as a broken swipe. Stay put instead.
+        if (screensAnimating || screensCount <= 1) return
         screensAnimating = true
         val duration = resources.getInteger(android.R.integer.config_shortAnimTime).toLong()
         mTitleElement.animate().alpha(0f).duration = duration
