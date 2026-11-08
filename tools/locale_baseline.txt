@@ -1,0 +1,24 @@
+# Missing keys each locale may carry, checked by tools/check_locales.py.
+#
+# The base file is app/src/main/res/values/strings.xml. A locale may lag,
+# but the lag must not grow. When you translate keys, lower the number in
+# the same change. Never raise it without saying why in the commit message.
+#
+# Current total: 1277 keys across 15 locales.
+#
+# locale  max-missing-keys
+cs 166
+de 35
+el 69
+es 35
+fr 54
+fr-rCA 64
+it 35
+nl 163
+pl 35
+pt 156
+pt-rBR 117
+ru 110
+sl 123
+uk 69
+zh-rHK 46
