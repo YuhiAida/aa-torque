@@ -26,6 +26,7 @@ import com.aatorque.stats.BuildConfig
 import com.aatorque.stats.CreditsFragment
 import com.aatorque.stats.R
 import com.google.protobuf.InvalidProtocolBufferException
+import java.io.File
 import java.io.IOException
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
@@ -33,6 +34,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 class SettingsActivity :
@@ -199,48 +201,65 @@ class SettingsActivity :
     }
 
     private val importFileLauncher = registerForActivityResult(ImportFileContract()) { uri: Uri? ->
-        if (uri != null) {
-            this@SettingsActivity.lifecycleScope.launch {
-                val inStream = try {
-                    contentResolver.openInputStream(uri)
-                } catch (e: IOException) {
-                    Timber.w(e, "Could not open settings file for import")
-                    null
+        if (uri == null) return@registerForActivityResult
+        lifecycleScope.launch {
+            // Read the file first. A file that does not parse must change nothing, so the
+            // store is not touched until the user confirms.
+            val imported = readImportedSettings(uri)
+            if (imported == null) {
+                Toast.makeText(baseContext, R.string.invalid_settings, Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            AlertDialog.Builder(this@SettingsActivity)
+                .setTitle(R.string.import_confirm_title)
+                .setMessage(R.string.import_confirm_message)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.action_import) { _, _ ->
+                    lifecycleScope.launch { replaceSettings(imported) }
                 }
-                if (inStream == null) {
-                    Toast.makeText(
-                        baseContext,
-                        R.string.invalid_settings,
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    return@launch
+                .show()
+        }
+    }
+
+    /** Parse the picked file without touching the store. */
+    private suspend fun readImportedSettings(uri: Uri): UserPreference? =
+        withContext(Dispatchers.IO) {
+            try {
+                contentResolver.openInputStream(uri)?.use { stream ->
+                    UserPreference.parseFrom(stream)
                 }
-                try {
-                    inStream.use { stream ->
-                        // The dashboard settings delete background files no reference names.
-                        // Take the same lock so these references are stored before that read.
-                        BackgroundStore.filesLock.withLock {
-                            this@SettingsActivity.applicationContext.dataStore.updateData {
-                                return@updateData UserPreference.parseFrom(stream)
-                            }
-                        }
-                    }
-                } catch (e: InvalidProtocolBufferException) {
-                    Toast.makeText(
-                        baseContext,
-                        R.string.invalid_settings,
-                        Toast.LENGTH_SHORT
-                    ).show()
-                } catch (e: IOException) {
-                    Timber.w(e, "Could not read settings file for import")
-                    Toast.makeText(
-                        baseContext,
-                        R.string.invalid_settings,
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
+            } catch (e: InvalidProtocolBufferException) {
+                Timber.w(e, "Could not parse settings file for import")
+                null
+            } catch (e: IOException) {
+                Timber.w(e, "Could not read settings file for import")
+                null
             }
         }
+
+    /**
+     * Replace the whole store, after keeping a copy of what was there. The copy goes to the
+     * app cache, so an accidental import can still be undone by hand.
+     */
+    private suspend fun replaceSettings(imported: UserPreference) {
+        val result = withContext(Dispatchers.IO) {
+            try {
+                val current = applicationContext.dataStore.data.first()
+                File(cacheDir, IMPORT_BACKUP_FILE).outputStream().use { stream ->
+                    UserPreferenceSerializer.writeTo(current, stream)
+                }
+                // The dashboard settings delete background files no reference names. Take the
+                // same lock so these references are stored before that read.
+                BackgroundStore.filesLock.withLock {
+                    applicationContext.dataStore.updateData { imported }
+                }
+                R.string.import_complete
+            } catch (e: IOException) {
+                Timber.w(e, "Could not back up settings before import")
+                R.string.import_failed
+            }
+        }
+        Toast.makeText(baseContext, result, Toast.LENGTH_SHORT).show()
     }
 
     class ExportFileContract : ActivityResultContract<String, Uri?>() {
@@ -449,5 +468,8 @@ class SettingsActivity :
         private const val PERMISSION_CAR_VENDOR_EXTENSION =
             "com.google.android.gms.permission.CAR_VENDOR_EXTENSION"
         const val EXPORT_MIME = "application/octet-stream"
+
+        /** Where the store is copied before an import replaces it. */
+        private const val IMPORT_BACKUP_FILE = "settings-before-import.pb"
     }
 }
