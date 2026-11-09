@@ -155,6 +155,7 @@
     <string name="convert_cc_min_gal_hour">CC/minute vers Gallon/heure</string>
     <string name="convert_liter_100_km">Litre aux 100 vers Miles au Gallon</string>
     <string name="convert_kpa_psi">kPa vers PSI</string>
+    <string name="status_ecu_lost">Les valeurs ne sont pas à jour. Vérifiez l\'adaptateur OBD.</string>
     <string name="status_setup_gauges">Configurer jauges dans les paramètres</string>
 
     <!-- Fuzzy -->

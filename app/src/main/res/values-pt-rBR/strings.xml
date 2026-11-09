@@ -83,6 +83,7 @@
     <string name="pidLabel">Rótulo</string>
     <string name="pidShowLabel">Mostrar rótulo</string>
     <string name="icon">Ícone</string>
+    <string name="status_ecu_lost">Os valores não estão atualizados. Verifique o adaptador OBD.</string>
     <string name="torque_waiting">Esperando Torque ficar disponível</string>
 
     <!-- Fuzzy -->
