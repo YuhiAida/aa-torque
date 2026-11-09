@@ -8,9 +8,9 @@ keys than its budget allows.
 
 A key added to the base file after the baseline was taken is not charged to any
 locale, so adding a string does not fail every other pull request. The baseline
-records the base key count in its ``base-keys`` line, and that count raises the
-allowance. Translate a new key or leave it in English; either way the numbers in
-the file do not have to be edited, so two pull requests cannot conflict there.
+lists the base keys it was measured against; a missing key that is in that list
+is still charged, so a translation cannot disappear unnoticed. The list must be
+present: a baseline without it is an error, not an empty allowance.
 
 Filling keys never fails: a locale may sit below its budget until the budget is
 lowered. Lower the number in the same change that adds the translations, so the
@@ -60,19 +60,28 @@ def read_keys(path: pathlib.Path) -> tuple[set[str], set[str]]:
     return translatable, present
 
 
-def read_baseline() -> tuple[dict[str, int], int]:
-    """Return (locale budgets, the base key count the budgets were measured against)."""
+def read_baseline() -> tuple[dict[str, int], set[str]]:
+    """Return (locale budgets, the base keys the budgets were measured against)."""
     budgets: dict[str, int] = {}
-    base_keys = 0
-    for line in BASELINE.read_text(encoding="utf-8").splitlines():
-        line = line.split("#", 1)[0].strip()
+    base_keys: set[str] = set()
+    for number, raw in enumerate(
+        BASELINE.read_text(encoding="utf-8").splitlines(), start=1
+    ):
+        line = raw.split("#", 1)[0].strip()
         if not line:
             continue
-        if line.startswith("base-keys"):
-            base_keys = int(line.split()[1])
+        if line.startswith("base-key "):
+            base_keys.add(line.split(None, 1)[1])
             continue
         locale, _, budget = line.partition(" ")
-        budgets[locale] = int(budget)
+        try:
+            budgets[locale] = int(budget)
+        except ValueError:
+            raise ValueError(f"line {number}: {raw!r} is not a budget") from None
+    if not base_keys:
+        raise ValueError(
+            "no base-key lines; the budgets have no key set to measure against"
+        )
     return budgets, base_keys
 
 
@@ -86,10 +95,11 @@ def main() -> int:
     args = parser.parse_args()
 
     base_keys, _ = read_keys(BASE)
-    budgets, baseline_base_keys = read_baseline()
-    # Keys added after the baseline are not charged: no locale could have them yet, and
-    # charging them would make every string change edit this file.
-    added_since_baseline = max(0, len(base_keys) - baseline_base_keys)
+    try:
+        budgets, baseline_keys = read_baseline()
+    except ValueError as exc:
+        print(f"Invalid {BASELINE.relative_to(ROOT)}: {exc}", file=sys.stderr)
+        return 1
 
     failures: list[str] = []
     notes: list[str] = []
@@ -105,26 +115,26 @@ def main() -> int:
         seen.add(locale)
         keys, _ = read_keys(path)
         missing = base_keys - keys
+        # Only keys that were in the baseline set count. A key added later cannot
+        # have been translated yet, and charging it would fail every string change.
+        charged = missing & baseline_keys
         extra = keys - base_keys
         budget = budgets.get(locale)
 
         if args.print:
-            allowance = None if budget is None else budget + added_since_baseline
-            print(f"{locale}\tmissing={len(missing)}\tbudget={allowance}")
+            print(f"{locale}\tmissing={len(charged)}\tbudget={budget}")
             continue
 
         if budget is None:
             failures.append(
                 f"{locale}: no budget in tools/locale_baseline.txt "
-                f"(it misses {len(missing)} keys)"
+                f"(it misses {len(charged)} baseline keys)"
             )
             continue
-        allowance = budget + added_since_baseline
-        if len(missing) > allowance:
-            worst = ", ".join(sorted(missing)[:5])
+        if len(charged) > budget:
+            worst = ", ".join(sorted(charged)[:5])
             failures.append(
-                f"{locale}: misses {len(missing)} keys, budget is {allowance} "
-                f"({budget} plus {added_since_baseline} added since the baseline) "
+                f"{locale}: misses {len(charged)} baseline keys, budget is {budget} "
                 f"(for example: {worst})"
             )
         if extra:
