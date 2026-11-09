@@ -167,6 +167,7 @@
     <string name="convert_kpa_psi">Kilopascales (kPa) a (PSI)</string>
 
     <!-- Additional context is required for a correct translation. Where will be this string used? -->
+    <string name="status_ecu_lost">Los valores no están actualizados. Compruebe el adaptador OBD.</string>
     <string name="status_setup_gauges">Configurar indicadores en ajustes</string>
     <string name="element_cylinder">Cilindro de motor</string>
     <string name="element_horsepower">Caballos de fuerza</string>

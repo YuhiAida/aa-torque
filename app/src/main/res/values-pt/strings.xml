@@ -57,4 +57,5 @@
     <string name="bg_vw2">Fibra de carbono</string>
     <string name="pref_background">Segundo plano</string>
     <string name="pref_default_background">Segundo plano</string>
+    <string name="status_ecu_lost">Os valores não estão atualizados. Verifique o adaptador OBD.</string>
 </resources>
