@@ -1,8 +1,10 @@
 # Missing keys each locale may carry, checked by tools/check_locales.py.
 #
 # The base file is app/src/main/res/values/strings.xml. A locale may lag,
-# but the lag must not grow. When you translate keys, lower the number in
-# the same change. Never raise it without saying why in the commit message.
+# but the lag must not grow. Lower a budget only when the charged missing
+# count falls, which means translating a key that is in the base-key list
+# below. Translating a newer key does not change the charged count. Never
+# raise a budget without saying why in the commit message.
 #
 # Current total: 1277 keys across 15 locales.
 #

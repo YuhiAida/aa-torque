@@ -13,8 +13,8 @@ is still charged, so a translation cannot disappear unnoticed. The list must be
 present: a baseline without it is an error, not an empty allowance.
 
 Filling keys never fails: a locale may sit below its budget until the budget is
-lowered. Lower the number in the same change that adds the translations, so the
-gap can only shrink.
+lowered. Lower the number only when the charged count falls, so the gap can only
+shrink; translating a key that is not in the baseline list does not change it.
 
 The XML parsed here is repository-owned source, not untrusted input, so stdlib
 parsing is safe: no external entities, and the files are committed and reviewed.
