@@ -22,6 +22,12 @@
         <item name="tintColor">@color/tintColor</item>
         <item name="android:textColor">@color/secondaryTextColor</item>
         <item name="android:itemBackground">@color/bgColor</item>
+        <item name="themedPaletteSurface">#000000</item>
+        <item name="themedPaletteFace">#111111</item>
+        <item name="themedPaletteRing">#FFFFFF</item>
+        <item name="themedPaletteTick">#FFFFFF</item>
+        <item name="themedPaletteAccent">#FF0000</item>
+        <item name="themedPaletteMark">@android:color/transparent</item>
     </style>
 
     <style name="AlertDialogTheme" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
@@ -72,18 +78,18 @@
         <item name="sv_centerCircleColor">@android:color/transparent</item>
 
         <!-- Marks on the dial background are done on the png itself, not rendered dynamiccaly. -->
-        <item name="sv_markColor">@android:color/transparent</item>
+        <item name="sv_markColor">?attr/themedPaletteMark</item>
 
-        <item name="sv_speedTextColor">@color/car_primary</item>
+        <item name="sv_speedTextColor">?attr/themedPaletteTick</item>
 
         <item name="sv_speedTextPadding">50dp</item>
         <item name="sv_speedTextPosition">CENTER</item>
         <item name="sv_speedTextSize">32sp</item>
-        <item name="sv_textColor">@android:color/transparent</item>
+        <item name="sv_textColor">?attr/themedPaletteTick</item>
         <item name="sv_textSize">12sp</item>
         <item name="sv_unit" />
         <item name="sv_unitSpeedInterval">4dp</item>
-        <item name="sv_unitTextColor">@color/car_primary</item>
+        <item name="sv_unitTextColor">?attr/themedPaletteTick</item>
         <item name="sv_unitTextSize">20sp</item>
         <item name="sv_unitUnderSpeedText">true</item>
         <item name="sv_withTremble">false</item>
@@ -419,12 +425,12 @@
         <item name="sv_tickRotation">false</item>
         <item name="sv_speedTextPadding">50dp</item>
         <item name="sv_withTremble">false</item>
-        <item name="sv_speedTextColor">@color/car_primary</item>
+        <item name="sv_speedTextColor">?attr/themedPaletteTick</item>
         <item name="sv_speedTextSize">32sp</item>
-        <item name="sv_unitTextColor">@color/car_primary</item>
+        <item name="sv_unitTextColor">?attr/themedPaletteTick</item>
         <item name="sv_speedTextPosition">CENTER</item>
         <item name="sv_unitTextSize">20sp</item>
-        <item name="sv_textColor">@android:color/transparent</item>
+        <item name="sv_textColor">?attr/themedPaletteTick</item>
         <item name="sv_textSize">12sp</item>
         <item name="sv_unitSpeedInterval">4dp</item>
     </style>

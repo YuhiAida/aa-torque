@@ -7,7 +7,13 @@
     <attr name="themedEmptyDialBackground" format="reference" />
     <attr name="themedBlankDialBackground" format="reference" />
     <attr name="themedStopWatchBackground" format="reference" />
-    <attr name="themedNeedleColor" format="reference" />
+    <attr name="themedNeedleColor" format="color|reference" />
+    <attr name="themedPaletteSurface" format="color" />
+    <attr name="themedPaletteFace" format="color" />
+    <attr name="themedPaletteRing" format="color" />
+    <attr name="themedPaletteTick" format="color" />
+    <attr name="themedPaletteAccent" format="color" />
+    <attr name="themedPaletteMark" format="color" />
 
     <declare-styleable name="ImageListPreference">
         <attr name="entryImages" format="reference" />

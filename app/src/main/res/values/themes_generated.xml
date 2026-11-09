@@ -1,0 +1,46 @@
+<resources>
+    <style name="AppTheme.Classic" parent="AppTheme">
+        <item name="themedCarBackground">@drawable/bg_classic_day</item>
+        <item name="themedDialBackground">@drawable/dial_classic_day</item>
+        <item name="themedEmptyDialBackground">@drawable/dial_classic_day</item>
+        <item name="themedBlankDialBackground">@drawable/dial_classic_day</item>
+        <item name="themedNeedle">@drawable/needle_dark</item>
+        <item name="themedStopWatchBackground">@drawable/sw_classic_day</item>
+        <item name="themedNeedleColor">#C8102E</item>
+        <item name="themedPaletteSurface">#FFFFFF</item>
+        <item name="themedPaletteFace">#F7F7F7</item>
+        <item name="themedPaletteRing">#4A4A4A</item>
+        <item name="themedPaletteTick">#2B2B2B</item>
+        <item name="themedPaletteAccent">#C8102E</item>
+        <item name="themedPaletteMark">#4A4A4A</item>
+        <item name="sv_speedometerColor">#4A4A4A</item>
+        <item name="sv_speedometerBackColor">#F7F7F7</item>
+        <item name="sv_indicator">HalfLineIndicator</item>
+        <item name="sv_indicatorWidth">2dp</item>
+        <item name="sv_tickPadding">0dp</item>
+        <item name="sv_tickRotation">false</item>
+    </style>
+
+    <style name="AppTheme.Classic.Night" parent="AppTheme">
+        <item name="themedCarBackground">@drawable/bg_classic_night</item>
+        <item name="themedDialBackground">@drawable/dial_classic_night</item>
+        <item name="themedEmptyDialBackground">@drawable/dial_classic_night</item>
+        <item name="themedBlankDialBackground">@drawable/dial_classic_night</item>
+        <item name="themedNeedle">@drawable/needle_dark</item>
+        <item name="themedStopWatchBackground">@drawable/sw_classic_night</item>
+        <item name="themedNeedleColor">#FF2D55</item>
+        <item name="themedPaletteSurface">#000000</item>
+        <item name="themedPaletteFace">#0A0A0A</item>
+        <item name="themedPaletteRing">#B8B8B8</item>
+        <item name="themedPaletteTick">#E8E8E8</item>
+        <item name="themedPaletteAccent">#FF2D55</item>
+        <item name="themedPaletteMark">#B8B8B8</item>
+        <item name="sv_speedometerColor">#B8B8B8</item>
+        <item name="sv_speedometerBackColor">#0A0A0A</item>
+        <item name="sv_indicator">HalfLineIndicator</item>
+        <item name="sv_indicatorWidth">2dp</item>
+        <item name="sv_tickPadding">0dp</item>
+        <item name="sv_tickRotation">false</item>
+    </style>
+
+</resources>
