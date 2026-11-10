@@ -69,6 +69,7 @@
     <string name="pidLabel">Название</string>
     <string name="pidShowLabel">Показывать название</string>
     <string name="icon">Иконка</string>
+    <string name="status_ecu_lost">Значения неактуальны. Проверьте адаптер OBD.</string>
     <string name="torque_waiting">Ожидание Torque</string>
 
     <!-- Fuzzy -->

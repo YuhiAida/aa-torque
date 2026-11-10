@@ -94,4 +94,5 @@
     <string name="convert_psi_bar">PSI -> BAR</string>
     <string name="convert_km_to_miles">km -> milje</string>
     <string name="element_transmission">Menjalnik</string>
+    <string name="status_ecu_lost">Vrednosti niso ažurne. Preverite adapter OBD.</string>
 </resources>
