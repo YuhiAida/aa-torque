@@ -31,6 +31,7 @@ import java.io.IOException
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
@@ -253,7 +254,10 @@ class SettingsActivity :
      * issue #168.
      */
     private suspend fun replaceSettings(imported: UserPreference) {
-        val result = withContext(Dispatchers.IO) {
+        // The user already confirmed the import, so the copy and the replace run to the end even
+        // if the screen is rotated away. A cancellation between the two would leave the image
+        // copy and the settings copy from different imports.
+        val result = withContext(Dispatchers.IO + NonCancellable) {
             try {
                 BackgroundStore.filesLock.withLock {
                     copyBackgroundsToBackup()
@@ -270,7 +274,7 @@ class SettingsActivity :
                 R.string.import_failed
             }
         }
-        Toast.makeText(baseContext, result, Toast.LENGTH_SHORT).show()
+        Toast.makeText(applicationContext, result, Toast.LENGTH_SHORT).show()
     }
 
     /** Write the live settings aside, then move them over the last copy in one step. */
