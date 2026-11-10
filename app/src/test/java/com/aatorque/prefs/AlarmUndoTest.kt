@@ -48,6 +48,31 @@ class AlarmUndoTest {
         assertEquals(listOf(30.0, 20.0, 10.0), model.uiState.map { it.value })
     }
 
+    /**
+     * GT 10 and GTE 10 sort to the same place, so only creation order decides which one wins a
+     * reading above 10. A restored rule that lands behind its peer changes the colour the user
+     * sees, and the next save keeps that change.
+     */
+    @Test
+    fun `undo keeps the precedence of rules with the same threshold`() {
+        val model = StateModel()
+        model.prependItem(FormData(Operation.GT, 10.0))
+        model.prependItem(FormData(Operation.GTE, 10.0))
+        assertEquals(
+            listOf(Operation.GT, Operation.GTE),
+            model.uiState.map { it.operation }
+        )
+
+        val removed = model.uiState.first { it.operation == Operation.GT }
+        model.delete(removed)
+        model.restore(removed)
+
+        assertEquals(
+            listOf(Operation.GT, Operation.GTE),
+            model.uiState.map { it.operation }
+        )
+    }
+
     @Test
     fun `restoring a rule that is already there does nothing`() {
         val model = StateModel()

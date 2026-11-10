@@ -78,11 +78,20 @@ val Operation.op: String
         return this.valueDescriptor.options.getExtension(com.aatorque.datastore.UserPrefs.op)
     }
 
+/** Order in which rules were created; breaks a tie between equal thresholds. */
+private var nextRuleOrder = 0L
+
 @Parcelize
 data class FormData(
     var operation: Operation = Operation.GT,
     var value: Double = 0.0,
-    var color: Int = Color(255, 0, 0, 255).toArgb()
+    var color: Int = Color(255, 0, 0, 255).toArgb(),
+    /**
+     * Position among rules with the same operation and value. It is assigned on creation and
+     * travels with the rule through delete and undo, so a restored rule keeps the precedence it
+     * had. See [RULE_ORDER].
+     */
+    val order: Long = nextRuleOrder++
 ) : Parcelable {
     fun toColoring(): Coloring = Coloring.newBuilder()
         .setColor(color)
@@ -118,7 +127,10 @@ private val RULE_ORDER = compareBy<FormData>(
             Operation.GT, Operation.GTE -> -it.value
             else -> it.value
         }
-    }
+    },
+    // Two rules can share a threshold, as GT 10 and GTE 10 do. Only creation order decides
+    // which of them is tried first, so the tie must not fall back to the order of the list.
+    { it.order }
 )
 
 class StateModel : ViewModel() {
