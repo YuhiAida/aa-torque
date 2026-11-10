@@ -32,6 +32,10 @@
             android:layout_height="3dp"
             app:color="@{alarm}" />
 
+        <!-- minHeight reserves a 25sp line even when a long value shrinks the text, so the
+             row does not jump as values change length and a short value can size back up.
+             Font padding is off: with it on, a 25sp line measured taller than the reserved
+             34dp and auto-size settled below the maximum size. -->
         <TextView
             android:id="@+id/valueElement"
             android:layout_width="120dp"
@@ -39,9 +43,15 @@
             android:layout_marginStart="8dp"
             android:layout_marginTop="0dp"
             android:layout_marginEnd="8dp"
-            android:ellipsize="none"
+            android:autoSizeMaxTextSize="25sp"
+            android:autoSizeMinTextSize="10sp"
+            android:autoSizeStepGranularity="1sp"
+            android:autoSizeTextType="uniform"
+            android:ellipsize="end"
             android:gravity="center"
+            android:includeFontPadding="false"
             android:maxLines="1"
+            android:minHeight="34dp"
             android:text="@{value}"
             android:textAlignment="gravity"
             android:textColor="@android:color/white"
