@@ -6,9 +6,15 @@ behind, but the lag must not grow: each locale has a budget of missing keys in
 ``tools/locale_baseline.txt``, and this checker fails when a locale misses more
 keys than its budget allows.
 
+A key added to the base file after the baseline was taken is not charged to any
+locale, so adding a string does not fail every other pull request. The baseline
+lists the base keys it was measured against; a missing key that is in that list
+is still charged, so a translation cannot disappear unnoticed. The list must be
+present: a baseline without it is an error, not an empty allowance.
+
 Filling keys never fails: a locale may sit below its budget until the budget is
-lowered. Lower the number in the same change that adds the translations, so the
-gap can only shrink.
+lowered. Lower the number only when the charged count falls, so the gap can only
+shrink; translating a key that is not in the baseline list does not change it.
 
 The XML parsed here is repository-owned source, not untrusted input, so stdlib
 parsing is safe: no external entities, and the files are committed and reviewed.
@@ -54,16 +60,29 @@ def read_keys(path: pathlib.Path) -> tuple[set[str], set[str]]:
     return translatable, present
 
 
-def read_baseline() -> dict[str, int]:
-    """Locale to the number of keys it is allowed to miss."""
+def read_baseline() -> tuple[dict[str, int], set[str]]:
+    """Return (locale budgets, the base keys the budgets were measured against)."""
     budgets: dict[str, int] = {}
-    for line in BASELINE.read_text(encoding="utf-8").splitlines():
-        line = line.split("#", 1)[0].strip()
+    base_keys: set[str] = set()
+    for number, raw in enumerate(
+        BASELINE.read_text(encoding="utf-8").splitlines(), start=1
+    ):
+        line = raw.split("#", 1)[0].strip()
         if not line:
             continue
+        if line.startswith("base-key "):
+            base_keys.add(line.split(None, 1)[1])
+            continue
         locale, _, budget = line.partition(" ")
-        budgets[locale] = int(budget)
-    return budgets
+        try:
+            budgets[locale] = int(budget)
+        except ValueError:
+            raise ValueError(f"line {number}: {raw!r} is not a budget") from None
+    if not base_keys:
+        raise ValueError(
+            "no base-key lines; the budgets have no key set to measure against"
+        )
+    return budgets, base_keys
 
 
 def main() -> int:
@@ -76,7 +95,11 @@ def main() -> int:
     args = parser.parse_args()
 
     base_keys, _ = read_keys(BASE)
-    budgets = read_baseline()
+    try:
+        budgets, baseline_keys = read_baseline()
+    except ValueError as exc:
+        print(f"Invalid {BASELINE.relative_to(ROOT)}: {exc}", file=sys.stderr)
+        return 1
 
     failures: list[str] = []
     notes: list[str] = []
@@ -92,23 +115,26 @@ def main() -> int:
         seen.add(locale)
         keys, _ = read_keys(path)
         missing = base_keys - keys
+        # Only keys that were in the baseline set count. A key added later cannot
+        # have been translated yet, and charging it would fail every string change.
+        charged = missing & baseline_keys
         extra = keys - base_keys
         budget = budgets.get(locale)
 
         if args.print:
-            print(f"{locale}\tmissing={len(missing)}\tbudget={budget}")
+            print(f"{locale}\tmissing={len(charged)}\tbudget={budget}")
             continue
 
         if budget is None:
             failures.append(
                 f"{locale}: no budget in tools/locale_baseline.txt "
-                f"(it misses {len(missing)} keys)"
+                f"(it misses {len(charged)} baseline keys)"
             )
             continue
-        if len(missing) > budget:
-            worst = ", ".join(sorted(missing)[:5])
+        if len(charged) > budget:
+            worst = ", ".join(sorted(charged)[:5])
             failures.append(
-                f"{locale}: misses {len(missing)} keys, budget is {budget} "
+                f"{locale}: misses {len(charged)} baseline keys, budget is {budget} "
                 f"(for example: {worst})"
             )
         if extra:
