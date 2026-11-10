@@ -132,6 +132,11 @@
     <string name="credits_original_author">Original app by: Kyle Agronick</string>
     <string name="export_dashboards">Export dashboards</string>
     <string name="import_dashboards">Import dashboards</string>
+    <string name="import_confirm_title">Replace all settings?</string>
+    <string name="import_confirm_message">The file replaces every dashboard, gauge, theme and alarm. The current settings are saved to the app storage first.</string>
+    <string name="action_import">Replace</string>
+    <string name="import_complete">Settings imported</string>
+    <string name="import_failed">Could not import settings</string>
     <string name="file_exported_successfully">File exported successfully</string>
     <string name="export_failed">Export failed</string>
     <string name="file_not_available">Export file is not available</string>

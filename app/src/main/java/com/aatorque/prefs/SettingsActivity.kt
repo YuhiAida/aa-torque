@@ -26,13 +26,16 @@ import com.aatorque.stats.BuildConfig
 import com.aatorque.stats.CreditsFragment
 import com.aatorque.stats.R
 import com.google.protobuf.InvalidProtocolBufferException
+import java.io.File
 import java.io.IOException
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 class SettingsActivity :
@@ -199,48 +202,129 @@ class SettingsActivity :
     }
 
     private val importFileLauncher = registerForActivityResult(ImportFileContract()) { uri: Uri? ->
-        if (uri != null) {
-            this@SettingsActivity.lifecycleScope.launch {
-                val inStream = try {
-                    contentResolver.openInputStream(uri)
-                } catch (e: IOException) {
-                    Timber.w(e, "Could not open settings file for import")
-                    null
+        if (uri == null) return@registerForActivityResult
+        lifecycleScope.launch {
+            // Read the file first. A file that does not parse must change nothing, so the
+            // store is not touched until the user confirms.
+            val imported = readImportedSettings(uri)
+            if (imported == null) {
+                Toast.makeText(baseContext, R.string.invalid_settings, Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            AlertDialog.Builder(this@SettingsActivity)
+                .setTitle(R.string.import_confirm_title)
+                .setMessage(R.string.import_confirm_message)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.action_import) { _, _ ->
+                    lifecycleScope.launch { replaceSettings(imported) }
                 }
-                if (inStream == null) {
-                    Toast.makeText(
-                        baseContext,
-                        R.string.invalid_settings,
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    return@launch
+                .show()
+        }
+    }
+
+    /** Parse the picked file without touching the store. */
+    private suspend fun readImportedSettings(uri: Uri): UserPreference? =
+        withContext(Dispatchers.IO) {
+            try {
+                contentResolver.openInputStream(uri)?.use { stream ->
+                    UserPreference.parseFrom(stream)
                 }
-                try {
-                    inStream.use { stream ->
-                        // The dashboard settings delete background files no reference names.
-                        // Take the same lock so these references are stored before that read.
-                        BackgroundStore.filesLock.withLock {
-                            this@SettingsActivity.applicationContext.dataStore.updateData {
-                                return@updateData UserPreference.parseFrom(stream)
-                            }
-                        }
-                    }
-                } catch (e: InvalidProtocolBufferException) {
-                    Toast.makeText(
-                        baseContext,
-                        R.string.invalid_settings,
-                        Toast.LENGTH_SHORT
-                    ).show()
-                } catch (e: IOException) {
-                    Timber.w(e, "Could not read settings file for import")
-                    Toast.makeText(
-                        baseContext,
-                        R.string.invalid_settings,
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
+            } catch (e: InvalidProtocolBufferException) {
+                Timber.w(e, "Could not parse settings file for import")
+                null
+            } catch (e: IOException) {
+                Timber.w(e, "Could not read settings file for import")
+                null
+            } catch (e: SecurityException) {
+                // The picker grant can be gone by the time the read runs.
+                Timber.w(e, "No permission to read settings file for import")
+                null
             }
         }
+
+    /**
+     * Replace the whole store, after keeping a copy of what was there.
+     *
+     * The copy goes to the app files directory, not the cache, so clearing the cache cannot
+     * take it. Each copy is staged and swapped in only when complete, so a failed import leaves
+     * the previous copy usable. Images are copied first and the store second: a failure leaves
+     * the settings untouched instead of half replaced. Everything runs under
+     * [BackgroundStore.filesLock] because the dashboard settings sweep deletes background files
+     * no setting names, and that sweep would otherwise eat the images the copy refers to. See
+     * issue #168.
+     */
+    private suspend fun replaceSettings(imported: UserPreference) {
+        // The user already confirmed the import, so the copy and the replace run to the end even
+        // if the screen is rotated away. A cancellation between the two would leave the image
+        // copy and the settings copy from different imports.
+        val result = withContext(Dispatchers.IO + NonCancellable) {
+            try {
+                BackgroundStore.filesLock.withLock {
+                    copyBackgroundsToBackup()
+                    // The transform gets the settings that are still live, and a throw here
+                    // aborts the whole write, so a failed copy never replaces anything.
+                    applicationContext.dataStore.updateData { current ->
+                        writeSettingsBackup(current)
+                        imported
+                    }
+                }
+                R.string.import_complete
+            } catch (e: IOException) {
+                Timber.w(e, "Could not back up settings before import")
+                R.string.import_failed
+            }
+        }
+        Toast.makeText(applicationContext, result, Toast.LENGTH_SHORT).show()
+    }
+
+    /** Write the live settings aside, then move them over the last copy in one step. */
+    private suspend fun writeSettingsBackup(current: UserPreference) {
+        val target = File(filesDir, IMPORT_BACKUP_FILE)
+        val staged = File(filesDir, "$IMPORT_BACKUP_FILE.tmp")
+        try {
+            staged.outputStream().use { stream ->
+                UserPreferenceSerializer.writeTo(current, stream)
+            }
+            if (!staged.renameTo(target)) {
+                throw IOException("Could not replace $IMPORT_BACKUP_FILE")
+            }
+        } finally {
+            staged.delete()
+        }
+    }
+
+    /** Keep the background images and their thumbnails with the settings copy. */
+    private fun copyBackgroundsToBackup() {
+        val source = BackgroundStore.dir(this)
+        val target = File(filesDir, IMPORT_BACKUP_DIR)
+        val staged = File(filesDir, "$IMPORT_BACKUP_DIR.tmp")
+        // A staged directory left by an earlier failure is rebuilt from nothing.
+        staged.deleteRecursively()
+        if (!staged.mkdirs()) {
+            throw IOException("Could not create $IMPORT_BACKUP_DIR.tmp")
+        }
+        val files = source.listFiles()
+        if (files == null && source.exists()) {
+            throw IOException("Could not list ${source.name}")
+        }
+        files?.forEach { file ->
+            if (!file.isFile) return@forEach
+            file.copyTo(File(staged, file.name), overwrite = true)
+        }
+        // Swap in the new copy only after it is complete, and keep the old one until then.
+        val previous = File(filesDir, "$IMPORT_BACKUP_DIR.old")
+        if (target.exists()) {
+            previous.deleteRecursively()
+            if (!target.renameTo(previous)) {
+                throw IOException("Could not set aside $IMPORT_BACKUP_DIR")
+            }
+        }
+        if (!staged.renameTo(target)) {
+            // Put the previous copy back rather than leave no backup at all.
+            previous.renameTo(target)
+            throw IOException("Could not replace $IMPORT_BACKUP_DIR")
+        }
+        previous.deleteRecursively()
     }
 
     class ExportFileContract : ActivityResultContract<String, Uri?>() {
@@ -449,5 +533,9 @@ class SettingsActivity :
         private const val PERMISSION_CAR_VENDOR_EXTENSION =
             "com.google.android.gms.permission.CAR_VENDOR_EXTENSION"
         const val EXPORT_MIME = "application/octet-stream"
+
+        /** Where the store is copied before an import replaces it. */
+        private const val IMPORT_BACKUP_FILE = "settings-before-import.pb"
+        private const val IMPORT_BACKUP_DIR = "settings-before-import-backgrounds"
     }
 }
