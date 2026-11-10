@@ -155,5 +155,6 @@
     <string name="convert_cc_min_gal_hour">CC в хвилину до галонів на годину</string>
     <string name="convert_liter_100_km">Літр 100/км до миль на галон</string>
     <string name="convert_kpa_psi">Кілопаскалі (кПа) до (PSI)</string>
+    <string name="status_ecu_lost">Значення неактуальні. Перевірте адаптер OBD.</string>
     <string name="status_setup_gauges">Налаштування датчиків у налаштуваннях</string>
 </resources>

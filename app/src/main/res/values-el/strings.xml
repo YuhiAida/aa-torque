@@ -148,6 +148,7 @@
     <string name="convert_cc_min_gal_hour">CC ανά λεπτό σε Γαλόνι την ώρα</string>
     <string name="convert_liter_100_km">Λίτρα/100χλμ σε Μίλια ανά Γαλόνι</string>
     <string name="convert_kpa_psi">Kilopascals (kPa) σε (PSI)</string>
+    <string name="status_ecu_lost">Οι τιμές δεν είναι ενημερωμένες. Ελέγξτε τον αντάπτορα OBD.</string>
     <string name="status_setup_gauges">Ρύθμιση μετρητών στις ρυθμίσεις</string>
 
     <!-- Fuzzy -->

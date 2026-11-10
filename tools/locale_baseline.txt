@@ -1,15 +1,19 @@
 # Missing keys each locale may carry, checked by tools/check_locales.py.
 #
 # The base file is app/src/main/res/values/strings.xml. A locale may lag,
-# but the lag must not grow. When you translate keys, lower the number in
-# the same change. Never raise it without saying why in the commit message.
+# but the lag must not grow. Lower a budget only when the charged missing
+# count falls, which means translating a key that is in the base-key list
+# below. Translating a newer key does not change the charged count. Never
+# raise a budget without saying why in the commit message.
 #
 # Current total: 1277 keys across 15 locales.
 #
-# The base key count when these budgets were measured. Keys added to the base
-# file after this number are not charged to any locale; see check_locales.py.
-base-keys 209
-
+# The base keys at the end of this file are the ones the budgets were measured
+# against. A key added to the base file after that list is not charged to any
+# locale, so adding a string does not fail every other pull request. A key in
+# the list is still charged when a locale loses its translation. The list must
+# be present; a baseline without it is an error, not an empty allowance.
+#
 # locale  max-missing-keys
 cs 166
 de 35
@@ -26,3 +30,214 @@ ru 110
 sl 123
 uk 69
 zh-rHK 46
+
+# base keys measured for these budgets, sorted
+base-key action_delete
+base-key action_preview
+base-key activity_credits_title
+base-key activity_main_title
+base-key activity_settings_title
+base-key activity_stopwatch_title
+base-key add_item
+base-key alarms
+base-key alarms_desc
+base-key app_car_service_name
+base-key app_name
+base-key background_import_failed
+base-key bg_aa
+base-key bg_beetle
+base-key bg_black
+base-key bg_blackboard
+base-key bg_bolt
+base-key bg_cloth
+base-key bg_dots
+base-key bg_ev
+base-key bg_gte
+base-key bg_outrun
+base-key bg_plain
+base-key bg_rock
+base-key bg_seat
+base-key bg_seat2
+base-key bg_skoda
+base-key bg_skoda2
+base-key bg_skodaone
+base-key bg_test
+base-key bg_vw
+base-key bg_vw2
+base-key bg_vw3
+base-key bg_vwgtd
+base-key bg_vwplaid
+base-key boolean_logic
+base-key check_for_updates
+base-key color
+base-key color_instruct
+base-key condition
+base-key convert_bar_psi
+base-key convert_c_to_f
+base-key convert_cc_min_gal_hour
+base-key convert_f_to_c
+base-key convert_km_to_miles
+base-key convert_kpa_psi
+base-key convert_liter_100_km
+base-key convert_minutes_seconds
+base-key convert_newton_ft_lb
+base-key convert_psi_bar
+base-key copy_logs
+base-key credits_author
+base-key credits_basedon
+base-key credits_drivesafely
+base-key credits_modifications
+base-key credits_original_author
+base-key credits_thanks
+base-key custom_expression
+base-key custom_image_title
+base-key custom_script
+base-key custom_script_desc
+base-key dashboards
+base-key decimal_places
+base-key decimal_places_desc
+base-key developer_options
+base-key developer_options_summary
+base-key developer_simulation
+base-key developer_simulation_summary
+base-key developer_simulation_title
+base-key donate
+base-key element_VIN
+base-key element_barometer
+base-key element_batteryVoltage
+base-key element_brakePressure
+base-key element_cac
+base-key element_coolantTemperature
+base-key element_cylinder
+base-key element_distance
+base-key element_eco
+base-key element_ecoaverage
+base-key element_fuel_primary
+base-key element_fuel_secondary
+base-key element_gearboxOilTemperature
+base-key element_horsepower
+base-key element_lateralAcceleration
+base-key element_longitudinalAcceleration
+base-key element_measurement
+base-key element_motherboard
+base-key element_navAltitude
+base-key element_navHeading
+base-key element_none
+base-key element_obd2
+base-key element_odometer
+base-key element_oilTemperature
+base-key element_outsideTemperature
+base-key element_pedal
+base-key element_radio
+base-key element_soundVolume
+base-key element_tire
+base-key element_torque_catalysttemperature
+base-key element_torque_engineload
+base-key element_torque_fuellevel
+base-key element_torque_fuelpressure
+base-key element_torque_intakemanifoldpressure
+base-key element_torque_phonebarometer
+base-key element_torque_phonebatterylevel
+base-key element_torque_throttle_position
+base-key element_torque_timing_advance
+base-key element_torque_turboboost
+base-key element_transmission
+base-key element_wheel
+base-key element_wheelAngle
+base-key element_world
+base-key element_wrench
+base-key element_yawRate
+base-key enable_script
+base-key enable_script_desc
+base-key enabled
+base-key enabled_desc_off
+base-key enabled_desc_on
+base-key exhaust
+base-key export_dashboards
+base-key export_failed
+base-key expressionDocumentation
+base-key file_exported_successfully
+base-key file_not_available
+base-key formulas
+base-key gauge_settings
+base-key icon
+base-key icon_credits
+base-key icon_null_desc
+base-key import_dashboards
+base-key invalid_settings
+base-key item_details_go_back
+base-key maintainer_name
+base-key max_value
+base-key media
+base-key media_background_summary
+base-key media_background_title
+base-key media_blur_summary
+base-key media_blur_title
+base-key media_darken_summary
+base-key media_darken_title
+base-key min_value
+base-key minmax_below
+base-key minmax_below_desc
+base-key new_version
+base-key no_update_available
+base-key not_set
+base-key num_screens
+base-key opacity_summary
+base-key opacity_title
+base-key pid
+base-key pidLabel
+base-key pidShowLabel
+base-key pref_appearance
+base-key pref_background
+base-key pref_background_choose
+base-key pref_background_default
+base-key pref_background_summary_default
+base-key pref_centerclock
+base-key pref_chart_summary
+base-key pref_chart_title
+base-key pref_count_category
+base-key pref_count_warning
+base-key pref_dashboard_name
+base-key pref_data_element_settings
+base-key pref_default_background
+base-key pref_displays
+base-key pref_font
+base-key pref_gauges
+base-key pref_highlow
+base-key pref_highlowmarks
+base-key pref_highvis
+base-key pref_highvis_off
+base-key pref_highvis_on
+base-key pref_leftclock
+base-key pref_rightclock
+base-key pref_shrink_gauge
+base-key pref_shrink_gauge_off
+base-key pref_shrink_gauge_on
+base-key pref_theme
+base-key pref_this_dashboard
+base-key pref_ticks
+base-key pref_ticks_off
+base-key pref_ticks_on
+base-key pref_title_performance
+base-key pref_torque_status
+base-key pref_view
+base-key rotary_desc
+base-key rotary_input
+base-key show_label_desc
+base-key show_label_desc_clock
+base-key status_connecting_to_ecu
+base-key status_connecting_torque
+base-key status_no_torque
+base-key status_setup_gauges
+base-key status_torque_connected
+base-key status_torque_unavailable
+base-key status_torque_waiting
+base-key torque_waiting
+base-key unit
+base-key update_check_failed
+base-key update_dialog_message
+base-key update_later
+base-key update_open_page
+base-key value
+base-key whole_numbers
+base-key whole_numbers_desc

@@ -47,4 +47,5 @@
     <string name="pref_background">Pozadí</string>
     <string name="pref_default_background">Pozadí</string>
     <string name="item_details_go_back">Zpět</string>
+    <string name="status_ecu_lost">Hodnoty nejsou aktuální. Zkontrolujte OBD adaptér.</string>
 </resources>
