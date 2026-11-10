@@ -395,6 +395,10 @@ open class DashboardFragment : AlbumArt() {
             // swallowed by the root view.
             handled || event.action == MotionEvent.ACTION_DOWN
         }
+        // The graph is a child view and consumes every touch that starts on it, so the root
+        // detector above never sees a swipe that begins inside the chart. It reports the
+        // vertical ones back here; horizontal drags stay its own viewport gesture.
+        torqueChart.onVerticalFling = { direction -> setScreen(direction) }
         configureRotaryInput()
         return rootView
     }
@@ -406,9 +410,14 @@ open class DashboardFragment : AlbumArt() {
         }.toTypedArray()
 
     private fun chartDataFromStore() {
-        lifecycleScope.launch {
+        // Scoped to the view: a read still in flight when the view goes away must not call
+        // setupItems() on a destroyed chart.
+        viewLifecycleOwner.lifecycleScope.launch {
             val prefs = context?.dataStore?.data?.first() ?: return@launch
             if (prefs.screensCount == 0) return@launch
+            // The chart can be closed while the store is read. A later open seeds it again, so
+            // do not reset a chart that is no longer on screen.
+            if (binding.showChart != true) return@launch
             val screenIndex = abs(prefs.currentScreen) % prefs.screensCount
             val seed = chartData(prefs.screensList[screenIndex], screenIndex)
             if (!seed.contentEquals(chartData)) {

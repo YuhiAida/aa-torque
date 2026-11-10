@@ -2,8 +2,10 @@ package com.aatorque.stats
 
 import android.content.Context
 import android.util.AttributeSet
+import android.view.GestureDetector
 import android.view.MotionEvent
 import com.jjoe64.graphview.GraphView
+import kotlin.math.abs
 
 /**
  * GraphView that cannot be dragged outside the readings it holds.
@@ -24,6 +26,33 @@ class ClampedGraphView(context: Context, attrs: AttributeSet?) : GraphView(conte
     /** Called after a finished drag was clamped, so the owner can re-read the window. */
     var onViewportSettled: (() -> Unit)? = null
 
+    /**
+     * Called when the gesture that started here is mostly vertical, with -1 for down and 1 for
+     * up. The graph consumes every touch that begins on it, so the dashboard's own detector
+     * never sees that swipe; the owner pages screens from this. A mostly horizontal drag stays
+     * with the viewport, which is the chart's own scroll.
+     */
+    var onVerticalFling: ((Int) -> Unit)? = null
+
+    private val flingDetector = GestureDetector(
+        context,
+        object : GestureDetector.SimpleOnGestureListener() {
+            override fun onFling(
+                e1: MotionEvent?,
+                e2: MotionEvent,
+                velocityX: Float,
+                velocityY: Float
+            ): Boolean {
+                if (e1 == null) return false
+                val diffX = e2.x - e1.x
+                val diffY = e2.y - e1.y
+                if (abs(diffY) <= abs(diffX) || abs(diffY) <= 100f) return false
+                onVerticalFling?.invoke(if (diffY > 0) -1 else 1)
+                return true
+            }
+        }
+    )
+
     /** True while the current gesture started on the graph, so the owner must not act on it. */
     var handledGesture = false
         private set
@@ -32,6 +61,7 @@ class ClampedGraphView(context: Context, attrs: AttributeSet?) : GraphView(conte
         if (event.action == MotionEvent.ACTION_DOWN) {
             handledGesture = true
         }
+        flingDetector.onTouchEvent(event)
         val handled = super.onTouchEvent(event)
         if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
             clamp()

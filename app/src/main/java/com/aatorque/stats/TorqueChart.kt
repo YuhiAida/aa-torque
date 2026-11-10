@@ -87,6 +87,7 @@ class TorqueChart : Fragment() {
         startDate = Date().time
         graph = view.findViewById(R.id.graph)
         graph.onViewportSettled = { onViewportSettled() }
+        graph.onVerticalFling = { direction -> onVerticalFling?.invoke(direction) }
         binding.liveBtn.setOnClickListener { resumeLive() }
         graph.legendRenderer.isVisible = false
         graph.legendRenderer.width = graph.width
@@ -243,6 +244,11 @@ class TorqueChart : Fragment() {
             appendNewReadings(data, binding)
         }
         graph.maxAllowed = now.toDouble()
+        // The ring drops the oldest readings as it fills, so the oldest allowed edge must move
+        // with it. A parked window that outlives the ring then shows empty grid and never
+        // counts as fallen off the end.
+        val oldest = items.mapNotNull { it.history.oldestTime }.minOrNull()
+        if (oldest != null) graph.minAllowed = oldest.toDouble()
         // A window the user dragged back stays where it was put, and the live button brings it
         // forward again. This used to be decided from the whole data range
         // (`getMaxX(true)` is the complete range, not the viewport), so the newest edge was
@@ -283,6 +289,9 @@ class TorqueChart : Fragment() {
     /** True when the last gesture started on the graph, which drags its own viewport. */
     val consumedLastGesture: Boolean
         get() = ::graph.isInitialized && graph.handledGesture
+
+    /** Up and down over the graph page dashboards; the owner wires this to its screen change. */
+    var onVerticalFling: ((Int) -> Unit)? = null
 
     /**
      * Walk the visible window through the readings the gauge kept. Left and right on the car
@@ -348,6 +357,13 @@ class TorqueChart : Fragment() {
      */
     private fun scale(data: TorqueData, value: Double): Double {
         val range = (data.display.maxValue - data.display.minValue).toDouble()
-        return if (range == 0.0) 0.0 else (value / range) * 100.0
+        // The plot is a percentage of the gauge range, so the bottom of the range is 0, not 0
+        // on the gauge. A reading below a positive minimum, or above a negative one, otherwise
+        // lands outside the fixed 0..100 bounds and is clipped. See issue #159.
+        return if (range == 0.0) {
+            0.0
+        } else {
+            ((value - data.display.minValue) / range) * 100.0
+        }
     }
 }
