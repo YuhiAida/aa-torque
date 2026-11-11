@@ -58,12 +58,16 @@ class ClampedGraphView(context: Context, attrs: AttributeSet?) : GraphView(conte
         private set
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (event.action == MotionEvent.ACTION_DOWN) {
+        // Use the masked action: a second finger moves the pointer index into the low bits,
+        // and a missed ACTION_UP would leave handledGesture true for the next swipe.
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
             handledGesture = true
         }
         flingDetector.onTouchEvent(event)
         val handled = super.onTouchEvent(event)
-        if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
+        if (event.actionMasked == MotionEvent.ACTION_UP ||
+            event.actionMasked == MotionEvent.ACTION_CANCEL
+        ) {
             clamp()
             onViewportSettled?.invoke()
             handledGesture = false
