@@ -25,6 +25,7 @@ import com.aatorque.stats.App
 import com.aatorque.stats.BuildConfig
 import com.aatorque.stats.CreditsFragment
 import com.aatorque.stats.R
+import com.aatorque.stats.databinding.DialogImportConfirmBinding
 import com.google.protobuf.InvalidProtocolBufferException
 import java.io.File
 import java.io.IOException
@@ -45,6 +46,7 @@ class SettingsActivity :
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
+        pendingImport = savedInstanceState?.getByteArray(STATE_PENDING_IMPORT)
         supportActionBar!!.setDisplayUseLogoEnabled(true)
         if (savedInstanceState == null) {
             supportFragmentManager
@@ -88,6 +90,11 @@ class SettingsActivity :
             },
             false
         )
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        pendingImport?.let { outState.putByteArray(STATE_PENDING_IMPORT, it) }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -170,35 +177,68 @@ class SettingsActivity :
             .commit()
     }
 
+    /** Settings that wait for the user to save a copy before the import replaces them. */
+    private var pendingImport: ByteArray? = null
+
     private val exportFileLauncher = registerForActivityResult(ExportFileContract()) { uri: Uri? ->
-        // This lambda will be executed when the activity result returns
-        lifecycleScope.launch(Dispatchers.IO) {
-            val data = applicationContext.dataStore.data.first()
-            val result = if (uri != null) {
-                try {
-                    val outputStream = contentResolver.openOutputStream(uri)
-                    if (outputStream == null) {
-                        R.string.export_failed
-                    } else {
-                        outputStream.use { stream ->
-                            UserPreferenceSerializer.writeTo(data, stream)
-                        }
-                        R.string.file_exported_successfully
-                    }
-                } catch (e: IOException) {
-                    Timber.w(e, "Could not export settings file")
-                    R.string.export_failed
-                } catch (e: SecurityException) {
-                    Timber.w(e, "No permission to export settings file")
-                    R.string.export_failed
-                }
-            } else {
-                R.string.export_failed
+        val pending = pendingImport
+        pendingImport = null
+        if (pending == null) {
+            // Export from the menu: only write the file.
+            lifecycleScope.launch {
+                val result = writeSettingsTo(uri)
+                toast(result)
             }
-            runOnUiThread {
-                Toast.makeText(baseContext, result, Toast.LENGTH_SHORT).show()
-            }
+            return@registerForActivityResult
         }
+        // The user asked for a copy before the import. If the copy does not land, the
+        // import must not run, or the settings would be replaced without the way back.
+        if (uri == null) return@registerForActivityResult
+        lifecycleScope.launch {
+            val result = writeSettingsTo(uri)
+            if (result != R.string.file_exported_successfully) {
+                toast(result)
+                return@launch
+            }
+            val imported = try {
+                UserPreference.parseFrom(pending)
+            } catch (e: InvalidProtocolBufferException) {
+                Timber.w(e, "Could not parse the pending import after the export")
+                null
+            }
+            if (imported == null) {
+                toast(R.string.invalid_settings)
+                return@launch
+            }
+            replaceSettings(imported)
+        }
+    }
+
+    /** Write the live settings to a user-picked file and name the result for a toast. */
+    private suspend fun writeSettingsTo(uri: Uri?): Int = withContext(Dispatchers.IO) {
+        if (uri == null) return@withContext R.string.export_failed
+        try {
+            val data = applicationContext.dataStore.data.first()
+            val outputStream = contentResolver.openOutputStream(uri)
+            if (outputStream == null) {
+                R.string.export_failed
+            } else {
+                outputStream.use { stream ->
+                    UserPreferenceSerializer.writeTo(data, stream)
+                }
+                R.string.file_exported_successfully
+            }
+        } catch (e: IOException) {
+            Timber.w(e, "Could not export settings file")
+            R.string.export_failed
+        } catch (e: SecurityException) {
+            Timber.w(e, "No permission to export settings file")
+            R.string.export_failed
+        }
+    }
+
+    private fun toast(result: Int) {
+        Toast.makeText(baseContext, result, Toast.LENGTH_SHORT).show()
     }
 
     private val importFileLauncher = registerForActivityResult(ImportFileContract()) { uri: Uri? ->
@@ -211,15 +251,29 @@ class SettingsActivity :
                 Toast.makeText(baseContext, R.string.invalid_settings, Toast.LENGTH_SHORT).show()
                 return@launch
             }
-            AlertDialog.Builder(this@SettingsActivity)
-                .setTitle(R.string.import_confirm_title)
-                .setMessage(R.string.import_confirm_message)
-                .setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton(R.string.action_import) { _, _ ->
+            showImportDialog(imported)
+        }
+    }
+
+    /** Confirm the replace, and offer a copy the user can keep outside the app. */
+    private fun showImportDialog(imported: UserPreference) {
+        val binding = DialogImportConfirmBinding.inflate(layoutInflater)
+        binding.importMessage.text = getString(R.string.import_confirm_message)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.import_confirm_title)
+            .setView(binding.root)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.action_import) { _, _ ->
+                if (binding.importSaveCopy.isChecked) {
+                    // Keep the parsed file across the picker, which can recreate this
+                    // activity: a protobuf message is not Parcelable, so store its bytes.
+                    pendingImport = imported.toByteArray()
+                    exportFile()
+                } else {
                     lifecycleScope.launch { replaceSettings(imported) }
                 }
-                .show()
-        }
+            }
+            .show()
     }
 
     /** Parse the picked file without touching the store. */
@@ -537,5 +591,8 @@ class SettingsActivity :
         /** Where the store is copied before an import replaces it. */
         private const val IMPORT_BACKUP_FILE = "settings-before-import.pb"
         private const val IMPORT_BACKUP_DIR = "settings-before-import-backgrounds"
+
+        /** The parsed import that waits for the user's copy during the save file picker. */
+        private const val STATE_PENDING_IMPORT = "pending_import"
     }
 }
