@@ -338,8 +338,17 @@ open class DashboardFragment : AlbumArt() {
             .registerReceiver(
                 object : BroadcastReceiver() {
                     override fun onReceive(p0: Context?, intent: Intent?) {
-                        if (intent?.getIntExtra("KEY_CODE", 0) == KeyEvent.KEYCODE_DPAD_CENTER) {
-                            toggleShowChart(binding.showChart != true)
+                        // A rotary-only unit reaches these four directions and nothing else,
+                        // so every one of them has to do something. See issue #165.
+                        when (intent?.getIntExtra("KEY_CODE", 0)) {
+                            KeyEvent.KEYCODE_DPAD_LEFT -> setScreen(-1)
+
+                            KeyEvent.KEYCODE_DPAD_RIGHT -> setScreen(1)
+
+                            KeyEvent.KEYCODE_DPAD_UP,
+                            KeyEvent.KEYCODE_DPAD_DOWN,
+                            KeyEvent.KEYCODE_DPAD_CENTER ->
+                                toggleShowChart(binding.showChart != true)
                         }
                     }
                 },
@@ -626,12 +635,28 @@ open class DashboardFragment : AlbumArt() {
 
     fun configureRotaryInput() {
         rootView.setOnGenericMotionListener { _, ev ->
+            // A rotary knob reports AXIS_SCROLL from SOURCE_ROTARY, and some head units
+            // report the same turn as SOURCE_MOUSE. Accept either, and keep the touch screen
+            // out so a finger drag is not read as a turn. See issue #165.
             if (ev.action == MotionEvent.ACTION_SCROLL &&
-                ev.isFromSource(InputDeviceCompat.SOURCE_MOUSE)
+                !ev.isFromSource(InputDeviceCompat.SOURCE_TOUCHSCREEN)
             ) {
-                val delta = ev.getAxisValue(MotionEvent.AXIS_VSCROLL)
-                setScreen(if (delta < 0) 1 else -1)
-                true
+                // A wheel reports AXIS_VSCROLL. A rotary encoder reports AXIS_SCROLL,
+                // which no older wheel sets, so try it only when the vertical axis is empty.
+                val vertical = ev.getAxisValue(MotionEvent.AXIS_VSCROLL)
+                val delta = if (vertical != 0f) {
+                    vertical
+                } else {
+                    ev.getAxisValue(MotionEvent.AXIS_SCROLL)
+                }
+                if (delta == 0f) {
+                    // A scroll with no axis is not a turn. Without this guard the screen
+                    // would step backwards on a click.
+                    false
+                } else {
+                    setScreen(if (delta < 0) 1 else -1)
+                    true
+                }
             } else {
                 false
             }
