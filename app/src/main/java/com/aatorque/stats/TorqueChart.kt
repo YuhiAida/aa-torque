@@ -41,6 +41,9 @@ class TorqueChart : Fragment() {
         /** Visible width of the chart. Older readings are reached by dragging left. */
         const val WINDOW_MS = 60_000L
 
+        /** The chart advances in 3 s steps; the gauges and readouts keep their own refresh. */
+        const val REFRESH_MS = 3_000L
+
         /** 15% white: enough to read the scale against any wallpaper, faint enough to ignore. */
         const val GRID_COLOR = 0x26FFFFFF
     }
@@ -53,6 +56,10 @@ class TorqueChart : Fragment() {
     /** The gauges this chart plots, and how far each series has read its history. */
     private var items: Array<TorqueData> = emptyArray()
     private val lastPoint = IdentityHashMap<TorqueData, Long>()
+
+    /** True while the window ends at the newest reading and rolls forward with it. */
+    private var following = true
+
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var graph: ClampedGraphView
     private lateinit var binding: FragmentChartBinding
@@ -79,9 +86,13 @@ class TorqueChart : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         startDate = Date().time
         graph = view.findViewById(R.id.graph)
+        graph.onViewportSettled = { onViewportSettled() }
+        graph.onVerticalFling = { direction -> onVerticalFling?.invoke(direction) }
+        binding.liveBtn.setOnClickListener { resumeLive() }
         graph.legendRenderer.isVisible = false
         graph.legendRenderer.width = graph.width
-        graph.viewport.isScalable = true
+        // No pinch: the scale is fixed so a slope means the same thing at any time.
+        graph.viewport.isScalable = false
         graph.viewport.isScrollable = true
         graph.gridLabelRenderer.numHorizontalLabels = 5
         graph.gridLabelRenderer.numVerticalLabels = 7
@@ -187,12 +198,17 @@ class TorqueChart : Fragment() {
         startDate = torqueData.mapNotNull { it.history.oldestTime }.minOrNull() ?: now
         graph.viewport.setMaxY(100.0)
         graph.viewport.setMinY(0.0)
+        // The series are percentages of each gauge range, so the vertical scale must not follow
+        // the visible data: on a drag GraphView would otherwise rescale Y to the stretch being
+        // read, and the traces would stretch and lose the spacing between them.
+        graph.viewport.setYAxisBoundsManual(true)
         // Manual bounds, or a drag is clamped to the data GraphView can see and the older
         // readings cannot be reached. The window ends at the newest point and follows it
         // until the user drags back.
         graph.viewport.setXAxisBoundsManual(true)
         graph.minAllowed = if (oldest == Long.MAX_VALUE) now.toDouble() else oldest.toDouble()
         graph.maxAllowed = now.toDouble()
+        setFollowing(true)
         showWindow(now)
         tick()
     }
@@ -210,7 +226,7 @@ class TorqueChart : Fragment() {
     private val ticker = object : Runnable {
         override fun run() {
             tick()
-            handler.postDelayed(this, TorqueRefresher.REFRESH_INTERVAL)
+            handler.postDelayed(this, REFRESH_MS)
         }
     }
 
@@ -223,14 +239,24 @@ class TorqueChart : Fragment() {
     private fun tick() {
         if (items.isEmpty()) return
         val now = System.currentTimeMillis()
-        // Decide before appending: a scrolling append moves the viewport to the series end,
-        // so a check afterwards cannot tell whether the user had dragged back. See issue #193.
-        val following = graph.viewport.getMaxX(true) >= now - 2_000
         items.forEachIndexed { index, data ->
             val binding = legendBinding.getOrNull(index) ?: return@forEachIndexed
             appendNewReadings(data, binding)
         }
         graph.maxAllowed = now.toDouble()
+        // The ring drops the oldest readings as it fills, so the oldest allowed edge must move
+        // with it. A parked window that outlives the ring then shows empty grid and never
+        // counts as fallen off the end.
+        val oldest = items.mapNotNull { it.history.oldestTime }.minOrNull()
+        if (oldest != null) graph.minAllowed = oldest.toDouble()
+        // A window the user dragged back stays where it was put, and the live button brings it
+        // forward again. This used to be decided from the whole data range
+        // (`getMaxX(true)` is the complete range, not the viewport), so the newest edge was
+        // always "at now" and every tick pulled a scrolled window back.
+        if (!following && ChartMath.fellOffTheEnd(currentWindow(), graph.minAllowed)) {
+            // The readings under the window are gone, so there is nothing left to read.
+            resumeLive()
+        }
         if (following) {
             follow(now)
         }
@@ -253,16 +279,65 @@ class TorqueChart : Fragment() {
     }
 
     /**
-     * Put the last [WINDOW_MS] of data on screen, ending at [now]. The window never starts
-     * before the oldest reading: a session younger than the window would otherwise show empty
-     * grid on the left and negative time labels.
+     * Put the readable part of the window on screen. A session younger than the window shows
+     * what it has and grows, instead of showing empty grid on the left.
      */
     private fun showWindow(now: Long) {
-        val oldest = graph.minAllowed.toLong()
-        // No reading yet: show a full window rather than a zero-width viewport.
-        val from = if (oldest >= now) now - WINDOW_MS else maxOf(now - WINDOW_MS, oldest)
-        graph.viewport.setMinX(from.toDouble())
-        graph.viewport.setMaxX(now.toDouble())
+        applyWindow(ChartMath.follow(now.toDouble(), WINDOW_MS))
+    }
+
+    /** True when the last gesture started on the graph, which drags its own viewport. */
+    val consumedLastGesture: Boolean
+        get() = ::graph.isInitialized && graph.handledGesture
+
+    /** Up and down over the graph page dashboards; the owner wires this to its screen change. */
+    var onVerticalFling: ((Int) -> Unit)? = null
+
+    /**
+     * Walk the visible window through the readings the gauge kept. Left and right on the car
+     * screen land here; the window keeps its width, and stops at the oldest and newest reading.
+     */
+    fun scrollHistory(direction: Int) {
+        if (!::graph.isInitialized) return
+        val scrolled = ChartMath.scroll(
+            currentWindow(),
+            direction,
+            graph.minAllowed,
+            graph.maxAllowed
+        )
+        applyWindow(scrolled)
+        setFollowing(ChartMath.atLive(scrolled, graph.maxAllowed))
+    }
+
+    /** The user finished a drag or a pinch on the graph; remember where it landed. */
+    private fun onViewportSettled() {
+        val settled = ChartMath.clamp(currentWindow(), graph.minAllowed, graph.maxAllowed)
+        applyWindow(settled)
+        setFollowing(ChartMath.atLive(settled, graph.maxAllowed))
+    }
+
+    /** Bring the window back to the newest reading after the user scrolled into the history. */
+    fun resumeLive() {
+        if (!::graph.isInitialized) return
+        setFollowing(true)
+        follow(System.currentTimeMillis())
+    }
+
+    /** The live button is shown while the window is parked in the history. */
+    private fun setFollowing(value: Boolean) {
+        following = value
+        if (::graph.isInitialized) {
+            binding.liveBtn.visibility = if (value) View.GONE else View.VISIBLE
+        }
+    }
+
+    /** The viewport is the window: read it with `false`, never with the complete-range form. */
+    private fun currentWindow(): ChartWindow =
+        ChartWindow(graph.viewport.getMinX(false), graph.viewport.getMaxX(false))
+
+    private fun applyWindow(window: ChartWindow) {
+        graph.viewport.setMinX(window.min)
+        graph.viewport.setMaxX(window.max)
     }
 
     /**
@@ -271,12 +346,7 @@ class TorqueChart : Fragment() {
      * oldest reading, and never ends after now.
      */
     private fun follow(now: Long) {
-        val viewport = graph.viewport
-        val span = viewport.getMaxX(true) - viewport.getMinX(true)
-        val width = if (span <= 0.0) WINDOW_MS.toDouble() else span
-        val from = maxOf(now - width, graph.minAllowed)
-        viewport.setMinX(from)
-        viewport.setMaxX(minOf(from + width, now.toDouble()))
+        applyWindow(ChartMath.follow(now.toDouble(), WINDOW_MS))
     }
 
     /**
@@ -287,6 +357,13 @@ class TorqueChart : Fragment() {
      */
     private fun scale(data: TorqueData, value: Double): Double {
         val range = (data.display.maxValue - data.display.minValue).toDouble()
-        return if (range == 0.0) 0.0 else (value / range) * 100.0
+        // The plot is a percentage of the gauge range, so the bottom of the range is 0, not 0
+        // on the gauge. A reading below a positive minimum, or above a negative one, otherwise
+        // lands outside the fixed 0..100 bounds and is clipped. See issue #159.
+        return if (range == 0.0) {
+            0.0
+        } else {
+            ((value - data.display.minValue) / range) * 100.0
+        }
     }
 }

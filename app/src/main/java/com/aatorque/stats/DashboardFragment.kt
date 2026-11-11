@@ -23,7 +23,6 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
 import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -32,6 +31,7 @@ import androidx.fragment.app.FragmentContainerView
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.aatorque.datastore.Screen
 import com.aatorque.datastore.UserPreference
 import com.aatorque.prefs.BackgroundSource
 import com.aatorque.prefs.BackgroundStore
@@ -47,6 +47,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -65,8 +66,6 @@ open class DashboardFragment : AlbumArt() {
         }
     private val torqueService = TorqueService()
 
-    private lateinit var mBtnNext: ImageButton
-    private lateinit var mBtnPrev: ImageButton
     private lateinit var mTitleElement: TextView
     private lateinit var mWrapper: RelativeLayout
     lateinit var mConStatus: TextView
@@ -76,6 +75,9 @@ open class DashboardFragment : AlbumArt() {
     var gaugeViews = arrayOfNulls<FragmentContainerView>(3)
 
     private var screensAnimating = false
+
+    /** The gauges the chart was last seeded from; a seed resets the window, so it is guarded. */
+    private var chartData: Array<TorqueData> = emptyArray()
 
     /** How many dashboards exist. A single dashboard has nowhere to scroll to. */
     private var screensCount = 1
@@ -129,6 +131,9 @@ open class DashboardFragment : AlbumArt() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         settingsViewModel = ViewModelProvider(this)[SettingsViewModel::class.java]
+        // The chart is a view of the dashboard, not a remembered state: every entry starts on
+        // the gauges, so the pane never opens on a surface the user did not ask for.
+        settingsViewModel.chartVisible.value = false
         val context = requireContext()
         torqueRefresher.simulate = DevOptions.simulateValues(context)
         DevOptions.prefs(context).registerOnSharedPreferenceChangeListener(devPrefListener)
@@ -169,17 +174,14 @@ open class DashboardFragment : AlbumArt() {
             data.collect {
                 val screenIndex = abs(it.currentScreen) % it.screensCount
                 val screens = it.screensList[screenIndex]
-                val showChartChanged = binding.showChart != it.showChart
                 screensCount = it.screensCount
                 binding.title = screens.title
-                binding.showBtns = false
                 // The row under the title carries the dashboard dots and the chart hint, so it
                 // is shown even for a single dashboard: the swipe down works either way.
                 binding.showDots = true
                 binding.dashboardDots.count = it.screensCount
                 binding.dashboardDots.chartHint = true
                 binding.dashboardDots.selected = screenIndex
-                settingsViewModel.chartVisible.value = it.showChart
                 settingsViewModel.minMaxBelow.value = it.minMaxBelow
                 val artworkWasOn = shouldDisplayArtwork
                 shouldDisplayArtwork = it.albumArt
@@ -192,15 +194,18 @@ open class DashboardFragment : AlbumArt() {
 
                 albumArtReady.countDown()
 
-                if (it.showChart) {
-                    torqueChart.setupItems(
-                        screens.gaugesList.mapIndexed { index, display ->
-                            torqueRefresher.updateIfNeeded(index, screenIndex, display)
-                        }.toTypedArray()
-                    )
+                if (binding.showChart == true) {
+                    // Seed only when the gauges the chart plots change. Seeding resets the
+                    // window, and every preference write used to land here, so a scrolled-back
+                    // chart jumped forward again while the user was reading it.
+                    val seed = chartData(screens, screenIndex)
+                    if (!seed.contentEquals(chartData)) {
+                        chartData = seed
+                        torqueChart.setupItems(seed)
+                    }
                 } else {
                     screens.gaugesList.forEachIndexed { index, display ->
-                        if (showChartChanged || torqueRefresher.hasChanged(index, display)) {
+                        if (torqueRefresher.hasChanged(index, display)) {
                             val clock = torqueRefresher.populateQuery(index, screenIndex, display)
                             gauges[index]?.setupClock(clock)
                         }
@@ -302,6 +307,9 @@ open class DashboardFragment : AlbumArt() {
             binding.showChart = it
             // The hint points at the chart, so it flips when the chart is what is on screen.
             binding.dashboardDots.chartOpen = it == true
+            if (it == true) {
+                chartDataFromStore()
+            }
         }
         settingsViewModel.minMaxBelow.observe(viewLifecycleOwner) {
             binding.minMaxBelow = it
@@ -310,11 +318,6 @@ open class DashboardFragment : AlbumArt() {
         rootView = binding.root
 
         mLayoutDashboard = rootView.findViewById(R.id.layoutDashboard)
-        mBtnNext = binding.nextBtn
-        mBtnPrev = binding.prevButton
-        mBtnNext.setOnClickListener { setScreen(1) }
-        mBtnPrev.setOnClickListener { setScreen(-1) }
-        binding.chartBtn.setOnClickListener { toggleShowChart(binding.showChart != true) }
         mTitleElement = binding.textTitle
         mTitleElement.isSelected = true
         mWrapper = binding.includeWrap
@@ -368,24 +371,30 @@ open class DashboardFragment : AlbumArt() {
                             val diffX = e2.x - e1.x
                             val diffY = e2.y - e1.y
 
-                            // Set a minimum swipe distance threshold (e.g., 100 pixels)
+                            // One axis, one job: left and right walk the chart's history, up and
+                            // down move between dashboards. The chart is opened from the row
+                            // under the title, so a vertical swipe is never its toggle.
                             if (abs(diffX) > abs(diffY) && abs(diffX) > 100) {
-                                if (diffX > 0) {
-                                    // Swipe Right
-                                    setScreen(-1)
+                                if (binding.showChart == true) {
+                                    // The graph drags its own viewport, so only step the window
+                                    // when the swipe started outside it.
+                                    if (!torqueChart.consumedLastGesture) {
+                                        torqueChart.scrollHistory(if (diffX > 0) -1 else 1)
+                                    }
                                 } else {
-                                    // Swipe Left
-                                    setScreen(1)
+                                    setScreen(if (diffX > 0) -1 else 1)
                                 }
                                 return true
                             } else if (abs(diffY) > abs(diffX) && abs(diffY) > 100) {
-                                toggleShowChart(binding.showChart != true)
+                                setScreen(if (diffY > 0) -1 else 1)
+                                return true
                             }
                         }
                         return false
                     }
                 }
             )
+        binding.dashboardDots.onChartToggle = { toggleShowChart(binding.showChart != true) }
         rootView.setOnTouchListener { v, event ->
             val handled = gestureDetector.onTouchEvent(event)
             if (event.action == MotionEvent.ACTION_UP) {
@@ -396,8 +405,36 @@ open class DashboardFragment : AlbumArt() {
             // swallowed by the root view.
             handled || event.action == MotionEvent.ACTION_DOWN
         }
+        // The graph is a child view and consumes every touch that starts on it, so the root
+        // detector above never sees a swipe that begins inside the chart. It reports the
+        // vertical ones back here; horizontal drags stay its own viewport gesture.
+        torqueChart.onVerticalFling = { direction -> setScreen(direction) }
         configureRotaryInput()
         return rootView
+    }
+
+    /** Seed the chart from the readings the gauges kept while it was closed. */
+    private fun chartData(screens: Screen, screenIndex: Int): Array<TorqueData> =
+        screens.gaugesList.mapIndexed { index, display ->
+            torqueRefresher.updateIfNeeded(index, screenIndex, display)
+        }.toTypedArray()
+
+    private fun chartDataFromStore() {
+        // Scoped to the view: a read still in flight when the view goes away must not call
+        // setupItems() on a destroyed chart.
+        viewLifecycleOwner.lifecycleScope.launch {
+            val prefs = context?.dataStore?.data?.first() ?: return@launch
+            if (prefs.screensCount == 0) return@launch
+            // The chart can be closed while the store is read. A later open seeds it again, so
+            // do not reset a chart that is no longer on screen.
+            if (binding.showChart != true) return@launch
+            val screenIndex = abs(prefs.currentScreen) % prefs.screensCount
+            val seed = chartData(prefs.screensList[screenIndex], screenIndex)
+            if (!seed.contentEquals(chartData)) {
+                chartData = seed
+                torqueChart.setupItems(seed)
+            }
+        }
     }
 
     fun setScreen(direction: Int) {
@@ -448,11 +485,9 @@ open class DashboardFragment : AlbumArt() {
                         }
                     }
                 )
-                lifecycleScope.launch {
-                    context?.dataStore?.updateData { currentSettings ->
-                        currentSettings.toBuilder().setShowChart(showChart).build()
-                    }
-                }
+                // The open state lives in the view model, not in the preference store: the
+                // chart is a way of looking at this dashboard, not a setting to restore.
+                settingsViewModel.chartVisible.value = showChart
             }
         })
     }
