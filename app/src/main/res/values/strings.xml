@@ -204,6 +204,8 @@
     <string name="enabled_desc_off">Hide this item</string>
     <string name="alarms">Alarms</string>
     <string name="alarms_desc">"Change color based off the value to implement things like shift lights or temperature warnings. "</string>
+    <string name="alarm_deleted">Alarm deleted</string>
+    <string name="undo">Undo</string>
     <string name="add_item">Add item</string>
     <string name="color_instruct">First item that matches will be used. Items are sorted in the following order:
         \n• equality

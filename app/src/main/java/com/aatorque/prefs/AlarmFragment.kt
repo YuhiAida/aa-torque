@@ -9,6 +9,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +29,10 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -38,7 +43,9 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -71,11 +78,20 @@ val Operation.op: String
         return this.valueDescriptor.options.getExtension(com.aatorque.datastore.UserPrefs.op)
     }
 
+/** Order in which rules were created; breaks a tie between equal thresholds. */
+private var nextRuleOrder = 0L
+
 @Parcelize
 data class FormData(
     var operation: Operation = Operation.GT,
     var value: Double = 0.0,
-    var color: Int = Color(255, 0, 0, 255).toArgb()
+    var color: Int = Color(255, 0, 0, 255).toArgb(),
+    /**
+     * Position among rules with the same operation and value. It is assigned on creation and
+     * travels with the rule through delete and undo, so a restored rule keeps the precedence it
+     * had. See [RULE_ORDER].
+     */
+    val order: Long = nextRuleOrder++
 ) : Parcelable {
     fun toColoring(): Coloring = Coloring.newBuilder()
         .setColor(color)
@@ -92,30 +108,57 @@ data class FormData(
     }
 }
 
+/**
+ * The order of the rules is their precedence: the first rule that matches supplies the
+ * colour. Every path that adds a rule re-sorts with this comparator so the order stays
+ * canonical.
+ */
+private val RULE_ORDER = compareBy<FormData>(
+    {
+        when (it.operation) {
+            Operation.EQ -> 0
+            Operation.GT, Operation.GTE -> 1
+            Operation.LTE, Operation.LT -> 2
+            Operation.UNRECOGNIZED -> 3
+        }
+    },
+    {
+        when (it.operation) {
+            Operation.GT, Operation.GTE -> -it.value
+            else -> it.value
+        }
+    },
+    // Two rules can share a threshold, as GT 10 and GTE 10 do. Only creation order decides
+    // which of them is tried first, so the tie must not fall back to the order of the list.
+    { it.order }
+)
+
 class StateModel : ViewModel() {
 
     val uiState = mutableStateListOf<FormData>()
+
     fun prependItem(it: FormData) {
         uiState.add(it)
-        uiState.sortWith(
-            compareBy({
-                when (it.operation) {
-                    Operation.EQ -> 0
-                    Operation.GT, Operation.GTE -> 1
-                    Operation.LTE, Operation.LT -> 2
-                    Operation.UNRECOGNIZED -> 3
-                }
-            }, {
-                when (it.operation) {
-                    Operation.GT, Operation.GTE -> -it.value
-                    else -> it.value
-                }
-            })
-        )
+        sortRules()
     }
 
     fun delete(current: FormData) {
         uiState.remove(current)
+    }
+
+    /**
+     * Put a deleted rule back. The rule is re-sorted into the list rather than dropped at a
+     * remembered index: another delete or edit while the undo bar is up moves every index,
+     * and a rule restored into the wrong place changes which threshold wins. See issue #169.
+     */
+    fun restore(current: FormData) {
+        if (uiState.contains(current)) return
+        uiState.add(current)
+        sortRules()
+    }
+
+    private fun sortRules() {
+        uiState.sortWith(RULE_ORDER)
     }
 }
 
@@ -386,6 +429,10 @@ fun MainView(
 @Composable
 fun VerticalReorderList(model: StateModel = viewModel()) {
     val openAlertDialog = remember { mutableStateOf<FormData?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val deletedMessage = stringResource(R.string.alarm_deleted)
+    val undoLabel = stringResource(R.string.undo)
 
     when {
         openAlertDialog.value != null -> {
@@ -401,43 +448,58 @@ fun VerticalReorderList(model: StateModel = viewModel()) {
             )
         }
     }
-    Column {
-        model.uiState.forEach { current ->
-            ListItem(
-                headlineContent = {
-                    Text("value ${current.operation.op} ${current.value}")
-                },
-                leadingContent = {
-                    TextButton(
-                        onClick = {
-                            openAlertDialog.value = current
-                        },
-                        modifier = Modifier
-                            .background(
-                                Color(current.color)
-                            )
-                            .border(
-                                BorderStroke(1.dp, Color.Black)
-                            )
-                            .height(50.dp)
-                            .width(50.dp)
-                    ) {
-                    }
-                },
+    Box {
+        Column {
+            model.uiState.forEach { current ->
+                ListItem(
+                    headlineContent = {
+                        Text("value ${current.operation.op} ${current.value}")
+                    },
+                    leadingContent = {
+                        TextButton(
+                            onClick = {
+                                openAlertDialog.value = current
+                            },
+                            modifier = Modifier
+                                .background(
+                                    Color(current.color)
+                                )
+                                .border(
+                                    BorderStroke(1.dp, Color.Black)
+                                )
+                                .height(50.dp)
+                                .width(50.dp)
+                        ) {
+                        }
+                    },
 
-                trailingContent = {
-                    Button(onClick = {
-                        model.delete(current)
-                    }) {
-                        Icon(
-                            Icons.Filled.Delete,
-                            contentDescription = Icons.Filled.Delete.toString()
-                        )
-                    }
-                },
-                shadowElevation = 3.dp,
-                tonalElevation = 1.dp
-            )
+                    trailingContent = {
+                        Button(onClick = {
+                            if (model.uiState.contains(current)) {
+                                model.delete(current)
+                                scope.launch {
+                                    val result = snackbarHostState.showSnackbar(
+                                        message = deletedMessage,
+                                        actionLabel = undoLabel,
+                                        duration = SnackbarDuration.Long
+                                    )
+                                    if (result == SnackbarResult.ActionPerformed) {
+                                        model.restore(current)
+                                    }
+                                }
+                            }
+                        }) {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = Icons.Filled.Delete.toString()
+                            )
+                        }
+                    },
+                    shadowElevation = 3.dp,
+                    tonalElevation = 1.dp
+                )
+            }
         }
+        SnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
     }
 }
